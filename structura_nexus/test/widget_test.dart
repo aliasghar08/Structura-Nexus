@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:structura_nexus/main.dart';
 import 'package:structura_nexus/data/benchmark_presets.dart';
 import 'package:structura_nexus/services/embedded_fea_solver.dart';
+import 'package:structura_nexus/services/structural_library_service.dart';
 
 void main() {
   test('Embedded FEA Solver solves multi-story sway frame', () {
@@ -26,5 +27,37 @@ void main() {
     expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
     expect(find.text('ASCE 7-16 LOAD COMBINATIONS'), findsOneWidget);
     expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
+  });
+
+  test('StructuralLibraryService exports valid AutoCAD DXF format', () {
+    final model = BenchmarkPresets.timoshenkoCantilever();
+    final dxf = StructuralLibraryService.exportToDxf(model);
+
+    expect(dxf, contains('SECTION'));
+    expect(dxf, contains('\$ACADVER'));
+    expect(dxf, contains('ENTITIES'));
+    expect(dxf, contains('LINE'));
+    expect(dxf, contains('POINT'));
+    expect(dxf, contains('EOF'));
+  });
+
+  test('StructuralLibraryService exports Bill of Materials (BOM) CSV', () {
+    final model = BenchmarkPresets.multiStorySwayFrame();
+    final bom = StructuralLibraryService.exportToCsvBom(model);
+
+    expect(bom, contains('Member ID,Start Node,End Node,AISC Section,Length (m)'));
+    expect(bom, contains('TOTAL STEEL TONNAGE'));
+    expect(bom, contains('COL_1'));
+  });
+
+  test('StructuralLibraryService JSON roundtrip preserves graph fidelity', () {
+    final model = BenchmarkPresets.warrenTruss();
+    final jsonMap = StructuralLibraryService.serializeModel(model);
+    final deserialized = StructuralLibraryService.deserializeModel(jsonMap);
+
+    expect(deserialized.nodes.length, model.nodes.length);
+    expect(deserialized.members.length, model.members.length);
+    expect(deserialized.nodes.first.x, model.nodes.first.x);
+    expect(deserialized.members.first.sectionProfile, model.members.first.sectionProfile);
   });
 }

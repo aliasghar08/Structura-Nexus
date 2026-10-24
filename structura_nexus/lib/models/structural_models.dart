@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:vector_math/vector_math_64.dart';
 
 enum DisplayMode {
@@ -184,13 +185,21 @@ class StructuralNode {
 
   StructuralNode({
     required this.id,
-    required this.coords,
+    Vector3? coords,
+    double? x,
+    double? y,
+    double? z,
     List<int>? restraint,
+    List<bool>? isRestrained,
     List<double>? loads,
+    double? fxN,
+    double? fyN,
+    double? fzN,
     List<double>? displacements,
     List<double>? reactions,
-  })  : restraint = restraint ?? [0, 0, 0, 0, 0, 0],
-        loads = loads ?? [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+  })  : coords = coords ?? Vector3(x ?? 0.0, y ?? 0.0, z ?? 0.0),
+        restraint = restraint ?? (isRestrained != null ? isRestrained.map((r) => r ? 1 : 0).toList() : [0, 0, 0, 0, 0, 0]),
+        loads = loads ?? [fxN ?? 0.0, fyN ?? 0.0, fzN ?? 0.0, 0.0, 0.0, 0.0],
         displacements = displacements ?? [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         reactions = reactions ?? [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
 
@@ -210,6 +219,46 @@ class StructuralNode {
       restraint[4] == 0 &&
       restraint[5] == 0;
   bool get hasLoad => loads.any((l) => l.abs() > 0.01);
+
+  double get x => coords.x;
+  double get y => coords.y;
+  double get z => coords.z;
+  double get fxN => loads.isNotEmpty ? loads[0] : 0.0;
+  double get fyN => loads.length > 1 ? loads[1] : 0.0;
+  double get fzN => loads.length > 2 ? loads[2] : 0.0;
+  List<bool> get isRestrained => restraint.map((r) => r == 1).toList();
+
+  StructuralNode copyWith({
+    String? id,
+    Vector3? coords,
+    double? x,
+    double? y,
+    double? z,
+    List<int>? restraint,
+    List<bool>? isRestrained,
+    List<double>? loads,
+    double? fxN,
+    double? fyN,
+    double? fzN,
+    List<double>? displacements,
+    List<double>? reactions,
+  }) {
+    final newCoords = coords ?? (x != null || y != null || z != null ? Vector3(x ?? this.x, y ?? this.y, z ?? this.z) : this.coords.clone());
+    final newRestraint = restraint ?? (isRestrained != null ? isRestrained.map((r) => r ? 1 : 0).toList() : List<int>.from(this.restraint));
+    final newLoads = loads ?? List<double>.from(this.loads);
+    if (fxN != null && newLoads.isNotEmpty) newLoads[0] = fxN;
+    if (fyN != null && newLoads.length > 1) newLoads[1] = fyN;
+    if (fzN != null && newLoads.length > 2) newLoads[2] = fzN;
+
+    return StructuralNode(
+      id: id ?? this.id,
+      coords: newCoords,
+      restraint: newRestraint,
+      loads: newLoads,
+      displacements: displacements ?? List<double>.from(this.displacements),
+      reactions: reactions ?? List<double>.from(this.reactions),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -256,9 +305,12 @@ class StructuralMember {
 
   StructuralMember({
     required this.id,
-    required this.iNodeId,
-    required this.jNodeId,
-    this.section = 'W14X48',
+    String? iNodeId,
+    String? startNodeId,
+    String? jNodeId,
+    String? endNodeId,
+    String? section,
+    String? sectionProfile,
     this.material = 'A992_STEEL',
     this.axialForceN = 0.0,
     this.shearY = 0.0,
@@ -276,7 +328,71 @@ class StructuralMember {
     this.slendernessKlR = 0.0,
     this.status = 'PASS',
     this.recommendedSection,
-  });
+  })  : iNodeId = iNodeId ?? startNodeId ?? 'N1',
+        jNodeId = jNodeId ?? endNodeId ?? 'N2',
+        section = section ?? sectionProfile ?? 'W14X48';
+
+  String get startNodeId => iNodeId;
+  String get endNodeId => jNodeId;
+  String get sectionProfile => section;
+
+  double get lengthM => 3.0;
+  double get weightKg {
+    final prof = SectionProfile.catalog[section];
+    return (prof?.weightKgM ?? 50.0) * lengthM;
+  }
+  bool get isCompliant => governingDcr <= 1.0;
+
+  StructuralMember copyWith({
+    String? id,
+    String? iNodeId,
+    String? startNodeId,
+    String? jNodeId,
+    String? endNodeId,
+    String? section,
+    String? sectionProfile,
+    String? material,
+    double? axialForceN,
+    double? shearY,
+    double? shearZ,
+    double? momentY,
+    double? momentZ,
+    double? torsion,
+    double? maxDeflection,
+    double? maxVonMisesMpa,
+    double? dcrAxial,
+    double? dcrBuckling,
+    double? dcrCombined,
+    double? dcrShear,
+    double? governingDcr,
+    double? slendernessKlR,
+    String? status,
+    String? recommendedSection,
+  }) {
+    return StructuralMember(
+      id: id ?? this.id,
+      iNodeId: iNodeId ?? startNodeId ?? this.iNodeId,
+      jNodeId: jNodeId ?? endNodeId ?? this.jNodeId,
+      section: section ?? sectionProfile ?? this.section,
+      material: material ?? this.material,
+      axialForceN: axialForceN ?? this.axialForceN,
+      shearY: shearY ?? this.shearY,
+      shearZ: shearZ ?? this.shearZ,
+      momentY: momentY ?? this.momentY,
+      momentZ: momentZ ?? this.momentZ,
+      torsion: torsion ?? this.torsion,
+      maxDeflection: maxDeflection ?? this.maxDeflection,
+      maxVonMisesMpa: maxVonMisesMpa ?? this.maxVonMisesMpa,
+      dcrAxial: dcrAxial ?? this.dcrAxial,
+      dcrBuckling: dcrBuckling ?? this.dcrBuckling,
+      dcrCombined: dcrCombined ?? this.dcrCombined,
+      dcrShear: dcrShear ?? this.dcrShear,
+      governingDcr: governingDcr ?? this.governingDcr,
+      slendernessKlR: slendernessKlR ?? this.slendernessKlR,
+      status: status ?? this.status,
+      recommendedSection: recommendedSection ?? this.recommendedSection,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -312,7 +428,8 @@ class StructuralModel {
   Map<String, Vector3> modalShapeOffsets;
 
   StructuralModel({
-    required this.sessionId,
+    String? sessionId,
+    String? name,
     this.loadCombination = '1.2D+1.6L',
     List<StructuralNode>? nodes,
     List<StructuralMember>? members,
@@ -326,9 +443,29 @@ class StructuralModel {
     this.surrogateUncertainty = 0.02,
     this.activeVibrationMode = 1,
     Map<String, Vector3>? modalShapeOffsets,
-  })  : nodes = nodes ?? [],
+  })  : sessionId = (sessionId != null && sessionId.isNotEmpty) ? sessionId : (name ?? 'struct_session_default'),
+        nodes = nodes ?? [],
         members = members ?? [],
         modalShapeOffsets = modalShapeOffsets ?? {};
+
+  String get name => sessionId;
+
+  double get totalWeightKg {
+    double total = 0.0;
+    for (final m in members) {
+      final n1 = getNode(m.iNodeId);
+      final n2 = getNode(m.jNodeId);
+      final len = (n1 != null && n2 != null) ? (n2.coords - n1.coords).length : 3.0;
+      final prof = SectionProfile.catalog[m.section];
+      total += (prof?.weightKgM ?? 50.0) * len;
+    }
+    return total;
+  }
+
+  double get governingDcr {
+    if (members.isEmpty) return 0.0;
+    return members.map((m) => m.governingDcr).reduce(math.max);
+  }
 
   StructuralNode? getNode(String id) {
     try {
@@ -336,6 +473,41 @@ class StructuralModel {
     } catch (_) {
       return null;
     }
+  }
+
+  StructuralModel copyWith({
+    String? sessionId,
+    String? name,
+    String? loadCombination,
+    List<StructuralNode>? nodes,
+    List<StructuralMember>? members,
+    EngineType? activeEngine,
+    DisplayMode? displayMode,
+    double? deformationScale,
+    double? baseShearN,
+    double? maxDriftRatio,
+    double? solverLatencyMs,
+    bool? isEquilibrated,
+    double? surrogateUncertainty,
+    int? activeVibrationMode,
+    Map<String, Vector3>? modalShapeOffsets,
+  }) {
+    return StructuralModel(
+      sessionId: sessionId ?? name ?? this.sessionId,
+      loadCombination: loadCombination ?? this.loadCombination,
+      nodes: nodes ?? this.nodes.map((n) => n.copyWith()).toList(),
+      members: members ?? this.members.map((m) => m.copyWith()).toList(),
+      activeEngine: activeEngine ?? this.activeEngine,
+      displayMode: displayMode ?? this.displayMode,
+      deformationScale: deformationScale ?? this.deformationScale,
+      baseShearN: baseShearN ?? this.baseShearN,
+      maxDriftRatio: maxDriftRatio ?? this.maxDriftRatio,
+      solverLatencyMs: solverLatencyMs ?? this.solverLatencyMs,
+      isEquilibrated: isEquilibrated ?? this.isEquilibrated,
+      surrogateUncertainty: surrogateUncertainty ?? this.surrogateUncertainty,
+      activeVibrationMode: activeVibrationMode ?? this.activeVibrationMode,
+      modalShapeOffsets: modalShapeOffsets ?? Map.from(this.modalShapeOffsets),
+    );
   }
 
   Map<String, dynamic> toGraphPayload(String action) => {

@@ -27,8 +27,11 @@
    | **Interactive Latency** | Full matrix re-meshing and batch solver runs (10s – 5min). | Sub-40ms real-time PyTorch GNN inference with live joint dragging. |
    | **Boundary Invariants** | Unchecked numerical drift at approximate boundaries. | Physics-hard Dirichlet projection ($u_i \times R_i \equiv 0$) guaranteed in tensor graphs. |
    | **Section Optimization** | Manual trial-and-error or brute-force slow catalog sweeps. | Generative evolutionary multi-objective optimizer targeting 15–25% mass savings. |
-   | **Seismic & Dynamics** | Buried in complex sub-menus with static modal tables. | One-click ASCE 7-16 ELF base shear + live 3D sinusoidal sinusoidal viewport vibration. |
+   | **Seismic & Dynamics** | Buried in complex sub-menus with static modal tables. | One-click ASCE 7-16 ELF base shear + live 3D sinusoidal viewport vibration. |
    | **Sustainability & LCA** | Missing; requires external manual spreadsheets / plugins. | Native EPD embodied carbon engine with EAF recycled steel and LEED/SE2050 metrics. |
+   | **AI CAD & Drafting** | Clunky proprietary drafting tools or manual geometry entry. | Real-time AI CAD Studio with multi-plane projections, precision snapping, and AI command console. |
+   | **Cloud & Collaboration**| Local desktop files; prone to version corruption. | Firebase Cloud synchronization, project library, and secure user profiles. |
+   | **Interoperability** | Fragmented proprietary binary formats. | Native AutoCAD DXF export, Bill of Materials CSV export, and JSON structural graphs. |
    | **AI Copilot** | None; legacy manual parameter navigation. | Conversational structural copilot with natural language intent classification. |
    | **Deployment & UI** | Heavy desktop-only legacy Win32/MFC interfaces. | Modern, glassmorphic Flutter Web & Desktop workstation with 3D canvas and offline solver. |
 
@@ -37,6 +40,19 @@
    - Hardcoded AISC 360-16 limit states (tension yield, flexural buckling with $KL/r \le 200$, combined P-M interaction Eq H1-1a/b, shear capacity) and ACI 318-19 beam shear envelopes.
    - Demand-to-Capacity Ratios ($\text{DCR} \le 1.0$) computed on all members across ASCE 7 factored load combinations (1.4D, 1.2D+1.6L, 1.2D+1.0W+0.5L, 1.2D+1.0E+0.2S).
    - Epistemic uncertainty quantification gating: automatic fallback to direct matrix factorization if variance exceeds $0.08$.
+
+4. **Firebase Cloud Ecosystem & Authentication**:
+   - **Identity & Access Management**: Email/Password authentication, Google OAuth popup sign-in, Guest/Anonymous mode, and automatic Cloud Firestore profile replication (`users/{uid}`).
+   - **Cloud Project Storage**: Full CRUD synchronization of structural project models in Cloud Firestore (`users/{uid}/projects`).
+   - **Interoperability & Custom Files**:
+     - **AutoCAD DXF Export**: Generates compliant `$ACADVER AC1015` files with 3D line entities and node coordinates for AutoCAD, Civil 3D, and Revit.
+     - **Bill of Materials (BOM) CSV Export**: Tabulates section profiles, lengths, unit weights, and total steel mass for procurement.
+     - **Custom JSON Structural Graph**: Full import and export of custom structural models.
+   - **AI-Powered CAD/BIM Editor ("CAD Studio")**:
+     - Multi-plane orthographic and 3D isometric projections (3D Iso, XY Plan, XZ Elevation, YZ Side).
+     - Precision drafting with Grid Snapping, Ortho Mode, and dynamic crosshair HUD.
+     - Natural Language & AutoCAD Generative Command Line (`LINE 0,0,0 6,4,0 W16X26`, `FIX BASE`, `POINT`, `add 3-story frame`, `cross-bracing`, `wind 25`, `subdivide`).
+     - Live AISC W-Shape section selector and Undo/Redo history stack.
 
 ---
 
@@ -51,7 +67,7 @@ Structura Nexus Repo/
 │   │   ├── ai/                     # World-Class PyTorch AI Architecture Suite
 │   │   │   ├── gnn_model.py        # Edge-augmented GNN, Dirichlet projection, MPS/CUDA
 │   │   │   ├── generative_optimizer.py # Multi-objective evolutionary section auto-sizer
-│   │   │   ├── dynamic_modal_engine.py # Eigenvalue modal extraction & ASCE 7-16 ELF seismic
+│   │   │   ├── dynamic_modal_engine.py # Dynamic eigenvalue modal extraction & ASCE 7-16 ELF
 │   │   │   ├── embodied_carbon_engine.py # Cradle-to-gate LCA, EPDs, LEED v4.1 & SE 2050
 │   │   │   └── copilot.py          # Natural language structural intelligence copilot
 │   │   ├── solvers/fea_engine.py   # 3D Direct Stiffness Matrix (DSM) FEA Solver
@@ -62,25 +78,34 @@ Structura Nexus Repo/
 ├── structura_nexus/                # Flutter Web & Desktop Engineering Workstation
 │   ├── lib/
 │   │   ├── main.dart               # Workstation entrypoint & responsive layout
+│   │   ├── firebase_options.dart   # Project-specific Firebase configuration
 │   │   ├── models/structural_models.dart # Domain models, AISC shapes, dynamic modal states
 │   │   ├── services/
+│   │   │   ├── firebase_auth_service.dart # Email, Google, Guest authentication & Firestore sync
+│   │   │   ├── structural_library_service.dart # Cloud storage, DXF/CSV BOM/JSON file codecs
 │   │   │   ├── embedded_fea_solver.dart  # Pure Dart 3D DSM solver (offline resilience)
 │   │   │   └── structural_api_service.dart # Real-time duplex WebSocket & PyTorch REST client
 │   │   ├── data/benchmark_presets.dart   # Standard textbook & multi-story presets
 │   │   └── widgets/
 │   │       ├── structural_3d_viewport.dart # 3D projection canvas with sinusoidal modal vibration
+│   │       ├── auth_dialog.dart          # Glassmorphic Firebase authentication dialog
+│   │       ├── structural_library_dialog.dart # Certified models, Cloud files & DXF/BOM export
+│   │       ├── cad_editor_dialog.dart    # Professional AI CAD Studio & generative command line
 │   │       ├── ai_copilot_dialog.dart    # Natural language structural assistant dialog
 │   │       ├── generative_optimizer_dialog.dart # AI section mass optimization dialog
 │   │       ├── seismic_modal_dialog.dart # Dynamic modal & seismic base shear dialog
 │   │       ├── embodied_carbon_dialog.dart # Embodied carbon & EAF green steel dialog
 │   │       ├── inspector_panel.dart       # Joint coordinate & 6-DOF boundary editor
 │   │       ├── code_compliance_panel.dart # DCR, ASCE 7 combinations & auto-sizer
-│   │       └── workstation_header.dart    # AI action triggers, presets, & vibration mode
-│   └── test/widget_test.dart       # Flutter test suite (embedded solver & UI)
+│   │       └── workstation_header.dart    # AI action triggers, presets, CAD & Cloud access
+│   └── test/widget_test.dart       # Flutter test suite (embedded solver, codecs & UI)
 ├── scripts/
 │   ├── run_backend.sh              # Backend server launch script
 │   ├── run_benchmarks.py           # Verification certification runner
 │   └── generate_synthetic_data.py  # Parametric space frame training set generator
+├── firestore.rules                 # Cloud Firestore security rules
+├── firebase.json                   # Firebase Hosting and Firestore configuration
+├── .firebaserc                     # Firebase project mapping (structura-nexus)
 ├── docs/
 │   └── ARCHITECTURE.md             # Blueprint specification & mathematical formulations
 ├── requirements.txt                # Python environment dependencies (torch, fastapi, etc.)

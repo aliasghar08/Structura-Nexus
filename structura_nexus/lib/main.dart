@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'models/structural_models.dart';
 import 'data/benchmark_presets.dart';
 import 'services/structural_api_service.dart';
 import 'services/embedded_fea_solver.dart';
+import 'services/firebase_auth_service.dart';
 import 'widgets/workstation_header.dart';
 import 'widgets/structural_3d_viewport.dart';
 import 'widgets/inspector_panel.dart';
@@ -12,8 +15,18 @@ import 'widgets/ai_copilot_dialog.dart';
 import 'widgets/generative_optimizer_dialog.dart';
 import 'widgets/seismic_modal_dialog.dart';
 import 'widgets/embodied_carbon_dialog.dart';
+import 'widgets/auth_dialog.dart';
+import 'widgets/structural_library_dialog.dart';
+import 'widgets/cad_editor_dialog.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await FirebaseAuthService().initialize();
+  } catch (e) {
+    debugPrint('Firebase initialization note: $e');
+  }
   runApp(const StructuraNexusApp());
 }
 
@@ -173,6 +186,46 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               model: _model,
               apiService: _apiService,
             ),
+            onOpenLibrary: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => StructuralLibraryDialog(
+                  currentModel: _model,
+                  onModelSelected: (newModel) {
+                    setState(() {
+                      _model = newModel;
+                      _selectedNodeId = null;
+                      _selectedMemberId = null;
+                      _triggerSolve();
+                    });
+                  },
+                ),
+              );
+            },
+            onOpenCadStudio: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => StructuralCadEditorDialog(
+                  initialModel: _model,
+                  onModelCommitted: (newModel) {
+                    setState(() {
+                      _model = newModel;
+                      _selectedNodeId = null;
+                      _selectedMemberId = null;
+                      _triggerSolve();
+                    });
+                  },
+                ),
+              );
+            },
+            onOpenAuth: () {
+              showDialog(
+                context: context,
+                builder: (ctx) => AuthDialog(
+                  onAuthSuccess: () => setState(() {}),
+                ),
+              );
+            },
           ),
           // 2. Middle Viewport & Inspector
           Expanded(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
+import '../services/firebase_auth_service.dart';
 
 class WorkstationHeader extends StatelessWidget {
   final StructuralModel model;
@@ -13,6 +14,9 @@ class WorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenGenerativeOptimizer;
   final VoidCallback? onOpenSeismicModal;
   final VoidCallback? onOpenEmbodiedCarbon;
+  final VoidCallback? onOpenLibrary;
+  final VoidCallback? onOpenCadStudio;
+  final VoidCallback? onOpenAuth;
 
   const WorkstationHeader({
     super.key,
@@ -27,6 +31,9 @@ class WorkstationHeader extends StatelessWidget {
     this.onOpenGenerativeOptimizer,
     this.onOpenSeismicModal,
     this.onOpenEmbodiedCarbon,
+    this.onOpenLibrary,
+    this.onOpenCadStudio,
+    this.onOpenAuth,
   });
 
   @override
@@ -125,6 +132,21 @@ class WorkstationHeader extends StatelessWidget {
             color: const Color(0xFF34D399),
             onTap: onOpenEmbodiedCarbon,
           ),
+          const SizedBox(width: 14),
+          // CAD Studio & Cloud Library Buttons
+          _buildAiActionButton(
+            label: 'CAD Studio',
+            icon: Icons.architecture_rounded,
+            color: const Color(0xFFF59E0B),
+            onTap: onOpenCadStudio,
+          ),
+          const SizedBox(width: 8),
+          _buildAiActionButton(
+            label: 'Cloud Library',
+            icon: Icons.folder_special_rounded,
+            color: const Color(0xFFA855F7),
+            onTap: onOpenLibrary,
+          ),
           const SizedBox(width: 16),
           // 3. Dual Engine Selector
           _buildEngineSelector(),
@@ -137,10 +159,56 @@ class WorkstationHeader extends StatelessWidget {
           const SizedBox(width: 16),
           // 6. Backend Connection Indicator & Solve Trigger
           _buildConnectionIndicator(),
+          const SizedBox(width: 16),
+          // 7. Firebase Auth Profile
+          _buildUserProfileButton(),
         ],
       ),
     ),
   );
+  }
+
+  Widget _buildUserProfileButton() {
+    final user = FirebaseAuthService().currentUser;
+    final isLoggedIn = user != null && !user.isAnonymous;
+
+    return InkWell(
+      onTap: onOpenAuth,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isLoggedIn
+              ? const Color(0xFF238636).withValues(alpha: 0.18)
+              : const Color(0xFF1F6FEB).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isLoggedIn ? const Color(0xFF2EA043) : const Color(0xFF1F6FEB).withValues(alpha: 0.4),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isLoggedIn ? Icons.cloud_done_rounded : Icons.account_circle_outlined,
+              size: 16,
+              color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isLoggedIn
+                  ? (user.displayName ?? user.email?.split('@').first ?? 'Account')
+                  : 'Cloud / Sign In',
+              style: TextStyle(
+                color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildPresetDropdown() {
