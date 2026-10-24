@@ -113,71 +113,13 @@ class WorkstationHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 20),
           // 2. Benchmark Presets Dropdown
           _buildPresetDropdown(),
           const SizedBox(width: 16),
-          // AI Intelligence Action Buttons
-          _buildAiActionButton(
-            label: 'AI Copilot',
-            icon: Icons.psychology_rounded,
-            color: const Color(0xFF00F0FF),
-            onTap: onOpenCopilot,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'Generative Opt',
-            icon: Icons.hub_rounded,
-            color: const Color(0xFF10B981),
-            onTap: onOpenGenerativeOptimizer,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'Modal Seismic',
-            icon: Icons.waves_rounded,
-            color: const Color(0xFF38BDF8),
-            onTap: onOpenSeismicModal,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'Embodied Carbon',
-            icon: Icons.eco_rounded,
-            color: const Color(0xFF34D399),
-            onTap: onOpenEmbodiedCarbon,
-          ),
-          const SizedBox(width: 14),
-          // CAD Studio & Cloud Library Buttons
-          _buildAiActionButton(
-            label: 'CAD Studio',
-            icon: Icons.architecture_rounded,
-            color: const Color(0xFFF59E0B),
-            onTap: onOpenCadStudio,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'Cloud Library',
-            icon: Icons.folder_special_rounded,
-            color: const Color(0xFFA855F7),
-            onTap: onOpenLibrary,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'PE Calcs & BIM',
-            icon: Icons.picture_as_pdf_rounded,
-            color: const Color(0xFF00F0FF),
-            onTap: onOpenPePacket,
-          ),
-          const SizedBox(width: 8),
-          _buildAiActionButton(
-            label: 'Gen Bracing',
-            icon: Icons.auto_awesome_rounded,
-            color: Colors.purpleAccent,
-            onTap: onOpenGenerativeBracing,
-          ),
-          const SizedBox(width: 16),
           // 3. Dual Engine Selector
           _buildEngineSelector(),
-          const SizedBox(width: 24),
+          const SizedBox(width: 20),
           // 4. Viewport Display Mode Switcher
           _buildDisplayModeSelector(),
           const SizedBox(width: 16),
@@ -412,41 +354,6 @@ class WorkstationHeader extends StatelessWidget {
               style: TextStyle(
                 color: isBackendConnected ? const Color(0xFF10B981) : Colors.white70,
                 fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAiActionButton({
-    required String label,
-    required IconData icon,
-    required Color color,
-    required VoidCallback? onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 10.5,
                 fontWeight: FontWeight.bold,
               ),
             ),

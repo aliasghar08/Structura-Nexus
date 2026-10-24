@@ -5,6 +5,7 @@
 
 // Header & Navigation
 export 'workstation_header.dart';
+export 'workstation_sidebar.dart';
 
 // 3D Viewport & WebGL
 export 'structural_3d_viewport.dart';
