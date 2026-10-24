@@ -59,6 +59,7 @@ class WorkstationScreen extends StatefulWidget {
 class _WorkstationScreenState extends State<WorkstationScreen> {
   late StructuralModel _model;
   final StructuralApiService _apiService = StructuralApiService();
+  final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
 
@@ -84,6 +85,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   @override
   void dispose() {
+    _surrogateStreamer.dispose();
     _apiService.dispose();
     super.dispose();
   }
@@ -246,6 +248,24 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                       setState(() {
                         _selectedMemberId = id;
                         if (id != null) _selectedNodeId = null;
+                      });
+                    },
+                    onNodeDragged: (nodeId, x, y, z) {
+                      _model.updateNodeCoords(nodeId, x, y, z);
+                      _surrogateStreamer.onNodeDragged(
+                        model: _model,
+                        onDisplacementsUpdated: (displacements) {
+                          setState(() {
+                            _model.updatePredictedDisplacements(displacements);
+                          });
+                        },
+                      );
+                    },
+                    onNodeDragEnd: (nodeId, x, y, z) {
+                      setState(() {
+                        _model.updateNodeCoords(nodeId, x, y, z);
+                        EmbeddedFeaSolver.solve(_model);
+                        _triggerSolve();
                       });
                     },
                   ),

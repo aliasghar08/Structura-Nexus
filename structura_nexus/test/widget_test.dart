@@ -60,4 +60,29 @@ void main() {
     expect(deserialized.nodes.first.x, model.nodes.first.x);
     expect(deserialized.members.first.sectionProfile, model.members.first.sectionProfile);
   });
+
+  test('Realtime surrogate drag updates node coordinates and predicted displacements', () {
+    final model = BenchmarkPresets.timoshenkoCantilever();
+    final initialX = model.nodes[1].x;
+
+    // Simulate pointer drag delta
+    model.updateNodeCoords(model.nodes[1].id, initialX + 0.5, model.nodes[1].y, model.nodes[1].z);
+    expect(model.nodes[1].x, closeTo(initialX + 0.5, 1e-4));
+
+    // Simulate 60 FPS surrogate predicted displacement update
+    model.updatePredictedDisplacements({
+      model.nodes[1].id: {
+        'dx': 0.0125,
+        'dy': -0.0450,
+        'dz': 0.0000,
+        'rx': 0.0,
+        'ry': 0.0,
+        'rz': -0.0035,
+      }
+    });
+
+    expect(model.nodes[1].displacements[0], closeTo(0.0125, 1e-4));
+    expect(model.nodes[1].displacements[1], closeTo(-0.0450, 1e-4));
+    expect(model.nodes[1].displacements[5], closeTo(-0.0035, 1e-4));
+  });
 }

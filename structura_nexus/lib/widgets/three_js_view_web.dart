@@ -16,6 +16,14 @@ extension type ThreeViewer(JSObject _) implements JSObject {
   external void setDeformationMode(bool enabled, double scale);
   external void setBmdVisible(bool visible);
   external void setStressOverlay(bool visible);
+  external void updatePredictedDisplacements(JSAny displacements);
+}
+
+extension type NodeDragDetail(JSObject _) implements JSObject {
+  external JSString? get nodeId;
+  external JSNumber? get x;
+  external JSNumber? get y;
+  external JSNumber? get z;
 }
 
 class ThreeJsStructuralViewport extends StatefulWidget {
@@ -25,6 +33,8 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final bool showBmd;
   final bool showSfd;
   final bool showStressGradient;
+  final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
+  final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
   const ThreeJsStructuralViewport({
     super.key,
@@ -34,26 +44,75 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.showBmd = false,
     this.showSfd = false,
     this.showStressGradient = true,
+    this.onNodeDragged,
+    this.onNodeDragEnd,
   });
 
   @override
-  State<ThreeJsStructuralViewport> createState() => _ThreeJsStructuralViewportState();
+  State<ThreeJsStructuralViewport> createState() => ThreeJsStructuralViewportState();
 }
 
-class _ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
+class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   static bool _viewRegistered = false;
   static const String _viewType = 'structura-three-view';
   static const String _containerId = 'structura-three-container';
 
   ThreeViewer? _viewer;
+  JSFunction? _dragListener;
+  JSFunction? _dragEndListener;
 
   @override
   void initState() {
     super.initState();
     _registerViewFactory();
+    _setupDragEventListeners();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initViewer();
     });
+  }
+
+  void _setupDragEventListeners() {
+    _dragListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        final detail = NodeDragDetail(customEv.detail as JSObject);
+        final id = detail.nodeId?.toDart;
+        final x = detail.x?.toDartDouble;
+        final y = detail.y?.toDartDouble;
+        final z = detail.z?.toDartDouble;
+        if (id != null && x != null && y != null && z != null) {
+          widget.onNodeDragged?.call(id, x, y, z);
+        }
+      }
+    }).toJS;
+
+    _dragEndListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        final detail = NodeDragDetail(customEv.detail as JSObject);
+        final id = detail.nodeId?.toDart;
+        final x = detail.x?.toDartDouble;
+        final y = detail.y?.toDartDouble;
+        final z = detail.z?.toDartDouble;
+        if (id != null && x != null && y != null && z != null) {
+          widget.onNodeDragEnd?.call(id, x, y, z);
+        }
+      }
+    }).toJS;
+
+    web.window.addEventListener('structura-node-dragged', _dragListener);
+    web.window.addEventListener('structura-node-drag-end', _dragEndListener);
+  }
+
+  @override
+  void dispose() {
+    if (_dragListener != null) {
+      web.window.removeEventListener('structura-node-dragged', _dragListener);
+    }
+    if (_dragEndListener != null) {
+      web.window.removeEventListener('structura-node-drag-end', _dragEndListener);
+    }
+    super.dispose();
   }
 
   void _registerViewFactory() {
@@ -95,6 +154,20 @@ class _ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       _viewer!.setStressOverlay(widget.showStressGradient);
     } catch (e) {
       debugPrint('[ThreeJsStructuralViewport] Error syncing model: $e');
+    }
+  }
+
+  /// Update deformed visualization in real time with 6-DOF surrogate predicted deflections.
+  void updateDisplacements(Map<String, dynamic> displacements) {
+    if (_viewer == null) return;
+    try {
+      final jsonStr = jsonEncode(displacements);
+      final parsed = _jsonParse(jsonStr.toJS);
+      if (parsed != null) {
+        _viewer!.updatePredictedDisplacements(parsed);
+      }
+    } catch (e) {
+      debugPrint('[ThreeJsStructuralViewport] Error updating displacements: $e');
     }
   }
 

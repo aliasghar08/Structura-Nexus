@@ -1,6 +1,7 @@
 /**
  * Structura Nexus: High-Performance Hardware-Accelerated Three.js WebGL Engine
- * Multi-story space frame rendering, extruded BMD/SFD ribbons, deformation magnification, and orbit dynamics.
+ * Multi-story space frame rendering, extruded BMD/SFD ribbons, deformation magnification,
+ * real-time pointer raycasting, node drag-and-morph, and 60 FPS surrogate streaming.
  */
 
 (function () {
@@ -26,8 +27,23 @@
       this.showBmd = false;
       this.showSfd = false;
       this.animTime = 0.0;
+
+      // Meshes and topology references
       this.nodeMeshes = [];
       this.memberMeshes = [];
+      this.supportGlyphs = {};
+      this.nodeMap = {}; // nodeId -> THREE.Vector3
+      this.baseNodePositions = {}; // nodeId -> THREE.Vector3
+      this.memberData = []; // [{ id, iNodeId, jNodeId, mesh, dcr, ... }]
+
+      // Interactive Pointer Raycasting & Dragging
+      this.raycaster = new THREE.Raycaster();
+      this.mouse = new THREE.Vector2();
+      this.isDraggingNode = false;
+      this.draggedNodeMesh = null;
+      this.dragPlane = new THREE.Plane();
+      this.planeIntersect = new THREE.Vector3();
+      this.planeNormal = new THREE.Vector3();
 
       this.init();
     }
@@ -57,10 +73,10 @@
       this.container.appendChild(this.renderer.domElement);
 
       // 3. Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.70);
       this.scene.add(ambientLight);
 
-      const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 0.85); // Cyan key
+      const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 0.90); // Cyan key
       dirLight1.position.set(20, 40, 20);
       this.scene.add(dirLight1);
 
@@ -77,7 +93,7 @@
       this.scene.add(axesHelper);
 
       // 5. Orbit Controls (if available)
-      if (THREE.OrbitControls) {
+      if (typeof THREE.OrbitControls !== "undefined") {
         this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
@@ -93,13 +109,173 @@
       this.scene.add(this.deformationGroup);
       this.scene.add(this.diagramGroup);
 
-      // 7. Window resize handling
+      // 7. Event Listeners (Window Resize & Interactive Node Dragging)
       window.addEventListener("resize", () => this.onResize());
+      this.setupPointerInteractions();
 
       // 8. Start Loop
       this.animate = this.animate.bind(this);
       this.animate();
       console.log(`[ThreeViewer] Initialized hardware WebGL viewport for #${this.containerId}`);
+    }
+
+    setupPointerInteractions() {
+      const dom = this.renderer.domElement;
+
+      dom.addEventListener("pointerdown", (e) => this.onPointerDown(e));
+      dom.addEventListener("pointermove", (e) => this.onPointerMove(e));
+      dom.addEventListener("pointerup", (e) => this.onPointerUp(e));
+      dom.addEventListener("pointercancel", (e) => this.onPointerUp(e));
+    }
+
+    updateMouseCoords(e) {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    onPointerDown(e) {
+      if (e.button !== 0) return; // Primary button only
+      this.updateMouseCoords(e);
+
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.nodeMeshes, false);
+
+      if (intersects.length > 0) {
+        const hitMesh = intersects[0].object;
+        this.isDraggingNode = true;
+        this.draggedNodeMesh = hitMesh;
+
+        if (this.controls) {
+          this.controls.enabled = false;
+        }
+
+        // Highlight dragged node
+        if (hitMesh.material && hitMesh.material.emissive) {
+          hitMesh.userData.savedEmissive = hitMesh.material.emissive.getHex();
+          hitMesh.material.emissive.setHex(0x00ffff);
+          hitMesh.material.emissiveIntensity = 0.8;
+        }
+
+        // Setup drag plane perpendicular to camera ray at the node's position
+        this.camera.getWorldDirection(this.planeNormal);
+        this.planeNormal.negate();
+        this.dragPlane.setFromNormalAndCoplanarPoint(this.planeNormal, hitMesh.position);
+
+        this.renderer.domElement.style.cursor = "grabbing";
+
+        // Dispatch start event
+        window.dispatchEvent(new CustomEvent("structura-node-drag-start", {
+          detail: {
+            nodeId: hitMesh.userData.nodeId,
+            x: hitMesh.position.x,
+            y: hitMesh.position.y,
+            z: hitMesh.position.z,
+          }
+        }));
+      }
+    }
+
+    onPointerMove(e) {
+      this.updateMouseCoords(e);
+      this.raycaster.setFromCamera(this.mouse, this.camera);
+
+      if (this.isDraggingNode && this.draggedNodeMesh) {
+        if (this.raycaster.ray.intersectPlane(this.dragPlane, this.planeIntersect)) {
+          // Snap/round to 2 decimals for engineering precision
+          const nx = Math.round(this.planeIntersect.x * 100) / 100;
+          const ny = Math.max(0.0, Math.round(this.planeIntersect.y * 100) / 100); // Ground bound
+          const nz = Math.round(this.planeIntersect.z * 100) / 100;
+
+          const nodeId = this.draggedNodeMesh.userData.nodeId;
+          this.draggedNodeMesh.position.set(nx, ny, nz);
+
+          // Update cached node coordinate
+          if (this.nodeMap[nodeId]) {
+            this.nodeMap[nodeId].set(nx, ny, nz);
+          }
+
+          // Move support glyph if attached
+          if (this.supportGlyphs[nodeId]) {
+            const glyph = this.supportGlyphs[nodeId];
+            glyph.position.set(nx, ny - (glyph.userData.yOffset || 0.15), nz);
+          }
+
+          // Morph all incident structural member cylinders in real time (60 FPS)
+          this.morphIncidentMembers(nodeId);
+
+          // Dispatch 60 FPS real-time drag event for surrogate streaming
+          window.dispatchEvent(new CustomEvent("structura-node-dragged", {
+            detail: { nodeId, x: nx, y: ny, z: nz }
+          }));
+        }
+      } else {
+        // Hover raycast for visual feedback
+        const intersects = this.raycaster.intersectObjects(this.nodeMeshes, false);
+        if (intersects.length > 0) {
+          this.renderer.domElement.style.cursor = "grab";
+        } else {
+          this.renderer.domElement.style.cursor = "default";
+        }
+      }
+    }
+
+    onPointerUp(e) {
+      if (this.isDraggingNode && this.draggedNodeMesh) {
+        const nodeId = this.draggedNodeMesh.userData.nodeId;
+        const fx = this.draggedNodeMesh.position.x;
+        const fy = this.draggedNodeMesh.position.y;
+        const fz = this.draggedNodeMesh.position.z;
+
+        // Restore material emissive
+        if (this.draggedNodeMesh.material && this.draggedNodeMesh.material.emissive) {
+          const orig = this.draggedNodeMesh.userData.savedEmissive || 0x004455;
+          this.draggedNodeMesh.material.emissive.setHex(orig);
+          this.draggedNodeMesh.material.emissiveIntensity = 0.3;
+        }
+
+        this.isDraggingNode = false;
+        this.draggedNodeMesh = null;
+        if (this.controls) {
+          this.controls.enabled = true;
+        }
+        this.renderer.domElement.style.cursor = "default";
+
+        // Dispatch pointer release event to trigger deterministic background FEA
+        window.dispatchEvent(new CustomEvent("structura-node-drag-end", {
+          detail: { nodeId, x: fx, y: fy, z: fz }
+        }));
+      }
+    }
+
+    morphIncidentMembers(nodeId) {
+      const p = this.nodeMap[nodeId];
+      if (!p) return;
+
+      const upAxis = new THREE.Vector3(0, 1, 0);
+
+      this.memberData.forEach((m) => {
+        if (m.iNodeId === nodeId || m.jNodeId === nodeId) {
+          const p1 = this.nodeMap[m.iNodeId];
+          const p2 = this.nodeMap[m.jNodeId];
+          if (!p1 || !p2) return;
+
+          const distance = p1.distanceTo(p2);
+          if (distance < 0.05) return;
+
+          // Midpoint position
+          const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+          m.mesh.position.copy(mid);
+
+          // Orientation toward p2
+          const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+          m.mesh.quaternion.setFromUnitVectors(upAxis, dir);
+
+          // Scale along length (Y-axis of cylinder)
+          const scaleY = distance / m.initialLength;
+          m.mesh.scale.set(1.0, scaleY, 1.0);
+        }
+      });
     }
 
     onResize() {
@@ -160,18 +336,22 @@
 
       this.nodeMeshes = [];
       this.memberMeshes = [];
+      this.supportGlyphs = {};
+      this.nodeMap = {};
+      this.baseNodePositions = {};
+      this.memberData = [];
 
       const nodes = model.nodes || [];
       const members = model.members || [];
-      const nodeMap = {};
 
       // 1. Render Nodes
-      const nodeGeo = new THREE.SphereGeometry(0.12, 16, 16);
+      const nodeGeo = new THREE.SphereGeometry(0.14, 16, 16);
       const nodeMat = new THREE.MeshStandardMaterial({
         color: 0x00ffff,
         metalness: 0.8,
         roughness: 0.2,
         emissive: 0x004455,
+        emissiveIntensity: 0.3,
       });
 
       const fixedBoxGeo = new THREE.BoxGeometry(0.35, 0.18, 0.35);
@@ -184,25 +364,33 @@
         const x = n.x ?? (n.coords ? n.coords[0] : 0.0);
         const y = n.y ?? (n.coords ? n.coords[1] : 0.0);
         const z = n.z ?? (n.coords ? n.coords[2] : 0.0);
-        nodeMap[n.id] = new THREE.Vector3(x, y, z);
+        this.nodeMap[n.id] = new THREE.Vector3(x, y, z);
+        this.baseNodePositions[n.id] = new THREE.Vector3(x, y, z);
 
-        const nodeMesh = new THREE.Mesh(nodeGeo, nodeMat);
+        const nodeMesh = new THREE.Mesh(nodeGeo.clone(), nodeMat.clone());
         nodeMesh.position.set(x, y, z);
+        nodeMesh.userData = { nodeId: n.id, isRestrained: false };
+
         this.structureGroup.add(nodeMesh);
         this.nodeMeshes.push(nodeMesh);
 
         // Boundary support glyphs
         const isRestrained = n.isRestrained || (n.restraint && n.restraint.some((r) => r === 1));
         if (isRestrained) {
+          nodeMesh.userData.isRestrained = true;
           const isFixed = n.restraint && n.restraint.slice(0, 3).every((r) => r === 1);
           if (isFixed) {
             const fixMesh = new THREE.Mesh(fixedBoxGeo, fixedBoxMat);
             fixMesh.position.set(x, y - 0.12, z);
+            fixMesh.userData = { yOffset: 0.12 };
             this.structureGroup.add(fixMesh);
+            this.supportGlyphs[n.id] = fixMesh;
           } else {
             const pinMesh = new THREE.Mesh(pinnedConeGeo, pinnedConeMat);
             pinMesh.position.set(x, y - 0.18, z);
+            pinMesh.userData = { yOffset: 0.18 };
             this.structureGroup.add(pinMesh);
+            this.supportGlyphs[n.id] = pinMesh;
           }
         }
       });
@@ -211,11 +399,11 @@
       members.forEach((m) => {
         const iId = m.iNodeId || m.i_node;
         const jId = m.jNodeId || m.j_node;
-        const p1 = nodeMap[iId];
-        const p2 = nodeMap[jId];
+        const p1 = this.nodeMap[iId];
+        const p2 = this.nodeMap[jId];
         if (!p1 || !p2) return;
 
-        const distance = p1.distanceTo(p2);
+        const distance = Math.max(p1.distanceTo(p2), 0.05);
         const dcr = m.governingDcr ?? m.governing_dcr ?? 0.65;
 
         // DCR color coding (Green -> Amber -> Red)
@@ -250,6 +438,15 @@
         this.structureGroup.add(cylMesh);
         this.memberMeshes.push(cylMesh);
 
+        this.memberData.push({
+          id: m.id,
+          iNodeId: iId,
+          jNodeId: jId,
+          mesh: cylMesh,
+          initialLength: distance,
+          dcr: dcr,
+        });
+
         // 3. Optional Extruded BMD (Bending Moment Diagram) Ribbon
         this.createBmdRibbon(p1, p2, dir, dcr);
       });
@@ -275,8 +472,55 @@
       }
     }
 
+    /**
+     * Morph the structural mesh in real time using surrogate 6-DOF predicted displacements.
+     * @param {Object} displacements - Map of nodeId -> { dx, dy, dz, rx, ry, rz }
+     */
+    updatePredictedDisplacements(displacements) {
+      if (!displacements) return;
+
+      const scale = this.deformationScale || 50.0;
+      const upAxis = new THREE.Vector3(0, 1, 0);
+
+      // 1. Displace nodes
+      this.nodeMeshes.forEach((mesh) => {
+        const nodeId = mesh.userData.nodeId;
+        const base = this.baseNodePositions[nodeId];
+        const disp = displacements[nodeId];
+
+        if (base && disp) {
+          const dx = (disp.dx || 0.0) * scale;
+          const dy = (disp.dy || 0.0) * scale;
+          const dz = (disp.dz || 0.0) * scale;
+
+          mesh.position.set(base.x + dx, base.y + dy, base.z + dz);
+          if (this.nodeMap[nodeId]) {
+            this.nodeMap[nodeId].set(base.x + dx, base.y + dy, base.z + dz);
+          }
+        }
+      });
+
+      // 2. Morph member cylinders to span between displaced nodes
+      this.memberData.forEach((m) => {
+        const p1 = this.nodeMap[m.iNodeId];
+        const p2 = this.nodeMap[m.jNodeId];
+        if (!p1 || !p2) return;
+
+        const distance = p1.distanceTo(p2);
+        if (distance < 0.05) return;
+
+        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+        m.mesh.position.copy(mid);
+
+        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+        m.mesh.quaternion.setFromUnitVectors(upAxis, dir);
+
+        const scaleY = distance / m.initialLength;
+        m.mesh.scale.set(1.0, scaleY, 1.0);
+      });
+    }
+
     createBmdRibbon(p1, p2, dir, dcr) {
-      // Extrude a parabolic moment envelope perpendicular to member axis
       const segments = 10;
       const normal = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
       if (normal.length() < 0.1) normal.set(0, 0, 1);
@@ -287,7 +531,6 @@
       for (let s = 0; s <= segments; s++) {
         const t = s / segments;
         const ptOnAxis = new THREE.Vector3().lerpVectors(p1, p2, t);
-        // Parabolic moment variation M(x) = 4 * M_max * t * (1 - t)
         const parabola = 4.0 * t * (1.0 - t);
         const ptOffset = new THREE.Vector3().copy(ptOnAxis).addScaledVector(normal, parabola * maxOffset);
         points.push(ptOffset);
@@ -296,7 +539,7 @@
       const curve = new THREE.CatmullRomCurve3(points);
       const tubeGeo = new THREE.TubeGeometry(curve, 16, 0.025, 8, false);
       const bmdMat = new THREE.MeshBasicMaterial({
-        color: 0xec4899, // Magenta moment curve
+        color: 0xec4899,
         wireframe: false,
         transparent: true,
         opacity: 0.85,
@@ -310,13 +553,11 @@
     setDeformationMode(enabled, scale = 50.0) {
       this.showDeformation = enabled;
       this.deformationScale = scale;
-      console.log(`[ThreeViewer] Deformation mode: ${enabled}, scale: ${scale}`);
     }
 
     setBmdVisible(visible) {
       this.showBmd = visible;
       this.diagramGroup.children.forEach((c) => (c.visible = visible));
-      console.log(`[ThreeViewer] BMD visibility: ${visible}`);
     }
 
     setStressOverlay(visible) {

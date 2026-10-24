@@ -510,6 +510,33 @@ class StructuralModel {
     );
   }
 
+  void updateNodeCoords(String nodeId, double x, double y, double z) {
+    for (int i = 0; i < nodes.length; i++) {
+      if (nodes[i].id == nodeId) {
+        nodes[i] = nodes[i].copyWith(x: x, y: y, z: z);
+        break;
+      }
+    }
+  }
+
+  void updatePredictedDisplacements(Map<String, dynamic> displacements) {
+    for (int i = 0; i < nodes.length; i++) {
+      final nid = nodes[i].id;
+      if (displacements.containsKey(nid)) {
+        final d = displacements[nid];
+        if (d is Map) {
+          final dx = (d['dx'] as num?)?.toDouble() ?? 0.0;
+          final dy = (d['dy'] as num?)?.toDouble() ?? 0.0;
+          final dz = (d['dz'] as num?)?.toDouble() ?? 0.0;
+          final rx = (d['rx'] as num?)?.toDouble() ?? 0.0;
+          final ry = (d['ry'] as num?)?.toDouble() ?? 0.0;
+          final rz = (d['rz'] as num?)?.toDouble() ?? 0.0;
+          nodes[i] = nodes[i].copyWith(displacements: [dx, dy, dz, rx, ry, rz]);
+        }
+      }
+    }
+  }
+
   Map<String, dynamic> toGraphPayload(String action) => {
         'session_id': sessionId,
         'action': action,

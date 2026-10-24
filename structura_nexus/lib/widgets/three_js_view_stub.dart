@@ -8,6 +8,8 @@ class ThreeJsStructuralViewport extends StatelessWidget {
   final bool showBmd;
   final bool showSfd;
   final bool showStressGradient;
+  final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
+  final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
   const ThreeJsStructuralViewport({
     super.key,
@@ -17,7 +19,11 @@ class ThreeJsStructuralViewport extends StatelessWidget {
     this.showBmd = false,
     this.showSfd = false,
     this.showStressGradient = true,
+    this.onNodeDragged,
+    this.onNodeDragEnd,
   });
+
+  void updateDisplacements(Map<String, dynamic> displacements) {}
 
   @override
   Widget build(BuildContext context) {
