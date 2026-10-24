@@ -1,0 +1,30 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:structura_nexus/main.dart';
+import 'package:structura_nexus/data/benchmark_presets.dart';
+import 'package:structura_nexus/services/embedded_fea_solver.dart';
+
+void main() {
+  test('Embedded FEA Solver solves multi-story sway frame', () {
+    final model = BenchmarkPresets.multiStorySwayFrame();
+    EmbeddedFeaSolver.solve(model);
+
+    expect(model.nodes.length, 12);
+    expect(model.members.length, 16);
+    expect(model.baseShearN, greaterThan(0.0));
+    expect(model.isEquilibrated, isTrue);
+    expect(model.members.any((m) => m.governingDcr > 0.0), isTrue);
+  });
+
+  testWidgets('Workstation screen renders correctly', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const StructuraNexusApp());
+    await tester.pumpAndSettle();
+
+    expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+    expect(find.text('ASCE 7-16 LOAD COMBINATIONS'), findsOneWidget);
+    expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
+  });
+}

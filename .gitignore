@@ -1,0 +1,29 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+structura_nexus/build/
+structura_nexus/.dart_tool/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Logs & temp
+*.log

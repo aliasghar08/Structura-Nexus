@@ -1,0 +1,2687 @@
+{
+  "graph": {
+    "session_id": "synthetic_frame_2story_2x1",
+    "action": "INFER_AND_VERIFY",
+    "load_combination": "1.2D+1.6L",
+    "nodes": [
+      {
+        "id": "N_S0_X0_Z0",
+        "coords": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S0_X0_Z1",
+        "coords": [
+          0.0,
+          0.0,
+          6.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S0_X1_Z0",
+        "coords": [
+          6.0,
+          0.0,
+          0.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S0_X1_Z1",
+        "coords": [
+          6.0,
+          0.0,
+          6.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S0_X2_Z0",
+        "coords": [
+          12.0,
+          0.0,
+          0.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S0_X2_Z1",
+        "coords": [
+          12.0,
+          0.0,
+          6.0
+        ],
+        "restraint": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "loads": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X0_Z0",
+        "coords": [
+          0.0,
+          3.5,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          7683.750580382844,
+          -23115.43863818544,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X0_Z1",
+        "coords": [
+          0.0,
+          3.5,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          24978.186935437607,
+          -72954.57781119042,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X1_Z0",
+        "coords": [
+          6.0,
+          3.5,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -31290.096344146157,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X1_Z1",
+        "coords": [
+          6.0,
+          3.5,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -36104.24906480987,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X2_Z0",
+        "coords": [
+          12.0,
+          3.5,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -36389.04993897773,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X2_Z1",
+        "coords": [
+          12.0,
+          3.5,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -33318.25049487673,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X0_Z0",
+        "coords": [
+          0.0,
+          7.0,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          9379.916080099669,
+          -79093.33452507199,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X0_Z1",
+        "coords": [
+          0.0,
+          7.0,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          19086.98951353575,
+          -62563.61535375167,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X1_Z0",
+        "coords": [
+          6.0,
+          7.0,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -70742.06986750684,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X1_Z1",
+        "coords": [
+          6.0,
+          7.0,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -36454.27828103819,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X2_Z0",
+        "coords": [
+          12.0,
+          7.0,
+          0.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -20804.798399368538,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X2_Z1",
+        "coords": [
+          12.0,
+          7.0,
+          6.0
+        ],
+        "restraint": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "loads": [
+          0.0,
+          -77435.18897869371,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "members": [
+      {
+        "id": "COL_1",
+        "i_node": "N_S0_X0_Z0",
+        "j_node": "N_S1_X0_Z0",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_2",
+        "i_node": "N_S0_X0_Z1",
+        "j_node": "N_S1_X0_Z1",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_3",
+        "i_node": "N_S0_X1_Z0",
+        "j_node": "N_S1_X1_Z0",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_4",
+        "i_node": "N_S0_X1_Z1",
+        "j_node": "N_S1_X1_Z1",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_5",
+        "i_node": "N_S0_X2_Z0",
+        "j_node": "N_S1_X2_Z0",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_6",
+        "i_node": "N_S0_X2_Z1",
+        "j_node": "N_S1_X2_Z1",
+        "section": "W14X68",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_7",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S2_X0_Z0",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_8",
+        "i_node": "N_S1_X0_Z1",
+        "j_node": "N_S2_X0_Z1",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_9",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S2_X1_Z0",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_10",
+        "i_node": "N_S1_X1_Z1",
+        "j_node": "N_S2_X1_Z1",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_11",
+        "i_node": "N_S1_X2_Z0",
+        "j_node": "N_S2_X2_Z0",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "COL_12",
+        "i_node": "N_S1_X2_Z1",
+        "j_node": "N_S2_X2_Z1",
+        "section": "W14X48",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_13",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S1_X1_Z0",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_14",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S1_X2_Z0",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_15",
+        "i_node": "N_S1_X0_Z1",
+        "j_node": "N_S1_X1_Z1",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_16",
+        "i_node": "N_S1_X1_Z1",
+        "j_node": "N_S1_X2_Z1",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_17",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S1_X0_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_18",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S1_X1_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_19",
+        "i_node": "N_S1_X2_Z0",
+        "j_node": "N_S1_X2_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_20",
+        "i_node": "N_S2_X0_Z0",
+        "j_node": "N_S2_X1_Z0",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_21",
+        "i_node": "N_S2_X1_Z0",
+        "j_node": "N_S2_X2_Z0",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_22",
+        "i_node": "N_S2_X0_Z1",
+        "j_node": "N_S2_X1_Z1",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_X_23",
+        "i_node": "N_S2_X1_Z1",
+        "j_node": "N_S2_X2_Z1",
+        "section": "W14X30",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_24",
+        "i_node": "N_S2_X0_Z0",
+        "j_node": "N_S2_X0_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_25",
+        "i_node": "N_S2_X1_Z0",
+        "j_node": "N_S2_X1_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "BEAM_Z_26",
+        "i_node": "N_S2_X2_Z0",
+        "j_node": "N_S2_X2_Z1",
+        "section": "W12X26",
+        "material": "A992_STEEL",
+        "releases": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    ],
+    "global_context": null
+  },
+  "ground_truth": {
+    "session_id": "synthetic_frame_2story_2x1",
+    "engine_type": "EXACT_FEA_PYNITE",
+    "status": "SUCCESS",
+    "inference_latency_ms": 5.41,
+    "nodes": [
+      {
+        "id": "N_S0_X0_Z0",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -8933.939659140342,
+          156910.57384954963,
+          -187.39017537696918,
+          -429.1825300522048,
+          -5.046342706070441,
+          24514.0211095366
+        ]
+      },
+      {
+        "id": "N_S0_X0_Z1",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -22746.39895588687,
+          202477.93519459385,
+          -187.3901753769693,
+          -429.1825300522049,
+          -5.046342706070441,
+          60162.20026569216
+        ]
+      },
+      {
+        "id": "N_S0_X1_Z0",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -10724.053027928796,
+          162920.23667186557,
+          -14.0511137756999,
+          -3.036004401957115,
+          -2.470113269420093,
+          26229.549617269833
+        ]
+      },
+      {
+        "id": "N_S0_X1_Z1",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -26330.066110621894,
+          116931.48028542155,
+          -14.051113775699992,
+          -3.0360044019572143,
+          -2.470113269420091,
+          63076.673262289296
+        ]
+      },
+      {
+        "id": "N_S0_X2_Z0",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -8425.549761664604,
+          98482.1979888734,
+          201.44128918564945,
+          380.17402622432087,
+          -4.522141430740013,
+          23332.3811121007
+        ]
+      },
+      {
+        "id": "N_S0_X2_Z1",
+        "displacements": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "reactions": [
+          -20646.141448669026,
+          190701.4923250119,
+          201.4412891856495,
+          380.17402622432104,
+          -4.522141430740016,
+          55765.36592766145
+        ]
+      },
+      {
+        "id": "N_S1_X0_Z0",
+        "displacements": [
+          0.0014336866359076072,
+          -0.0002128631815788464,
+          0.00012794484474422903,
+          3.5156153868926633e-05,
+          0.00018302797379530095,
+          -0.0005162573666302906
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X0_Z1",
+        "displacements": [
+          0.0034211212750014865,
+          -0.0002746793694500304,
+          0.00012794484474422903,
+          3.515615386892661e-05,
+          0.00018302797379530095,
+          -0.0011834884937726817
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X1_Z0",
+        "displacements": [
+          0.0013957424553217585,
+          -0.0002210158249424533,
+          -8.116209347903594e-06,
+          -7.483834967193651e-06,
+          8.958960044528832e-05,
+          -0.0004338637685113046
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X1_Z1",
+        "displacements": [
+          0.0032922651104546445,
+          -0.0001586279771313858,
+          -8.116209347903594e-06,
+          -7.483834967193669e-06,
+          8.958960044528827e-05,
+          -0.0009883173005058705
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X2_Z0",
+        "displacements": [
+          0.0013738083052002516,
+          -0.0001335998809926577,
+          -8.820436821939604e-05,
+          -9.601309079664706e-06,
+          0.00016401549230663257,
+          -0.000499283083092305
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S1_X2_Z1",
+        "displacements": [
+          0.0032230727664171485,
+          -0.00025870357485951225,
+          -8.820436821939607e-05,
+          -9.601309079664706e-06,
+          0.00016401549230663266,
+          -0.0011415475809587595
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X0_Z0",
+        "displacements": [
+          0.003334193344145706,
+          -0.0004513709261896449,
+          0.0003209878515450261,
+          1.5252018566777052e-05,
+          0.00039126570954222257,
+          -0.00037817143759007286
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X0_Z1",
+        "displacements": [
+          0.007484077391497159,
+          -0.00045665931181189926,
+          0.00032098785154502623,
+          1.525201856677707e-05,
+          0.00039126570954222214,
+          -0.0007653406067413172
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X1_Z0",
+        "displacements": [
+          0.0032745022277610478,
+          -0.000438432822151298,
+          -5.326958861874858e-05,
+          -2.506686952953142e-05,
+          0.0001951573496679154,
+          -0.0002572498612746208
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X1_Z1",
+        "displacements": [
+          0.0073631477828413365,
+          -0.00027161455231551233,
+          -5.326958861874859e-05,
+          -2.506686952953129e-05,
+          0.00019515734966791542,
+          -0.0005756738706102954
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X2_Z0",
+        "displacements": [
+          0.003253347060465289,
+          -0.00020330367474308413,
+          -0.00016359413666172334,
+          3.3172332059965645e-05,
+          0.0003553014350571961,
+          -0.00036341968301635666
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "N_S2_X2_Z1",
+        "displacements": [
+          0.007322688509721556,
+          -0.0005072627562145324,
+          -0.00016359413666172334,
+          3.317233205996561e-05,
+          0.0003553014350571961,
+          -0.0008197558914253935
+        ],
+        "reactions": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "members": [
+      {
+        "id": "COL_1",
+        "i_node": "N_S0_X0_Z0",
+        "j_node": "N_S1_X0_Z0",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -156910.6,
+        "shear_y": 8933.9,
+        "shear_z": 187.4,
+        "moment_y": 429.2,
+        "moment_z": 24514.0,
+        "torsion": 5.0,
+        "max_deflection": 0.00072,
+        "max_von_mises_stress_mpa": 28.06,
+        "dcr_axial": 0.0493,
+        "dcr_buckling": 0.0493,
+        "dcr_combined": 0.0689,
+        "dcr_shear": 0.0128,
+        "governing_dcr": 0.0689,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 24514.0211095366
+          },
+          {
+            "station": 1.75,
+            "value": 8879.626706040997
+          },
+          {
+            "station": 3.5,
+            "value": -6754.767697454605
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 8933.939659140342
+          },
+          {
+            "station": 1.75,
+            "value": 8933.939659140342
+          },
+          {
+            "station": 3.5,
+            "value": 8933.939659140342
+          }
+        ]
+      },
+      {
+        "id": "COL_2",
+        "i_node": "N_S0_X0_Z1",
+        "j_node": "N_S1_X0_Z1",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -202477.9,
+        "shear_y": 22746.4,
+        "shear_z": 187.4,
+        "moment_y": 429.2,
+        "moment_z": 60162.2,
+        "torsion": 5.0,
+        "max_deflection": 0.001712,
+        "max_von_mises_stress_mpa": 53.43,
+        "dcr_axial": 0.0636,
+        "dcr_buckling": 0.0636,
+        "dcr_combined": 0.1371,
+        "dcr_shear": 0.0327,
+        "governing_dcr": 0.1371,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 60162.20026569216
+          },
+          {
+            "station": 1.75,
+            "value": 20356.002092890125
+          },
+          {
+            "station": 3.5,
+            "value": -19450.19607991191
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 22746.39895588687
+          },
+          {
+            "station": 1.75,
+            "value": 22746.39895588687
+          },
+          {
+            "station": 3.5,
+            "value": 22746.39895588687
+          }
+        ]
+      },
+      {
+        "id": "COL_3",
+        "i_node": "N_S0_X1_Z0",
+        "j_node": "N_S1_X1_Z0",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -162920.2,
+        "shear_y": 10724.1,
+        "shear_z": 14.1,
+        "moment_y": 46.1,
+        "moment_z": 26229.5,
+        "torsion": 2.5,
+        "max_deflection": 0.000698,
+        "max_von_mises_stress_mpa": 28.7,
+        "dcr_axial": 0.0512,
+        "dcr_buckling": 0.0512,
+        "dcr_combined": 0.0708,
+        "dcr_shear": 0.0154,
+        "governing_dcr": 0.0708,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 26229.549617269833
+          },
+          {
+            "station": 1.75,
+            "value": 7462.456818394439
+          },
+          {
+            "station": 3.5,
+            "value": -11304.635980480954
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 10724.053027928796
+          },
+          {
+            "station": 1.75,
+            "value": 10724.053027928796
+          },
+          {
+            "station": 3.5,
+            "value": 10724.053027928796
+          }
+        ]
+      },
+      {
+        "id": "COL_4",
+        "i_node": "N_S0_X1_Z1",
+        "j_node": "N_S1_X1_Z1",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -116931.5,
+        "shear_y": 26330.1,
+        "shear_z": 14.1,
+        "moment_y": 46.1,
+        "moment_z": 63076.7,
+        "torsion": 2.5,
+        "max_deflection": 0.001646,
+        "max_von_mises_stress_mpa": 48.08,
+        "dcr_axial": 0.0367,
+        "dcr_buckling": 0.0367,
+        "dcr_combined": 0.1267,
+        "dcr_shear": 0.0378,
+        "governing_dcr": 0.1267,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 63076.673262289296
+          },
+          {
+            "station": 1.75,
+            "value": 16999.057568700973
+          },
+          {
+            "station": 3.5,
+            "value": -29078.55812488735
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 26330.066110621894
+          },
+          {
+            "station": 1.75,
+            "value": 26330.066110621894
+          },
+          {
+            "station": 3.5,
+            "value": 26330.066110621894
+          }
+        ]
+      },
+      {
+        "id": "COL_5",
+        "i_node": "N_S0_X2_Z0",
+        "j_node": "N_S1_X2_Z0",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -98482.2,
+        "shear_y": 8425.5,
+        "shear_z": 201.4,
+        "moment_y": 380.2,
+        "moment_z": 23332.4,
+        "torsion": 4.5,
+        "max_deflection": 0.000688,
+        "max_von_mises_stress_mpa": 22.74,
+        "dcr_axial": 0.0309,
+        "dcr_buckling": 0.0309,
+        "dcr_combined": 0.0574,
+        "dcr_shear": 0.0121,
+        "governing_dcr": 0.0574,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 23332.3811121007
+          },
+          {
+            "station": 1.75,
+            "value": 8587.669029187646
+          },
+          {
+            "station": 3.5,
+            "value": -6157.043053725407
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 8425.549761664604
+          },
+          {
+            "station": 1.75,
+            "value": 8425.549761664604
+          },
+          {
+            "station": 3.5,
+            "value": 8425.549761664604
+          }
+        ]
+      },
+      {
+        "id": "COL_6",
+        "i_node": "N_S0_X2_Z1",
+        "j_node": "N_S1_X2_Z1",
+        "length": 3.5,
+        "section": "W14X68",
+        "axial_force": -190701.5,
+        "shear_y": 20646.1,
+        "shear_z": 201.4,
+        "moment_y": 380.2,
+        "moment_z": 55765.4,
+        "torsion": 4.5,
+        "max_deflection": 0.001612,
+        "max_von_mises_stress_mpa": 49.67,
+        "dcr_axial": 0.0599,
+        "dcr_buckling": 0.0599,
+        "dcr_combined": 0.1275,
+        "dcr_shear": 0.0296,
+        "governing_dcr": 0.1275,
+        "slenderness_kl_r": 56.0,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 55765.36592766145
+          },
+          {
+            "station": 1.75,
+            "value": 19634.618392490665
+          },
+          {
+            "station": 3.5,
+            "value": -16496.129142680118
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 20646.141448669026
+          },
+          {
+            "station": 1.75,
+            "value": 20646.141448669026
+          },
+          {
+            "station": 3.5,
+            "value": 20646.141448669026
+          }
+        ]
+      },
+      {
+        "id": "COL_7",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S2_X0_Z0",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -123887.7,
+        "shear_y": 3790.8,
+        "shear_z": 125.6,
+        "moment_y": 244.1,
+        "moment_z": 8227.9,
+        "torsion": 2.5,
+        "max_deflection": 0.002394,
+        "max_von_mises_stress_mpa": 22.05,
+        "dcr_axial": 0.0642,
+        "dcr_buckling": 0.0642,
+        "dcr_combined": 0.055,
+        "dcr_shear": 0.0067,
+        "governing_dcr": 0.0642,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 5040.063425334711
+          },
+          {
+            "station": 1.75,
+            "value": -1593.9061523499413
+          },
+          {
+            "station": 3.5,
+            "value": -8227.875730034593
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 3790.8397586769443
+          },
+          {
+            "station": 1.75,
+            "value": 3790.8397586769443
+          },
+          {
+            "station": 3.5,
+            "value": 3790.8397586769443
+          }
+        ]
+      },
+      {
+        "id": "COL_8",
+        "i_node": "N_S1_X0_Z1",
+        "j_node": "N_S2_X0_Z1",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -94525.6,
+        "shear_y": 7378.1,
+        "shear_z": 125.6,
+        "moment_y": 244.1,
+        "moment_z": 17738.2,
+        "torsion": 2.5,
+        "max_deflection": 0.005457,
+        "max_von_mises_stress_mpa": 27.32,
+        "dcr_axial": 0.049,
+        "dcr_buckling": 0.049,
+        "dcr_combined": 0.0711,
+        "dcr_shear": 0.0131,
+        "governing_dcr": 0.0711,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 8084.9915897369465
+          },
+          {
+            "station": 1.75,
+            "value": -4826.621324590609
+          },
+          {
+            "station": 3.5,
+            "value": -17738.234238918165
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 7378.064522472896
+          },
+          {
+            "station": 1.75,
+            "value": 7378.064522472896
+          },
+          {
+            "station": 3.5,
+            "value": 7378.064522472896
+          }
+        ]
+      },
+      {
+        "id": "COL_9",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S2_X1_Z0",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -112932.6,
+        "shear_y": 7568.1,
+        "shear_z": 14.1,
+        "moment_y": 46.3,
+        "moment_z": 15282.8,
+        "torsion": 1.3,
+        "max_deflection": 0.002335,
+        "max_von_mises_stress_mpa": 26.29,
+        "dcr_axial": 0.0586,
+        "dcr_buckling": 0.0586,
+        "dcr_combined": 0.0679,
+        "dcr_shear": 0.0135,
+        "governing_dcr": 0.0679,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 11205.531477618533
+          },
+          {
+            "station": 1.75,
+            "value": -2038.6291006748643
+          },
+          {
+            "station": 3.5,
+            "value": -15282.789678968262
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 7568.0917590248
+          },
+          {
+            "station": 1.75,
+            "value": 7568.0917590248
+          },
+          {
+            "station": 3.5,
+            "value": 7568.0917590248
+          }
+        ]
+      },
+      {
+        "id": "COL_10",
+        "i_node": "N_S1_X1_Z1",
+        "j_node": "N_S2_X1_Z1",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -58688.5,
+        "shear_y": 15082.8,
+        "shear_z": 14.1,
+        "moment_y": 46.3,
+        "moment_z": 31157.9,
+        "torsion": 1.3,
+        "max_deflection": 0.005328,
+        "max_von_mises_stress_mpa": 34.86,
+        "dcr_axial": 0.0304,
+        "dcr_buckling": 0.0304,
+        "dcr_combined": 0.0934,
+        "dcr_shear": 0.0268,
+        "governing_dcr": 0.0934,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 21631.765225454863
+          },
+          {
+            "station": 1.75,
+            "value": -4763.084162223213
+          },
+          {
+            "station": 3.5,
+            "value": -31157.93354990129
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 15082.771078673191
+          },
+          {
+            "station": 1.75,
+            "value": 15082.771078673191
+          },
+          {
+            "station": 3.5,
+            "value": 15082.771078673191
+          }
+        ]
+      },
+      {
+        "id": "COL_11",
+        "i_node": "N_S1_X2_Z0",
+        "j_node": "N_S2_X2_Z0",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -36206.1,
+        "shear_y": 4181.5,
+        "shear_z": 139.7,
+        "moment_y": 296.8,
+        "moment_z": 8885.9,
+        "torsion": 2.3,
+        "max_deflection": 0.002317,
+        "max_von_mises_stress_mpa": 13.34,
+        "dcr_axial": 0.0188,
+        "dcr_buckling": 0.0188,
+        "dcr_combined": 0.0344,
+        "dcr_shear": 0.0074,
+        "governing_dcr": 0.0344,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 5749.43641813973
+          },
+          {
+            "station": 1.75,
+            "value": -1568.2518180195175
+          },
+          {
+            "station": 3.5,
+            "value": -8885.940054178765
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 4181.536134948148
+          },
+          {
+            "station": 1.75,
+            "value": 4181.536134948148
+          },
+          {
+            "station": 3.5,
+            "value": 4181.536134948148
+          }
+        ]
+      },
+      {
+        "id": "COL_12",
+        "i_node": "N_S1_X2_Z1",
+        "j_node": "N_S2_X2_Z1",
+        "length": 3.5,
+        "section": "W14X48",
+        "axial_force": -129108.7,
+        "shear_y": 7545.7,
+        "shear_z": 139.7,
+        "moment_y": 296.8,
+        "moment_z": 16919.5,
+        "torsion": 2.3,
+        "max_deflection": 0.005274,
+        "max_von_mises_stress_mpa": 30.64,
+        "dcr_axial": 0.067,
+        "dcr_buckling": 0.067,
+        "dcr_combined": 0.0785,
+        "dcr_shear": 0.0134,
+        "governing_dcr": 0.0785,
+        "slenderness_kl_r": 72.16,
+        "status": "PASS",
+        "recommended_section": "W14X22",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 9490.65945237653
+          },
+          {
+            "station": 1.75,
+            "value": -3714.3955020422836
+          },
+          {
+            "station": 3.5,
+            "value": -16919.450456461098
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 7545.745688239333
+          },
+          {
+            "station": 1.75,
+            "value": 7545.745688239333
+          },
+          {
+            "station": 3.5,
+            "value": 7545.745688239333
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_13",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S1_X1_Z0",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -7222.0,
+        "shear_y": 3821.2,
+        "shear_z": 61.8,
+        "moment_y": 210.9,
+        "moment_z": 11795.9,
+        "torsion": 0.1,
+        "max_deflection": 0.000225,
+        "max_von_mises_stress_mpa": 20.8,
+        "dcr_axial": 0.0205,
+        "dcr_buckling": 0.0205,
+        "dcr_combined": 0.0629,
+        "dcr_shear": 0.0084,
+        "governing_dcr": 0.0629,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -11795.904252726663
+          },
+          {
+            "station": 3.0,
+            "value": -332.3208457465762
+          },
+          {
+            "station": 6.0,
+            "value": 11131.26256123351
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -3821.1944689933625
+          },
+          {
+            "station": 3.0,
+            "value": -3821.1944689933625
+          },
+          {
+            "station": 6.0,
+            "value": -3821.1944689933625
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_14",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S1_X2_Z0",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -4174.8,
+        "shear_y": 3881.2,
+        "shear_z": 61.7,
+        "moment_y": 205.4,
+        "moment_z": 11907.5,
+        "torsion": 0.0,
+        "max_deflection": 0.000184,
+        "max_von_mises_stress_mpa": 20.38,
+        "dcr_axial": 0.0118,
+        "dcr_buckling": 0.0118,
+        "dcr_combined": 0.0589,
+        "dcr_shear": 0.0086,
+        "governing_dcr": 0.0589,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -11379.796642857818
+          },
+          {
+            "station": 3.0,
+            "value": 263.857902143367
+          },
+          {
+            "station": 6.0,
+            "value": 11907.512447144552
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -3881.218181667062
+          },
+          {
+            "station": 3.0,
+            "value": -3881.218181667062
+          },
+          {
+            "station": 6.0,
+            "value": -3881.218181667062
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_15",
+        "i_node": "N_S1_X0_Z1",
+        "j_node": "N_S1_X1_Z1",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -24525.6,
+        "shear_y": 8915.6,
+        "shear_z": 61.8,
+        "moment_y": 210.9,
+        "moment_z": 27534.1,
+        "torsion": 0.1,
+        "max_deflection": 0.000225,
+        "max_von_mises_stress_mpa": 46.96,
+        "dcr_axial": 0.0695,
+        "dcr_buckling": 0.0695,
+        "dcr_combined": 0.1518,
+        "dcr_shear": 0.0197,
+        "governing_dcr": 0.1518,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -27534.11453929849
+          },
+          {
+            "station": 3.0,
+            "value": -787.1904795094742
+          },
+          {
+            "station": 6.0,
+            "value": 25959.733580279542
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -8915.641353263005
+          },
+          {
+            "station": 3.0,
+            "value": -8915.641353263005
+          },
+          {
+            "station": 6.0,
+            "value": -8915.641353263005
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_16",
+        "i_node": "N_S1_X1_Z1",
+        "j_node": "N_S1_X2_Z1",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -13169.6,
+        "shear_y": 8455.9,
+        "shear_z": 61.7,
+        "moment_y": 205.4,
+        "moment_z": 25985.8,
+        "torsion": 0.0,
+        "max_deflection": 0.000214,
+        "max_von_mises_stress_mpa": 42.66,
+        "dcr_axial": 0.0373,
+        "dcr_buckling": 0.0373,
+        "dcr_combined": 0.1293,
+        "dcr_shear": 0.0187,
+        "governing_dcr": 0.1293,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -24749.69802372526
+          },
+          {
+            "station": 3.0,
+            "value": 618.0287978266533
+          },
+          {
+            "station": 6.0,
+            "value": 25985.755619378568
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -8455.908940517304
+          },
+          {
+            "station": 3.0,
+            "value": -8455.908940517304
+          },
+          {
+            "station": 6.0,
+            "value": -8455.908940517304
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_17",
+        "i_node": "N_S1_X0_Z0",
+        "j_node": "N_S1_X0_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": 0.0,
+        "shear_y": 140.7,
+        "shear_z": 71.1,
+        "moment_y": 213.4,
+        "moment_z": 422.0,
+        "torsion": 1.1,
+        "max_deflection": 0.00244,
+        "max_von_mises_stress_mpa": 3.22,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0074,
+        "dcr_shear": 0.0004,
+        "governing_dcr": 0.0074,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -422.01168101892324
+          },
+          {
+            "station": 3.0,
+            "value": 0.0
+          },
+          {
+            "station": 6.0,
+            "value": 422.01168101892324
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -140.67056033964107
+          },
+          {
+            "station": 3.0,
+            "value": -140.67056033964107
+          },
+          {
+            "station": 6.0,
+            "value": -140.67056033964107
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_18",
+        "i_node": "N_S1_X1_Z0",
+        "j_node": "N_S1_X1_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": -0.0,
+        "shear_y": 16.5,
+        "shear_z": 108.7,
+        "moment_y": 326.2,
+        "moment_z": 49.5,
+        "torsion": 0.9,
+        "max_deflection": 0.002352,
+        "max_von_mises_stress_mpa": 3.83,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0081,
+        "dcr_shear": 0.0003,
+        "governing_dcr": 0.0081,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -49.482091562372666
+          },
+          {
+            "station": 3.0,
+            "value": -3.907985046680551e-14
+          },
+          {
+            "station": 6.0,
+            "value": 49.48209156237259
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -16.49403052079086
+          },
+          {
+            "station": 3.0,
+            "value": -16.49403052079086
+          },
+          {
+            "station": 6.0,
+            "value": -16.49403052079086
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_19",
+        "i_node": "N_S1_X2_Z0",
+        "j_node": "N_S1_X2_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": -0.0,
+        "shear_y": 172.4,
+        "shear_z": 69.2,
+        "moment_y": 207.6,
+        "moment_z": 517.1,
+        "torsion": 1.0,
+        "max_deflection": 0.002307,
+        "max_von_mises_stress_mpa": 3.33,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0078,
+        "dcr_shear": 0.0005,
+        "governing_dcr": 0.0078,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 517.073681815905
+          },
+          {
+            "station": 3.0,
+            "value": 0.0
+          },
+          {
+            "station": 6.0,
+            "value": -517.073681815905
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 172.35789393863502
+          },
+          {
+            "station": 3.0,
+            "value": 172.35789393863502
+          },
+          {
+            "station": 6.0,
+            "value": 172.35789393863502
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_20",
+        "i_node": "N_S2_X0_Z0",
+        "j_node": "N_S2_X1_Z0",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -11361.2,
+        "shear_y": 2580.3,
+        "shear_z": 125.6,
+        "moment_y": 430.1,
+        "moment_z": 8228.5,
+        "torsion": 0.1,
+        "max_deflection": 0.000465,
+        "max_von_mises_stress_mpa": 18.55,
+        "dcr_axial": 0.0322,
+        "dcr_buckling": 0.0322,
+        "dcr_combined": 0.0588,
+        "dcr_shear": 0.0057,
+        "governing_dcr": 0.0588,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -8228.498427023116
+          },
+          {
+            "station": 3.0,
+            "value": -487.7170244723229
+          },
+          {
+            "station": 6.0,
+            "value": 7253.06437807847
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -2580.260467516931
+          },
+          {
+            "station": 3.0,
+            "value": -2580.260467516931
+          },
+          {
+            "station": 6.0,
+            "value": -2580.260467516931
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_21",
+        "i_node": "N_S2_X1_Z0",
+        "j_node": "N_S2_X2_Z0",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -4026.5,
+        "shear_y": 2819.5,
+        "shear_z": 139.7,
+        "moment_y": 462.7,
+        "moment_z": 8886.7,
+        "torsion": 0.1,
+        "max_deflection": 0.000339,
+        "max_von_mises_stress_mpa": 18.58,
+        "dcr_axial": 0.0114,
+        "dcr_buckling": 0.0114,
+        "dcr_combined": 0.0517,
+        "dcr_shear": 0.0062,
+        "governing_dcr": 0.0517,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -8030.237432775622
+          },
+          {
+            "station": 3.0,
+            "value": 428.2182810250015
+          },
+          {
+            "station": 6.0,
+            "value": 8886.673994825625
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -2819.4852379335416
+          },
+          {
+            "station": 3.0,
+            "value": -2819.4852379335416
+          },
+          {
+            "station": 6.0,
+            "value": -2819.4852379335416
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_22",
+        "i_node": "N_S2_X0_Z1",
+        "j_node": "N_S2_X1_Z1",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -23016.9,
+        "shear_y": 5657.5,
+        "shear_z": 125.6,
+        "moment_y": 430.1,
+        "moment_z": 17737.6,
+        "torsion": 0.1,
+        "max_deflection": 0.000388,
+        "max_von_mises_stress_mpa": 34.56,
+        "dcr_axial": 0.0652,
+        "dcr_buckling": 0.0652,
+        "dcr_combined": 0.1142,
+        "dcr_shear": 0.0125,
+        "governing_dcr": 0.1142,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -17737.611541651728
+          },
+          {
+            "station": 3.0,
+            "value": -764.9891690617878
+          },
+          {
+            "station": 6.0,
+            "value": 16207.633203528152
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -5657.540790863313
+          },
+          {
+            "station": 3.0,
+            "value": -5657.540790863313
+          },
+          {
+            "station": 6.0,
+            "value": -5657.540790863313
+          }
+        ]
+      },
+      {
+        "id": "BEAM_X_23",
+        "i_node": "N_S2_X1_Z1",
+        "j_node": "N_S2_X2_Z1",
+        "length": 6.0,
+        "section": "W14X30",
+        "axial_force": -7700.7,
+        "shear_y": 5311.4,
+        "shear_z": 139.7,
+        "moment_y": 462.7,
+        "moment_z": 16918.7,
+        "torsion": 0.1,
+        "max_deflection": 0.000404,
+        "max_von_mises_stress_mpa": 31.02,
+        "dcr_axial": 0.0218,
+        "dcr_buckling": 0.0218,
+        "dcr_combined": 0.0898,
+        "dcr_shear": 0.0117,
+        "governing_dcr": 0.0898,
+        "slenderness_kl_r": 158.73,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -14949.788214284894
+          },
+          {
+            "station": 3.0,
+            "value": 984.4641506208955
+          },
+          {
+            "station": 6.0,
+            "value": 16918.716515526685
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -5311.417454968596
+          },
+          {
+            "station": 3.0,
+            "value": -5311.417454968596
+          },
+          {
+            "station": 6.0,
+            "value": -5311.417454968596
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_24",
+        "i_node": "N_S2_X0_Z0",
+        "j_node": "N_S2_X0_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": 0.0,
+        "shear_y": 81.3,
+        "shear_z": 144.2,
+        "moment_y": 432.5,
+        "moment_z": 244.0,
+        "torsion": 0.6,
+        "max_deflection": 0.005428,
+        "max_von_mises_stress_mpa": 5.41,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0117,
+        "dcr_shear": 0.0004,
+        "governing_dcr": 0.0117,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -244.01314395289478
+          },
+          {
+            "station": 3.0,
+            "value": 4.263256414560601e-14
+          },
+          {
+            "station": 6.0,
+            "value": 244.01314395289486
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -81.33771465096488
+          },
+          {
+            "station": 3.0,
+            "value": -81.33771465096488
+          },
+          {
+            "station": 6.0,
+            "value": -81.33771465096488
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_25",
+        "i_node": "N_S2_X1_Z0",
+        "j_node": "N_S2_X1_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": -0.0,
+        "shear_y": 15.5,
+        "shear_z": 233.4,
+        "moment_y": 700.2,
+        "moment_z": 46.5,
+        "torsion": 0.5,
+        "max_deflection": 0.005331,
+        "max_von_mises_stress_mpa": 8.12,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0171,
+        "dcr_shear": 0.0007,
+        "governing_dcr": 0.0171,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": -46.46025902383079
+          },
+          {
+            "station": 3.0,
+            "value": 3.836930773104541e-13
+          },
+          {
+            "station": 6.0,
+            "value": 46.460259023831554
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": -15.486753007943648
+          },
+          {
+            "station": 3.0,
+            "value": -15.486753007943648
+          },
+          {
+            "station": 6.0,
+            "value": -15.486753007943648
+          }
+        ]
+      },
+      {
+        "id": "BEAM_Z_26",
+        "i_node": "N_S2_X2_Z0",
+        "j_node": "N_S2_X2_Z1",
+        "length": 6.0,
+        "section": "W12X26",
+        "axial_force": 0.0,
+        "shear_y": 99.0,
+        "shear_z": 155.0,
+        "moment_y": 465.0,
+        "moment_z": 296.9,
+        "torsion": 0.7,
+        "max_deflection": 0.0053,
+        "max_von_mises_stress_mpa": 5.88,
+        "dcr_axial": 0.0,
+        "dcr_buckling": 0.0,
+        "dcr_combined": 0.0128,
+        "dcr_shear": 0.0005,
+        "governing_dcr": 0.0128,
+        "slenderness_kl_r": 157.48,
+        "status": "PASS",
+        "recommended_section": "W12X26",
+        "bmd_points": [
+          {
+            "station": 0.0,
+            "value": 296.938002185982
+          },
+          {
+            "station": 3.0,
+            "value": -8.526512829121202e-14
+          },
+          {
+            "station": 6.0,
+            "value": -296.93800218598216
+          }
+        ],
+        "sfd_points": [
+          {
+            "station": 0.0,
+            "value": 98.97933406199407
+          },
+          {
+            "station": 3.0,
+            "value": 98.97933406199407
+          },
+          {
+            "station": 6.0,
+            "value": 98.97933406199407
+          }
+        ]
+      }
+    ],
+    "equilibrium": {
+      "sum_fx": 0.0,
+      "sum_fy": -0.0,
+      "sum_fz": 0.0,
+      "sum_mx": -104.09,
+      "sum_my": -24.08,
+      "sum_mz": 253080.19,
+      "is_equilibrated": true,
+      "max_residual_n": 0.0
+    },
+    "global_base_shear_n": 97812.3,
+    "max_drift_ratio": 0.00107,
+    "surrogate_uncertainty": null,
+    "code_compliance_summary": {
+      "total_members": 26,
+      "passing": 26,
+      "failing": 0,
+      "warning": 0
+    }
+  }
+}
