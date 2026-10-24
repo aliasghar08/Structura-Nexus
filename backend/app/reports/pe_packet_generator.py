@@ -23,7 +23,7 @@ class PECalculationPacketGenerator:
     def __init__(
         self,
         project_name: str = "Structura Nexus Multi-Story Space Frame",
-        engineer_name: str = "Staff Structural Engineer, PE, SE",
+        engineer_name: str = "Ali Asghar, PE, SE <aliasgharinnocent@yahoo.com>",
         license_number: str = "PE-94021-SE",
         jurisdiction: str = "AISC 360-16 / ASCE 7-16 / IBC 2024",
     ):
@@ -797,6 +797,9 @@ I hereby certify that these structural design calculations were performed under 
             </div>
             <div style="font-size:10px; color:#64748B; font-family:monospace; margin-top:8px;">
                 SECURITY HASH: {cert_hash}
+            </div>
+            <div style="font-size:10px; color:#64748B; margin-top:4px;">
+                Structura Nexus &copy; 2026 Ali Asghar &lt;aliasgharinnocent@yahoo.com&gt;. All Rights Reserved. Protected by DMCA.
             </div>
         </div>
         <div class="seal-circle">

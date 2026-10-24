@@ -21,6 +21,7 @@ import 'widgets/cad_editor_dialog.dart';
 import 'widgets/lateral_stability_dialog.dart';
 import 'widgets/pe_packet_dialog.dart';
 import 'widgets/generative_bracing_dialog.dart';
+import 'widgets/floating_copyright_watermark.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -146,9 +147,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          // 1. Top Header & Engine Bar
+          Column(
+            children: [
+              // 1. Top Header & Engine Bar
           WorkstationHeader(
             model: _model,
             isBackendConnected: _apiService.isConnected,
@@ -317,8 +320,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               );
             },
           ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+        const FloatingCopyrightWatermark(),
+      ],
+    ),
+  );
+}
 }
