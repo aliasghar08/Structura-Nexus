@@ -30,3 +30,4 @@ export 'structural_library_dialog.dart';
 
 // Common Overlays
 export 'floating_copyright_watermark.dart';
+export 'workstation_status_bar.dart';

@@ -25,8 +25,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+    expect(find.text('TOOLS & SUITE'), findsOneWidget);
+    expect(find.text('AI & GEN'), findsOneWidget);
+    expect(find.text('CAD & BIM'), findsOneWidget);
+    expect(find.text('ANALYSIS'), findsOneWidget);
     expect(find.text('ASCE 7-16 LOAD COMBINATIONS'), findsOneWidget);
     expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
+    expect(find.textContaining('aliasgharinnocent@yahoo.com'), findsOneWidget);
+    expect(find.textContaining('DMCA Protected'), findsOneWidget);
   });
 
   testWidgets('Tapping a feature redirects unauthenticated user to login screen', (WidgetTester tester) async {
