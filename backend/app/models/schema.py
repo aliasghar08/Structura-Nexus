@@ -24,6 +24,11 @@ class MemberModel(BaseModel):
         description="End releases for 12 local DOF (e.g. pinned ends)"
     )
 
+class StructuralModelInput(BaseModel):
+    name: Optional[str] = "Structural Model"
+    nodes: List[NodeModel]
+    members: List[MemberModel]
+
 class StructuralGraphPayload(BaseModel):
     session_id: str = "usr_structura_session"
     action: str = Field(
@@ -187,4 +192,78 @@ class SecondOrderAnalysisResponse(BaseModel):
     p_delta_first_order_moments: Dict[str, float]
     second_order_converged: bool
     iterations_run: int
+
+# PE Calculation Packet Schemas
+class PEPacketRequest(BaseModel):
+    model: StructuralModelInput
+    engineer_name: Optional[str] = "Staff Structural Engineer, PE, SE"
+    license_number: Optional[str] = "PE-94021-SE"
+    jurisdiction: Optional[str] = "AISC 360-16 / ASCE 7-16 / IBC 2024"
+
+class PEPacketResponse(BaseModel):
+    status: str = "SUCCESS"
+    project_name: str
+    governing_dcr: float
+    total_steel_weight_kg: float
+    total_embodied_carbon_tco2e: float
+    critical_member_id: str
+    critical_section: str
+    critical_load_factor_alpha_cr: float
+    sway_amplification_b2: float
+    stability_status: str
+    certification_hash: str
+    member_count: int
+    node_count: int
+    latex_source: str
+    html_report: str
+    svg_elevation: str
+
+# BIM & CAD Interoperability Schemas
+class S2KExportRequest(BaseModel):
+    model: StructuralModelInput
+
+class S2KExportResponse(BaseModel):
+    status: str = "SUCCESS"
+    filename: str
+    s2k_content: str
+
+class S2KImportRequest(BaseModel):
+    s2k_content: str
+
+class S2KImportResponse(BaseModel):
+    status: str = "SUCCESS"
+    model: StructuralModelInput
+
+class IFCExportRequest(BaseModel):
+    model: StructuralModelInput
+
+class IFCExportResponse(BaseModel):
+    status: str = "SUCCESS"
+    filename: str
+    ifc_content: str
+
+# Generative Bracing Optimization Schemas
+class GenerativeBracingRequest(BaseModel):
+    model: StructuralModelInput
+    target_drift_ratio: Optional[float] = 1.0 / 400.0
+    candidate_sections: Optional[List[str]] = None
+
+class GenerativeBracingResponse(BaseModel):
+    status: str = "SUCCESS"
+    project_name: str
+    building_height_m: float
+    drift_limit_ratio: str
+    max_allowable_drift_mm: float
+    baseline_unbraced_drift_mm: float
+    baseline_weight_tonnes: float
+    optimal_topology: str
+    optimal_system_name: str
+    optimized_drift_mm: float
+    drift_reduction_percentage: float
+    added_steel_tonnes: float
+    stability_alpha_cr: float
+    sway_b2: float
+    candidates_evaluated: List[Dict[str, Any]]
+    new_nodes: List[Dict[str, Any]]
+    new_members: List[Dict[str, Any]]
 

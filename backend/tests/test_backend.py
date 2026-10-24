@@ -366,3 +366,136 @@ def test_second_order_buckling_endpoint():
     m1_2nd = data["p_delta_magnified_moments"]["M1"]
     assert m1_2nd >= m1_1st
 
+
+def test_pe_calculation_packet_endpoint():
+    req = {
+        "model": {
+            "name": "Certified PE Office Frame",
+            "nodes": [
+                {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+                {"id": "N2", "coords": [6.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+                {"id": "N3", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [15000, -35000, 0, 0, 0, 0]},
+                {"id": "N4", "coords": [6.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [15000, -35000, 0, 0, 0, 0]}
+            ],
+            "members": [
+                {"id": "C1", "i_node": "N1", "j_node": "N3", "section": "W14X48", "material": "A992_STEEL"},
+                {"id": "C2", "i_node": "N2", "j_node": "N4", "section": "W14X48", "material": "A992_STEEL"},
+                {"id": "B1", "i_node": "N3", "j_node": "N4", "section": "W18X50", "material": "A992_STEEL"}
+            ]
+        },
+        "engineer_name": "Chief Structural Engineer, PE",
+        "license_number": "PE-88491-SE",
+        "jurisdiction": "AISC 360-16 / ASCE 7-16"
+    }
+    response = client.post("/api/v1/reports/pe-packet", json=req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["project_name"] == "Certified PE Office Frame"
+    assert data["governing_dcr"] > 0.0
+    assert data["total_steel_weight_kg"] > 0.0
+    assert len(data["certification_hash"]) == 16
+    assert "\\documentclass" in data["latex_source"]
+    assert "AISC 360-16" in data["latex_source"]
+    assert "<!DOCTYPE html>" in data["html_report"]
+    assert "PE Calculation Packet" in data["html_report"]
+    assert "<svg" in data["svg_elevation"]
+
+
+def test_etabs_s2k_interop_endpoints():
+    model_req = {
+        "model": {
+            "name": "ETABS Exchange Frame",
+            "nodes": [
+                {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+                {"id": "N2", "coords": [0.0, 3.5, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [20000, -40000, 0, 0, 0, 0]}
+            ],
+            "members": [
+                {"id": "COL1", "i_node": "N1", "j_node": "N2", "section": "W14X48", "material": "A992_STEEL"}
+            ]
+        }
+    }
+    # 1. Test Export
+    export_res = client.post("/api/v1/interop/s2k/export", json=model_req)
+    assert export_res.status_code == 200
+    export_data = export_res.json()
+    assert export_data["status"] == "SUCCESS"
+    s2k_txt = export_data["s2k_content"]
+    assert 'TABLE:  "JOINT COORDINATES"' in s2k_txt
+    assert 'TABLE:  "CONNECTIVITY - FRAME"' in s2k_txt
+    assert 'TABLE:  "MATERIAL PROPERTIES 01 - GENERAL"' in s2k_txt
+
+    # 2. Test Import
+    import_res = client.post("/api/v1/interop/s2k/import", json={"s2k_content": s2k_txt})
+    assert import_res.status_code == 200
+    import_data = import_res.json()
+    assert import_data["status"] == "SUCCESS"
+    imported_nodes = import_data["model"]["nodes"]
+    imported_members = import_data["model"]["members"]
+    assert len(imported_nodes) == 2
+    assert len(imported_members) == 1
+    assert imported_members[0]["section"] == "W14X48"
+
+
+def test_ifc43_export_endpoint():
+    model_req = {
+        "model": {
+            "name": "BIM_Space_Frame",
+            "nodes": [
+                {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1]},
+                {"id": "N2", "coords": [5.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1]},
+                {"id": "N3", "coords": [0.0, 3.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0]},
+                {"id": "N4", "coords": [5.0, 3.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0]}
+            ],
+            "members": [
+                {"id": "M1", "i_node": "N1", "j_node": "N3", "section": "W14X48"},
+                {"id": "M2", "i_node": "N2", "j_node": "N4", "section": "W14X48"},
+                {"id": "M3", "i_node": "N3", "j_node": "N4", "section": "W14X30"}
+            ]
+        }
+    }
+    response = client.post("/api/v1/interop/ifc/export", json=model_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    ifc_text = data["ifc_content"]
+    assert "ISO-10303-21;" in ifc_text
+    assert "FILE_SCHEMA(('IFC4X3'));" in ifc_text
+    assert "IFCPROJECT" in ifc_text
+    assert "IFCMEMBER" in ifc_text
+    assert "END-ISO-10303-21;" in ifc_text
+
+
+def test_generative_bracing_optimization_endpoint():
+    model_req = {
+        "model": {
+            "name": "3-Story Portal Frame for Bracing Optimization",
+            "nodes": [
+                {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+                {"id": "N2", "coords": [6.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+                {"id": "N3", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [25000, -30000, 0, 0, 0, 0]},
+                {"id": "N4", "coords": [6.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [25000, -30000, 0, 0, 0, 0]},
+                {"id": "N5", "coords": [0.0, 8.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [35000, -25000, 0, 0, 0, 0]},
+                {"id": "N6", "coords": [6.0, 8.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [35000, -25000, 0, 0, 0, 0]}
+            ],
+            "members": [
+                {"id": "C1", "i_node": "N1", "j_node": "N3", "section": "W14X48", "material": "A992_STEEL"},
+                {"id": "C2", "i_node": "N2", "j_node": "N4", "section": "W14X48", "material": "A992_STEEL"},
+                {"id": "B1", "i_node": "N3", "j_node": "N4", "section": "W18X50", "material": "A992_STEEL"},
+                {"id": "C3", "i_node": "N3", "j_node": "N5", "section": "W14X38", "material": "A992_STEEL"},
+                {"id": "C4", "i_node": "N4", "j_node": "N6", "section": "W14X38", "material": "A992_STEEL"},
+                {"id": "B2", "i_node": "N5", "j_node": "N6", "section": "W16X31", "material": "A992_STEEL"}
+            ]
+        },
+        "target_drift_ratio": 0.0025
+    }
+    response = client.post("/api/v1/optimization/generative-bracing", json=model_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["optimal_topology"] in ["X_BRACE", "CHEVRON", "SINGLE_DIAGONAL"]
+    assert data["drift_reduction_percentage"] > 40.0
+    assert data["optimized_drift_mm"] <= data["max_allowable_drift_mm"] or data["optimized_drift_mm"] < data["baseline_unbraced_drift_mm"]
+    assert len(data["candidates_evaluated"]) == 3
+    assert len(data["new_members"]) > 0
+

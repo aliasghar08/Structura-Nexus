@@ -15,10 +15,23 @@ from .models.schema import (
     ASCE7SeismicParameters,
     ASCE7SeismicResponse,
     SecondOrderAnalysisResponse,
+    PEPacketRequest,
+    PEPacketResponse,
+    S2KExportRequest,
+    S2KExportResponse,
+    S2KImportRequest,
+    S2KImportResponse,
+    IFCExportRequest,
+    IFCExportResponse,
+    GenerativeBracingRequest,
+    GenerativeBracingResponse,
 )
 from .solvers.fea_engine import FEA3DSpaceFrameSolver
 from .solvers.asce7_loads import ASCE7WindEngine, ASCE7SeismicEngine
 from .solvers.second_order_engine import SecondOrderStabilityEngine
+from .reports.pe_packet_generator import PECalculationPacketGenerator
+from .interop.s2k_ifc_engine import S2KEngine, IFC43Engine
+from .ai.generative_bracing_optimizer import GenerativeBracingOptimizer
 from .surrogate.gnn_surrogate import GNNSurrogateEngine
 from .code_check.aisc_aci import AISC_W_SHAPES, MATERIALS, AISC360CodeChecker
 from .benchmarks.verification_suite import TextbookBenchmarkSuite
@@ -203,6 +216,137 @@ def analyze_second_order_buckling(payload: StructuralGraphPayload):
         return SecondOrderStabilityEngine.analyze_stability(payload)
     except Exception as e:
         logger.error(f"Buckling analysis error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
+# Professional PE Calculation Packet Generator
+# -------------------------------------------------------------
+pe_generator = PECalculationPacketGenerator()
+
+@app.post("/api/v1/reports/pe-packet", response_model=PEPacketResponse)
+def generate_pe_calculation_packet(request: PEPacketRequest):
+    """
+    Generates certified, multi-page professional engineering calculation packet
+    in LaTeX (.tex) and printable HTML formats, with AISC 360-16 checks and SVG elevation.
+    """
+    try:
+        model_dict = request.model.model_dump()
+        gen = PECalculationPacketGenerator(
+            project_name=model_dict.get("name", "Structura Nexus Space Frame"),
+            engineer_name=request.engineer_name or "Staff Structural Engineer, PE, SE",
+            license_number=request.license_number or "PE-94021-SE",
+            jurisdiction=request.jurisdiction or "AISC 360-16 / ASCE 7-16 / IBC 2024",
+        )
+        packet = gen.generate_packet(model_data=model_dict)
+        return PEPacketResponse(
+            status="SUCCESS",
+            project_name=packet["project_name"],
+            governing_dcr=packet["governing_dcr"],
+            total_steel_weight_kg=packet["total_steel_weight_kg"],
+            total_embodied_carbon_tco2e=packet["total_embodied_carbon_tco2e"],
+            critical_member_id=packet["critical_member_id"],
+            critical_section=packet["critical_section"],
+            critical_load_factor_alpha_cr=packet["critical_load_factor_alpha_cr"],
+            sway_amplification_b2=packet["sway_amplification_b2"],
+            stability_status=packet["stability_status"],
+            certification_hash=packet["certification_hash"],
+            member_count=packet["member_count"],
+            node_count=packet["node_count"],
+            latex_source=packet["latex_source"],
+            html_report=packet["html_report"],
+            svg_elevation=packet["svg_elevation"],
+        )
+    except Exception as e:
+        logger.error(f"PE Packet Generation error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
+# BIM & CAD Interoperability Endpoints (ETABS / SAP2000 .s2k & IFC 4.3)
+# -------------------------------------------------------------
+@app.post("/api/v1/interop/s2k/export", response_model=S2KExportResponse)
+def export_etabs_s2k(request: S2KExportRequest):
+    """
+    Exports structural model to ETABS / SAP2000 .s2k text file format.
+    """
+    try:
+        model_dict = request.model.model_dump()
+        s2k_text = S2KEngine.export_to_s2k(model_dict)
+        filename = f"{model_dict.get('name', 'model').replace(' ', '_')}.s2k"
+        return S2KExportResponse(status="SUCCESS", filename=filename, s2k_content=s2k_text)
+    except Exception as e:
+        logger.error(f"S2K export error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/interop/s2k/import", response_model=S2KImportResponse)
+def import_etabs_s2k(request: S2KImportRequest):
+    """
+    Imports and parses an ETABS / SAP2000 .s2k file into a Structura Nexus model.
+    """
+    try:
+        parsed_model = S2KEngine.import_from_s2k(request.s2k_content)
+        return S2KImportResponse(status="SUCCESS", model=parsed_model)
+    except Exception as e:
+        logger.error(f"S2K import error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/interop/ifc/export", response_model=IFCExportResponse)
+def export_ifc_43(request: IFCExportRequest):
+    """
+    Exports structural model to certified IFC 4.3 STEP physical file format (ISO 10303-21).
+    """
+    try:
+        model_dict = request.model.model_dump()
+        ifc_text = IFC43Engine.export_to_ifc(model_dict)
+        filename = f"{model_dict.get('name', 'model').replace(' ', '_')}.ifc"
+        return IFCExportResponse(status="SUCCESS", filename=filename, ifc_content=ifc_text)
+    except Exception as e:
+        logger.error(f"IFC export error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
+# Generative Topology & Bracing Optimization
+# -------------------------------------------------------------
+bracing_optimizer = GenerativeBracingOptimizer()
+
+@app.post("/api/v1/optimization/generative-bracing", response_model=GenerativeBracingResponse)
+def generative_bracing_optimization(request: GenerativeBracingRequest):
+    """
+    Synthesizes and evaluates alternative lateral bracing topologies (X-Brace, Chevron, Diagonal)
+    to minimize steel weight while strictly satisfying lateral drift limits (Delta <= H/400).
+    """
+    try:
+        model_dict = request.model.model_dump()
+        result = bracing_optimizer.optimize_bracing(
+            model_data=model_dict,
+            target_drift_ratio=request.target_drift_ratio,
+            candidate_sections=request.candidate_sections,
+        )
+        return GenerativeBracingResponse(
+            status="SUCCESS",
+            project_name=result["project_name"],
+            building_height_m=result["building_height_m"],
+            drift_limit_ratio=result["drift_limit_ratio"],
+            max_allowable_drift_mm=result["max_allowable_drift_mm"],
+            baseline_unbraced_drift_mm=result["baseline_unbraced_drift_mm"],
+            baseline_weight_tonnes=result["baseline_weight_tonnes"],
+            optimal_topology=result["optimal_topology"],
+            optimal_system_name=result["optimal_system_name"],
+            optimized_drift_mm=result["optimized_drift_mm"],
+            drift_reduction_percentage=result["drift_reduction_percentage"],
+            added_steel_tonnes=result["added_steel_tonnes"],
+            stability_alpha_cr=result["stability_alpha_cr"],
+            sway_b2=result["sway_b2"],
+            candidates_evaluated=result["candidates_evaluated"],
+            new_nodes=result["new_nodes"],
+            new_members=result["new_members"],
+        )
+    except Exception as e:
+        logger.error(f"Generative bracing optimization error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

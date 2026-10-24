@@ -17,6 +17,8 @@ class WorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenLibrary;
   final VoidCallback? onOpenCadStudio;
   final VoidCallback? onOpenAuth;
+  final VoidCallback? onOpenPePacket;
+  final VoidCallback? onOpenGenerativeBracing;
 
   const WorkstationHeader({
     super.key,
@@ -34,6 +36,8 @@ class WorkstationHeader extends StatelessWidget {
     this.onOpenLibrary,
     this.onOpenCadStudio,
     this.onOpenAuth,
+    this.onOpenPePacket,
+    this.onOpenGenerativeBracing,
   });
 
   @override
@@ -146,6 +150,20 @@ class WorkstationHeader extends StatelessWidget {
             icon: Icons.folder_special_rounded,
             color: const Color(0xFFA855F7),
             onTap: onOpenLibrary,
+          ),
+          const SizedBox(width: 8),
+          _buildAiActionButton(
+            label: 'PE Calcs & BIM',
+            icon: Icons.picture_as_pdf_rounded,
+            color: const Color(0xFF00F0FF),
+            onTap: onOpenPePacket,
+          ),
+          const SizedBox(width: 8),
+          _buildAiActionButton(
+            label: 'Gen Bracing',
+            icon: Icons.auto_awesome_rounded,
+            color: Colors.purpleAccent,
+            onTap: onOpenGenerativeBracing,
           ),
           const SizedBox(width: 16),
           // 3. Dual Engine Selector

@@ -540,6 +540,187 @@ class StructuralApiService {
     return null;
   }
 
+  /// Generates certified professional engineering calculation packet (LaTeX & HTML)
+  Future<Map<String, dynamic>?> generatePeCalculationPacket(
+    StructuralModel model, {
+    String engineerName = 'Staff Structural Engineer, PE, SE',
+    String licenseNumber = 'PE-94021-SE',
+    String jurisdiction = 'AISC 360-16 / ASCE 7-16 / IBC 2024',
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/reports/pe-packet'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'model': {
+            'name': model.name,
+            'nodes': model.nodes
+                .map((n) => {
+                      'id': n.id,
+                      'coords': [n.x, n.y, n.z],
+                      'restraint': n.isRestrained.map((r) => r ? 1 : 0).toList(),
+                      'loads': [n.fxN, n.fyN, n.fzN, 0.0, 0.0, 0.0],
+                    })
+                .toList(),
+            'members': model.members
+                .map((m) => {
+                      'id': m.id,
+                      'i_node': m.startNodeId,
+                      'j_node': m.endNodeId,
+                      'section': m.sectionProfile,
+                      'material': 'A992_STEEL',
+                    })
+                .toList(),
+          },
+          'engineer_name': engineerName,
+          'license_number': licenseNumber,
+          'jurisdiction': jurisdiction,
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('PE Packet API request failed: $e');
+    }
+    return null;
+  }
+
+  /// Exports structural model to CSI ETABS / SAP2000 .s2k format
+  Future<Map<String, dynamic>?> exportEtabsS2k(StructuralModel model) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/interop/s2k/export'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'model': {
+            'name': model.name,
+            'nodes': model.nodes
+                .map((n) => {
+                      'id': n.id,
+                      'coords': [n.x, n.y, n.z],
+                      'restraint': n.isRestrained.map((r) => r ? 1 : 0).toList(),
+                      'loads': [n.fxN, n.fyN, n.fzN, 0.0, 0.0, 0.0],
+                    })
+                .toList(),
+            'members': model.members
+                .map((m) => {
+                      'id': m.id,
+                      'i_node': m.startNodeId,
+                      'j_node': m.endNodeId,
+                      'section': m.sectionProfile,
+                      'material': 'A992_STEEL',
+                    })
+                .toList(),
+          },
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('S2K export API request failed: $e');
+    }
+    return null;
+  }
+
+  /// Imports and parses an ETABS / SAP2000 .s2k file into a StructuralModel
+  Future<Map<String, dynamic>?> importEtabsS2k(String s2kContent) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/interop/s2k/import'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'s2k_content': s2kContent}),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('S2K import API request failed: $e');
+    }
+    return null;
+  }
+
+  /// Exports structural model to certified IFC 4.3 STEP physical file format
+  Future<Map<String, dynamic>?> exportIfc43(StructuralModel model) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/interop/ifc/export'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'model': {
+            'name': model.name,
+            'nodes': model.nodes
+                .map((n) => {
+                      'id': n.id,
+                      'coords': [n.x, n.y, n.z],
+                      'restraint': n.isRestrained.map((r) => r ? 1 : 0).toList(),
+                      'loads': [n.fxN, n.fyN, n.fzN, 0.0, 0.0, 0.0],
+                    })
+                .toList(),
+            'members': model.members
+                .map((m) => {
+                      'id': m.id,
+                      'i_node': m.startNodeId,
+                      'j_node': m.endNodeId,
+                      'section': m.sectionProfile,
+                      'material': 'A992_STEEL',
+                    })
+                .toList(),
+          },
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('IFC 4.3 export API request failed: $e');
+    }
+    return null;
+  }
+
+  /// Generative Topology & Lateral Bracing Optimizer
+  Future<Map<String, dynamic>?> optimizeGenerativeBracing(
+    StructuralModel model, {
+    double targetDriftRatio = 1.0 / 400.0,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/optimization/generative-bracing'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'model': {
+            'name': model.name,
+            'nodes': model.nodes
+                .map((n) => {
+                      'id': n.id,
+                      'coords': [n.x, n.y, n.z],
+                      'restraint': n.isRestrained.map((r) => r ? 1 : 0).toList(),
+                      'loads': [n.fxN, n.fyN, n.fzN, 0.0, 0.0, 0.0],
+                    })
+                .toList(),
+            'members': model.members
+                .map((m) => {
+                      'id': m.id,
+                      'i_node': m.startNodeId,
+                      'j_node': m.endNodeId,
+                      'section': m.sectionProfile,
+                      'material': 'A992_STEEL',
+                    })
+                .toList(),
+          },
+          'target_drift_ratio': targetDriftRatio,
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('Generative bracing API request failed: $e');
+    }
+    return null;
+  }
+
   void dispose() {
     _channel?.sink.close();
   }
