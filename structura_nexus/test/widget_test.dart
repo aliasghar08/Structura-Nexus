@@ -29,6 +29,30 @@ void main() {
     expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
   });
 
+  testWidgets('Tapping a feature redirects unauthenticated user to login screen', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
+    await tester.pumpAndSettle();
+
+    // Tap AI Copilot button in toolbar
+    await tester.tap(find.text('AI Copilot'));
+    await tester.pumpAndSettle();
+
+    // Expect to be redirected to AuthScreen with custom message
+    expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
+    expect(find.text('Please sign in or create an account to use AI Structural Copilot.'), findsOneWidget);
+    expect(find.text('Back to Workstation'), findsOneWidget);
+
+    // Tap Back to Workstation to return
+    await tester.tap(find.text('Back to Workstation'));
+    await tester.pumpAndSettle();
+
+    // Back in workstation
+    expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+  });
+
   test('StructuralLibraryService exports valid AutoCAD DXF format', () {
     final model = BenchmarkPresets.timoshenkoCantilever();
     final dxf = StructuralLibraryService.exportToDxf(model);

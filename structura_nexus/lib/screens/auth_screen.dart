@@ -123,6 +123,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
       if (mounted) {
         widget.onLoginSuccess?.call();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -143,6 +146,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       await _authService.signInWithGoogle();
       if (mounted) {
         widget.onLoginSuccess?.call();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -166,11 +172,17 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
       await _authService.signInAnonymously();
       if (mounted) {
         widget.onLoginSuccess?.call();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       }
     } catch (e) {
       // Fallback: if anonymous auth fails on network, invoke success directly
       if (mounted) {
         widget.onLoginSuccess?.call();
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop(true);
+        }
       }
     } finally {
       if (mounted) {
@@ -361,6 +373,29 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
+
+          // Optional Back Button (if navigated from workstation)
+          if (Navigator.of(context).canPop())
+            Positioned(
+              top: 20,
+              left: 20,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(false),
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                label: const Text(
+                  'Back to Workstation',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF161B22),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                ),
+              ),
+            ),
 
           // Main Card View
           Center(

@@ -9,6 +9,8 @@ import '../models/structural_models.dart';
 import '../data/benchmark_presets.dart';
 import '../services/structural_api_service.dart';
 import '../services/embedded_fea_solver.dart';
+import '../services/firebase_auth_service.dart';
+import 'auth_screen.dart';
 import '../widgets/workstation_header.dart';
 import '../widgets/structural_3d_viewport.dart';
 import '../widgets/inspector_panel.dart';
@@ -38,6 +40,39 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
+
+  bool get _isUserLoggedIn {
+    final user = FirebaseAuthService().currentUser;
+    return user != null && !user.isAnonymous;
+  }
+
+  void _requireAuth({
+    required String featureName,
+    required VoidCallback onAuthenticated,
+  }) {
+    if (_isUserLoggedIn) {
+      onAuthenticated();
+      return;
+    }
+
+    Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => AuthScreen(
+          redirectMessage: 'Please sign in or create an account to use $featureName.',
+          onLoginSuccess: () {
+            if (mounted) {
+              setState(() {});
+              onAuthenticated();
+            }
+          },
+        ),
+      ),
+    ).then((authenticated) {
+      if (authenticated == true && mounted) {
+        setState(() {});
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -128,95 +163,144 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 model: _model,
                 isBackendConnected: _apiService.isConnected,
                 onEngineChanged: (engine) {
-                  setState(() {
-                    _model.activeEngine = engine;
-                    _triggerSolve();
-                  });
+                  _requireAuth(
+                    featureName: 'Solver Engine Switcher',
+                    onAuthenticated: () {
+                      setState(() {
+                        _model.activeEngine = engine;
+                        _triggerSolve();
+                      });
+                    },
+                  );
                 },
                 onModeChanged: (mode) => setState(() => _model.displayMode = mode),
                 onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
-                onPresetSelected: _loadPreset,
-                onSolveTriggered: _triggerSolve,
-                onOpenCopilot: () => AiCopilotDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
-                  onStructureModified: _triggerSolve,
+                onPresetSelected: (presetKey) {
+                  _requireAuth(
+                    featureName: 'Benchmark Presets',
+                    onAuthenticated: () => _loadPreset(presetKey),
+                  );
+                },
+                onSolveTriggered: () {
+                  _requireAuth(
+                    featureName: 'Finite Element Solver',
+                    onAuthenticated: _triggerSolve,
+                  );
+                },
+                onOpenCopilot: () => _requireAuth(
+                  featureName: 'AI Structural Copilot',
+                  onAuthenticated: () => AiCopilotDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                    onStructureModified: _triggerSolve,
+                  ),
                 ),
-                onOpenGenerativeOptimizer: () => GenerativeOptimizerDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
-                  onStructureModified: _triggerSolve,
+                onOpenGenerativeOptimizer: () => _requireAuth(
+                  featureName: 'Generative AI Section Auto-Sizer',
+                  onAuthenticated: () => GenerativeOptimizerDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                    onStructureModified: _triggerSolve,
+                  ),
                 ),
-                onOpenSeismicModal: () => SeismicModalDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
-                  onActivateVibration: (modeIndex, offsets) {
-                    setState(() {
-                      _model.activeVibrationMode = modeIndex;
-                      _model.modalShapeOffsets = offsets;
-                      _model.displayMode = DisplayMode.modalVibration;
-                    });
+                onOpenSeismicModal: () => _requireAuth(
+                  featureName: 'Dynamic Modal Vibration Analysis',
+                  onAuthenticated: () => SeismicModalDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                    onActivateVibration: (modeIndex, offsets) {
+                      setState(() {
+                        _model.activeVibrationMode = modeIndex;
+                        _model.modalShapeOffsets = offsets;
+                        _model.displayMode = DisplayMode.modalVibration;
+                      });
+                    },
+                  ),
+                ),
+                onOpenEmbodiedCarbon: () => _requireAuth(
+                  featureName: 'Embodied Carbon Life Cycle Assessment',
+                  onAuthenticated: () => EmbodiedCarbonDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                  ),
+                ),
+                onOpenLibrary: () => _requireAuth(
+                  featureName: 'AISC Structural Library & DXF Export',
+                  onAuthenticated: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => StructuralLibraryDialog(
+                        currentModel: _model,
+                        onModelSelected: (newModel) {
+                          setState(() {
+                            _model = newModel;
+                            _selectedNodeId = null;
+                            _selectedMemberId = null;
+                            _triggerSolve();
+                          });
+                        },
+                      ),
+                    );
                   },
                 ),
-                onOpenEmbodiedCarbon: () => EmbodiedCarbonDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
+                onOpenCadStudio: () => _requireAuth(
+                  featureName: 'Structural CAD Studio',
+                  onAuthenticated: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => StructuralCadEditorDialog(
+                        initialModel: _model,
+                        onModelCommitted: (newModel) {
+                          setState(() {
+                            _model = newModel;
+                            _selectedNodeId = null;
+                            _selectedMemberId = null;
+                            _triggerSolve();
+                          });
+                        },
+                      ),
+                    );
+                  },
                 ),
-                onOpenLibrary: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => StructuralLibraryDialog(
-                      currentModel: _model,
-                      onModelSelected: (newModel) {
-                        setState(() {
-                          _model = newModel;
-                          _selectedNodeId = null;
-                          _selectedMemberId = null;
-                          _triggerSolve();
-                        });
-                      },
-                    ),
-                  );
-                },
-                onOpenCadStudio: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => StructuralCadEditorDialog(
-                      initialModel: _model,
-                      onModelCommitted: (newModel) {
-                        setState(() {
-                          _model = newModel;
-                          _selectedNodeId = null;
-                          _selectedMemberId = null;
-                          _triggerSolve();
-                        });
-                      },
-                    ),
-                  );
-                },
                 onOpenAuth: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => AuthDialog(
-                      onAuthSuccess: () => setState(() {}),
-                    ),
-                  );
+                  if (_isUserLoggedIn) {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AuthDialog(
+                        onAuthSuccess: () => setState(() {}),
+                      ),
+                    );
+                  } else {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => AuthScreen(
+                          onLoginSuccess: () => setState(() {}),
+                        ),
+                      ),
+                    );
+                  }
                 },
-                onOpenPePacket: () => PePacketDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
-                  onStructureModified: () => setState(() => _triggerSolve()),
+                onOpenPePacket: () => _requireAuth(
+                  featureName: 'PE Stamped Calculation Packet',
+                  onAuthenticated: () => PePacketDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                    onStructureModified: () => setState(() => _triggerSolve()),
+                  ),
                 ),
-                onOpenGenerativeBracing: () => GenerativeBracingDialog.show(
-                  context,
-                  model: _model,
-                  apiService: _apiService,
-                  onStructureModified: () => setState(() => _triggerSolve()),
+                onOpenGenerativeBracing: () => _requireAuth(
+                  featureName: 'Generative Bracing Synthesizer',
+                  onAuthenticated: () => GenerativeBracingDialog.show(
+                    context,
+                    model: _model,
+                    apiService: _apiService,
+                    onStructureModified: () => setState(() => _triggerSolve()),
+                  ),
                 ),
               ),
               // 2. Middle Viewport & Inspector
@@ -241,6 +325,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                           });
                         },
                         onNodeDragged: (nodeId, x, y, z) {
+                          if (!_isUserLoggedIn) {
+                            _requireAuth(
+                              featureName: 'Kinetic Real-Time Geometry Morphing',
+                              onAuthenticated: () {},
+                            );
+                            return;
+                          }
                           _model.updateNodeCoords(nodeId, x, y, z);
                           _surrogateStreamer.onNodeDragged(
                             model: _model,
@@ -252,6 +343,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                           );
                         },
                         onNodeDragEnd: (nodeId, x, y, z) {
+                          if (!_isUserLoggedIn) return;
                           setState(() {
                             _model.updateNodeCoords(nodeId, x, y, z);
                             EmbeddedFeaSolver.solve(_model);
@@ -264,7 +356,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                       model: _model,
                       selectedNodeId: _selectedNodeId,
                       selectedMemberId: _selectedMemberId,
-                      onModelChanged: _triggerSolve,
+                      onModelChanged: () {
+                        _requireAuth(
+                          featureName: 'Structural Model Editor',
+                          onAuthenticated: _triggerSolve,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -272,7 +369,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               // 3. Bottom Code Compliance & ASCE 7 Panel
               CodeCompliancePanel(
                 model: _model,
-                onOptimize: _optimizeSections,
+                onOptimize: () {
+                  _requireAuth(
+                    featureName: 'AISC Section Auto-Sizer',
+                    onAuthenticated: _optimizeSections,
+                  );
+                },
                 onCombinationChanged: (combo) {
                   setState(() {
                     _model.loadCombination = combo;
@@ -280,14 +382,19 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   });
                 },
                 onOpenLateralStability: () {
-                  LateralStabilityDialog.show(
-                    context,
-                    model: _model,
-                    apiService: _apiService,
-                    onStructureModified: () {
-                      setState(() {
-                        _triggerSolve();
-                      });
+                  _requireAuth(
+                    featureName: 'ASCE 7 Lateral Hazard & Stability Engine',
+                    onAuthenticated: () {
+                      LateralStabilityDialog.show(
+                        context,
+                        model: _model,
+                        apiService: _apiService,
+                        onStructureModified: () {
+                          setState(() {
+                            _triggerSolve();
+                          });
+                        },
+                      );
                     },
                   );
                 },

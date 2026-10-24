@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'services/firebase_auth_service.dart';
-import 'services/firebase_auth_gate.dart';
 import 'screens/workstation_screen.dart';
 
 // Re-export WorkstationScreen for testing & backward compatibility
@@ -39,9 +38,7 @@ class StructuraNexusApp extends StatelessWidget {
         primaryColor: const Color(0xFF1F6FEB),
         fontFamily: GoogleFonts.inter().fontFamily,
       ),
-      home: AuthGate(
-        builder: (context, user) => const WorkstationScreen(),
-      ),
+      home: const WorkstationScreen(),
     );
   }
 }
