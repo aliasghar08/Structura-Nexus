@@ -5,12 +5,14 @@ class CodeCompliancePanel extends StatelessWidget {
   final StructuralModel model;
   final VoidCallback onOptimize;
   final Function(String) onCombinationChanged;
+  final VoidCallback? onOpenLateralStability;
 
   const CodeCompliancePanel({
     super.key,
     required this.model,
     required this.onOptimize,
     required this.onCombinationChanged,
+    this.onOpenLateralStability,
   });
 
   @override
@@ -213,6 +215,94 @@ class CodeCompliancePanel extends StatelessWidget {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1F6FEB),
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            // 6. ASCE 7 Lateral & Second-Order Stability Card
+            Container(
+              width: 220,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF161B22),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'LATERAL & STABILITY',
+                          style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          model.stabilityStatus != null
+                              ? (model.stabilityStatus!.length > 8
+                                  ? model.stabilityStatus!.substring(0, 8)
+                                  : model.stabilityStatus!)
+                              : 'ASCE 7',
+                          style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTelemetryBlock(
+                          'α_cr (BUCKLING)',
+                          model.criticalLoadFactorAlphaCr != null
+                              ? model.criticalLoadFactorAlphaCr!.toStringAsFixed(2)
+                              : '—',
+                          model.criticalLoadFactorAlphaCr != null && model.criticalLoadFactorAlphaCr! >= 10.0
+                              ? 'Direct Analysis'
+                              : 'Sway Sensitive',
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: _buildTelemetryBlock(
+                          'B2 SWAY AMP',
+                          model.swayAmplificationB2 != null
+                              ? model.swayAmplificationB2!.toStringAsFixed(2)
+                              : '1.00',
+                          'P-Δ Magnifier',
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: onOpenLateralStability,
+                      icon: const Icon(Icons.waves_rounded, size: 13),
+                      label: const Text(
+                        'ASCE 7 & P-Δ ENGINE',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00F0FF).withValues(alpha: 0.2),
+                        foregroundColor: const Color(0xFF00F0FF),
+                        side: const BorderSide(color: Color(0xFF00F0FF)),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),

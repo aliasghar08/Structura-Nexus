@@ -4,14 +4,21 @@ import torch
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from .models.schema import (
     StructuralGraphPayload,
     SolverResponse,
     RealtimeSurrogatePredictionResponse,
+    ASCE7WindParameters,
+    ASCE7WindResponse,
+    ASCE7SeismicParameters,
+    ASCE7SeismicResponse,
+    SecondOrderAnalysisResponse,
 )
 from .solvers.fea_engine import FEA3DSpaceFrameSolver
+from .solvers.asce7_loads import ASCE7WindEngine, ASCE7SeismicEngine
+from .solvers.second_order_engine import SecondOrderStabilityEngine
 from .surrogate.gnn_surrogate import GNNSurrogateEngine
 from .code_check.aisc_aci import AISC_W_SHAPES, MATERIALS, AISC360CodeChecker
 from .benchmarks.verification_suite import TextbookBenchmarkSuite
@@ -52,6 +59,16 @@ class SeismicQueryRequest(BaseModel):
     S1: float = 0.50
     R: float = 8.0
     Ie: float = 1.0
+
+
+class ASCE7WindRequest(BaseModel):
+    payload: StructuralGraphPayload
+    params: Optional[ASCE7WindParameters] = None
+
+
+class ASCE7SeismicRequest(BaseModel):
+    payload: StructuralGraphPayload
+    params: Optional[ASCE7SeismicParameters] = None
 
 
 @app.get("/")
@@ -145,6 +162,49 @@ def predict_realtime_response(payload: StructuralGraphPayload):
     except Exception as e:
         logger.error(f"Surrogate predict error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
+# ASCE 7-16 Automated Lateral Loads & Second-Order Stability
+# -------------------------------------------------------------
+@app.post("/api/v1/loads/asce7/wind", response_model=ASCE7WindResponse)
+def generate_asce7_wind(request: ASCE7WindRequest):
+    """
+    ASCE 7-16 MWFRS Directional Wind Pressure calculation and nodal load distribution.
+    """
+    try:
+        params = request.params or ASCE7WindParameters()
+        return ASCE7WindEngine.generate_wind_loads(request.payload, params)
+    except Exception as e:
+        logger.error(f"ASCE 7 Wind error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/loads/asce7/seismic", response_model=ASCE7SeismicResponse)
+def generate_asce7_seismic(request: ASCE7SeismicRequest):
+    """
+    ASCE 7-16 Equivalent Lateral Force (ELF) base shear and vertical storey distribution.
+    """
+    try:
+        params = request.params or ASCE7SeismicParameters()
+        return ASCE7SeismicEngine.generate_seismic_loads(request.payload, params)
+    except Exception as e:
+        logger.error(f"ASCE 7 Seismic error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/analysis/buckling", response_model=SecondOrderAnalysisResponse)
+def analyze_second_order_buckling(payload: StructuralGraphPayload):
+    """
+    Second-Order Geometric Stiffness [Kg] assembly, Generalized Eigenvalue Buckling (alpha_cr),
+    AISC 360-16 B2 sway amplification factor, and iterative P-Delta analysis.
+    """
+    try:
+        return SecondOrderStabilityEngine.analyze_stability(payload)
+    except Exception as e:
+        logger.error(f"Buckling analysis error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # -------------------------------------------------------------

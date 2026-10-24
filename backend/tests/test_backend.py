@@ -250,3 +250,119 @@ def test_realtime_surrogate_predict_endpoint():
     # Verify non-zero prediction at free joint
     assert "solve_duration_ms" in data
     assert data["solve_duration_ms"] < 50.0  # Under 50ms (sub-15ms typical)
+
+
+def test_asce7_wind_generator_endpoint():
+    payload = {
+        "session_id": "test_wind_01",
+        "action": "EXACT_SOLVE",
+        "load_combination": "1.2D+1.0W+0.5L",
+        "nodes": [
+            {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N2", "coords": [6.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N3", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N4", "coords": [6.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N5", "coords": [0.0, 8.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N6", "coords": [6.0, 8.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, 0, 0, 0, 0, 0]}
+        ],
+        "members": [
+            {"id": "C1", "i_node": "N1", "j_node": "N3", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "C2", "i_node": "N2", "j_node": "N4", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "B1", "i_node": "N3", "j_node": "N4", "section": "W14X30", "material": "A992_STEEL"},
+            {"id": "C3", "i_node": "N3", "j_node": "N5", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "C4", "i_node": "N4", "j_node": "N6", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "B2", "i_node": "N5", "j_node": "N6", "section": "W14X30", "material": "A992_STEEL"}
+        ]
+    }
+    request_body = {
+        "payload": payload,
+        "params": {
+            "basic_wind_speed_m_s": 48.0,
+            "exposure_category": "C",
+            "risk_category": "II",
+            "direction": "+X"
+        }
+    }
+    response = client.post("/api/v1/loads/asce7/wind", json=request_body)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["total_base_wind_shear_n"] > 0.0
+    assert len(data["velocity_pressures"]) >= 2
+    # Velocity pressure increases with elevation (Exposure C)
+    p_lower = data["velocity_pressures"][0]["qz_n_m2"]
+    p_upper = data["velocity_pressures"][-1]["qz_n_m2"]
+    assert p_upper >= p_lower
+    # Top floor joints receive positive lateral wind loads
+    top_nodes = [n for n in data["updated_nodes"] if n["coords"][1] == 8.0]
+    assert any(n["loads"][0] > 0.0 for n in top_nodes)
+
+
+def test_asce7_seismic_elf_endpoint():
+    payload = {
+        "session_id": "test_seismic_01",
+        "action": "EXACT_SOLVE",
+        "load_combination": "1.2D+1.0E+1.0L",
+        "nodes": [
+            {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, -25000, 0, 0, 0, 0]},
+            {"id": "N2", "coords": [6.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, -25000, 0, 0, 0, 0]},
+            {"id": "N3", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, -45000, 0, 0, 0, 0]},
+            {"id": "N4", "coords": [6.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, -45000, 0, 0, 0, 0]}
+        ],
+        "members": [
+            {"id": "C1", "i_node": "N1", "j_node": "N3", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "C2", "i_node": "N2", "j_node": "N4", "section": "W14X48", "material": "A992_STEEL"},
+            {"id": "B1", "i_node": "N3", "j_node": "N4", "section": "W14X30", "material": "A992_STEEL"}
+        ]
+    }
+    request_body = {
+        "payload": payload,
+        "params": {
+            "ss": 1.50,
+            "s1": 0.60,
+            "site_class": "D",
+            "risk_category": "III",
+            "r_factor": 8.0,
+            "direction": "+X"
+        }
+    }
+    response = client.post("/api/v1/loads/asce7/seismic", json=request_body)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["sds"] > 0.0
+    assert data["sd1"] > 0.0
+    assert data["cs"] > 0.0
+    assert data["base_shear_v_kn"] > 0.0
+    assert len(data["storey_forces"]) > 0
+    # Storey lateral force applied in +X
+    level_nodes = [n for n in data["updated_nodes"] if n["coords"][1] == 4.0]
+    assert any(n["loads"][0] > 0.0 for n in level_nodes)
+
+
+def test_second_order_buckling_endpoint():
+    payload = {
+        "session_id": "test_buckling_01",
+        "action": "EXACT_SOLVE",
+        "load_combination": "1.2D+1.6L",
+        "nodes": [
+            {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N2", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [1000, -85000, 0, 0, 0, 0]}
+        ],
+        "members": [
+            {"id": "M1", "i_node": "N1", "j_node": "N2", "section": "W14X48", "material": "A992_STEEL"}
+        ]
+    }
+    response = client.post("/api/v1/analysis/buckling", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert data["critical_load_factor_alpha_cr"] > 0.0
+    assert data["sway_amplification_b2"] >= 1.0
+    assert len(data["buckling_modes"]) > 0
+    assert "M1" in data["p_delta_magnified_moments"]
+    # Second order moment >= first order moment
+    m1_1st = data["p_delta_first_order_moments"]["M1"]
+    m1_2nd = data["p_delta_magnified_moments"]["M1"]
+    assert m1_2nd >= m1_1st
+

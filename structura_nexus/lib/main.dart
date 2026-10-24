@@ -18,6 +18,7 @@ import 'widgets/embodied_carbon_dialog.dart';
 import 'widgets/auth_dialog.dart';
 import 'widgets/structural_library_dialog.dart';
 import 'widgets/cad_editor_dialog.dart';
+import 'widgets/lateral_stability_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -288,6 +289,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 _model.loadCombination = combo;
                 _triggerSolve();
               });
+            },
+            onOpenLateralStability: () {
+              LateralStabilityDialog.show(
+                context,
+                model: _model,
+                apiService: _apiService,
+                onStructureModified: () {
+                  setState(() {
+                    _triggerSolve();
+                  });
+                },
+              );
             },
           ),
         ],

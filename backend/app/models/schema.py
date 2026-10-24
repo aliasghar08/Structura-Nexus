@@ -105,3 +105,86 @@ class RealtimeSurrogatePredictionResponse(BaseModel):
     displacements: Dict[str, NodeDisplacement]
     member_forces: Optional[Dict[str, List[float]]] = None
     solve_duration_ms: float
+
+# ASCE 7-16 Lateral Loads Schemas
+class ASCE7WindParameters(BaseModel):
+    basic_wind_speed_m_s: float = Field(default=45.0, description="Basic wind speed V (m/s)")
+    exposure_category: str = Field(default="B", description="Exposure category: B, C, or D")
+    risk_category: str = Field(default="II", description="Risk category: I, II, III, or IV")
+    direction: str = Field(default="+X", description="+X, -X, +Z, -Z")
+    k_d: float = Field(default=0.85, description="Wind directionality factor Kd")
+    k_zt: float = Field(default=1.0, description="Topographic factor Kzt")
+    k_e: float = Field(default=1.0, description="Ground elevation factor Ke")
+    gust_factor_g: float = Field(default=0.85, description="Gust-effect factor G")
+
+class StoreyWindPressure(BaseModel):
+    storey_index: int
+    elevation_m: float
+    kz: float
+    qz_n_m2: float
+    windward_pressure_n_m2: float
+    leeward_pressure_n_m2: float
+    total_storey_force_n: float
+
+class ASCE7WindResponse(BaseModel):
+    status: str = "SUCCESS"
+    basic_wind_speed_m_s: float
+    exposure_category: str
+    risk_category: str
+    direction: str
+    velocity_pressures: List[StoreyWindPressure]
+    total_base_wind_shear_n: float
+    updated_nodes: List[NodeModel]
+
+class ASCE7SeismicParameters(BaseModel):
+    ss: float = Field(default=1.25, description="Mapped MCE_R short period spectral acceleration (g)")
+    s1: float = Field(default=0.50, description="Mapped MCE_R 1-second spectral acceleration (g)")
+    site_class: str = Field(default="D", description="Site class: A, B, C, D, or E")
+    risk_category: str = Field(default="II", description="Risk category: I, II, III, or IV")
+    r_factor: float = Field(default=8.0, description="Response modification coefficient R (e.g. 8.0 for SMF)")
+    direction: str = Field(default="+X", description="+X or +Z")
+    importance_factor_ie: Optional[float] = None
+    approx_period_sec: Optional[float] = None
+
+class StoreySeismicForce(BaseModel):
+    storey_index: int
+    elevation_m: float
+    storey_weight_kn: float
+    cvx: float
+    lateral_force_kn: float
+    storey_shear_kn: float
+
+class ASCE7SeismicResponse(BaseModel):
+    status: str = "SUCCESS"
+    sds: float
+    sd1: float
+    importance_factor_ie: float
+    fundamental_period_sec: float
+    cs: float
+    total_seismic_weight_kn: float
+    base_shear_v_kn: float
+    storey_forces: List[StoreySeismicForce]
+    updated_nodes: List[NodeModel]
+
+# Second-Order Geometric Nonlinearity & Buckling Schemas
+class BucklingModeResult(BaseModel):
+    mode_index: int
+    eigenvalue_lambda: float
+    critical_load_factor_alpha_cr: float
+    sway_amplification_b2: float
+    aisc_stability_status: str
+    mode_shape: Dict[str, List[float]]
+
+class SecondOrderAnalysisResponse(BaseModel):
+    status: str = "SUCCESS"
+    critical_load_factor_alpha_cr: float
+    governing_mode_index: int
+    sway_amplification_b2: float
+    is_stable: bool
+    second_order_max_drift_ratio: float
+    buckling_modes: List[BucklingModeResult]
+    p_delta_magnified_moments: Dict[str, float]
+    p_delta_first_order_moments: Dict[str, float]
+    second_order_converged: bool
+    iterations_run: int
+

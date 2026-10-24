@@ -459,6 +459,87 @@ class StructuralApiService {
     );
   }
 
+  /// ASCE 7-16 MWFRS Automated Directional Wind Pressure Generation
+  Future<Map<String, dynamic>?> generateAsce7Wind(
+    StructuralModel model, {
+    double speedMs = 45.0,
+    String exposure = 'B',
+    String riskCategory = 'II',
+    String direction = '+X',
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/loads/asce7/wind'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'payload': model.toGraphPayload('ASCE7_WIND'),
+          'params': {
+            'basic_wind_speed_m_s': speedMs,
+            'exposure_category': exposure,
+            'risk_category': riskCategory,
+            'direction': direction,
+          },
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('ASCE 7 Wind API request failed: $e');
+    }
+    return null;
+  }
+
+  /// ASCE 7-16 Equivalent Lateral Force (ELF) Seismic Base Shear & Vertical Storey Distribution
+  Future<Map<String, dynamic>?> generateAsce7Seismic(
+    StructuralModel model, {
+    double ss = 1.25,
+    double s1 = 0.50,
+    String siteClass = 'D',
+    double rFactor = 8.0,
+    String direction = '+X',
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/loads/asce7/seismic'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'payload': model.toGraphPayload('ASCE7_SEISMIC'),
+          'params': {
+            'ss': ss,
+            's1': s1,
+            'site_class': siteClass,
+            'r_factor': rFactor,
+            'direction': direction,
+          },
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('ASCE 7 Seismic API request failed: $e');
+    }
+    return null;
+  }
+
+  /// Second-Order Geometric Stiffness [Kg] & Eigenvalue Buckling Analysis (alpha_cr & B2)
+  Future<Map<String, dynamic>?> analyzeBuckling(StructuralModel model) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/analysis/buckling'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(model.toGraphPayload('BUCKLING')),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('Second-order buckling API request failed: $e');
+    }
+    return null;
+  }
+
   void dispose() {
     _channel?.sink.close();
   }

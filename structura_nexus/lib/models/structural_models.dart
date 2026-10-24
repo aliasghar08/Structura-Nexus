@@ -426,6 +426,9 @@ class StructuralModel {
   double surrogateUncertainty;
   int activeVibrationMode;
   Map<String, Vector3> modalShapeOffsets;
+  double? criticalLoadFactorAlphaCr;
+  double? swayAmplificationB2;
+  String? stabilityStatus;
 
   StructuralModel({
     String? sessionId,
@@ -443,6 +446,9 @@ class StructuralModel {
     this.surrogateUncertainty = 0.02,
     this.activeVibrationMode = 1,
     Map<String, Vector3>? modalShapeOffsets,
+    this.criticalLoadFactorAlphaCr,
+    this.swayAmplificationB2,
+    this.stabilityStatus,
   })  : sessionId = (sessionId != null && sessionId.isNotEmpty) ? sessionId : (name ?? 'struct_session_default'),
         nodes = nodes ?? [],
         members = members ?? [],
@@ -533,6 +539,21 @@ class StructuralModel {
           final rz = (d['rz'] as num?)?.toDouble() ?? 0.0;
           nodes[i] = nodes[i].copyWith(displacements: [dx, dy, dz, rx, ry, rz]);
         }
+      }
+    }
+  }
+
+  void applyUpdatedNodes(List<dynamic> updatedNodesJson) {
+    final Map<String, List<double>> loadsMap = {};
+    for (final n in updatedNodesJson) {
+      if (n is Map && n['id'] != null && n['loads'] is List) {
+        loadsMap[n['id'].toString()] =
+            (n['loads'] as List).map((e) => (e as num).toDouble()).toList();
+      }
+    }
+    for (int i = 0; i < nodes.length; i++) {
+      if (loadsMap.containsKey(nodes[i].id)) {
+        nodes[i] = nodes[i].copyWith(loads: loadsMap[nodes[i].id]);
       }
     }
   }
