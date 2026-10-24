@@ -21,7 +21,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    await tester.pumpWidget(const StructuraNexusApp());
+    await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
     await tester.pumpAndSettle();
 
     expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);

@@ -7,6 +7,7 @@ import 'data/benchmark_presets.dart';
 import 'services/structural_api_service.dart';
 import 'services/embedded_fea_solver.dart';
 import 'services/firebase_auth_service.dart';
+import 'services/firebase_auth_gate.dart';
 import 'widgets/workstation_header.dart';
 import 'widgets/structural_3d_viewport.dart';
 import 'widgets/inspector_panel.dart';
@@ -48,7 +49,9 @@ class StructuraNexusApp extends StatelessWidget {
         primaryColor: const Color(0xFF1F6FEB),
         fontFamily: GoogleFonts.inter().fontFamily,
       ),
-      home: const WorkstationScreen(),
+      home: AuthGate(
+        builder: (context, user) => const WorkstationScreen(),
+      ),
     );
   }
 }
