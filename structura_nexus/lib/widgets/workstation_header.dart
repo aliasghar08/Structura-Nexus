@@ -56,15 +56,24 @@ class WorkstationHeader extends StatelessWidget {
           // 1. Branding
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(7),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1F6FEB), Color(0xFF00F0FF)],
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  'assets/structura_nexus_icon.jpeg',
+                  width: 32,
+                  height: 32,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1F6FEB), Color(0xFF00F0FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.architecture_rounded, size: 18, color: Colors.black),
                   ),
-                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.architecture_rounded, size: 18, color: Colors.black),
               ),
               const SizedBox(width: 10),
               Column(

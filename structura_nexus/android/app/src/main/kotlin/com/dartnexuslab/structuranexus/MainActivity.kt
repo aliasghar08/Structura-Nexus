@@ -1,4 +1,4 @@
-package com.structura.structura_nexus
+package com.dartnexuslab.structuranexus
 
 import io.flutter.embedding.android.FlutterActivity
 
