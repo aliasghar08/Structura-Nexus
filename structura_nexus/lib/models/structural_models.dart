@@ -7,6 +7,7 @@ enum DisplayMode {
   bmdRibbon,
   vonMisesStress,
   aiscCompliance,
+  modalVibration,
 }
 
 enum EngineType {
@@ -307,6 +308,8 @@ class StructuralModel {
   double solverLatencyMs;
   bool isEquilibrated;
   double surrogateUncertainty;
+  int activeVibrationMode;
+  Map<String, Vector3> modalShapeOffsets;
 
   StructuralModel({
     required this.sessionId,
@@ -321,8 +324,11 @@ class StructuralModel {
     this.solverLatencyMs = 0.0,
     this.isEquilibrated = true,
     this.surrogateUncertainty = 0.02,
+    this.activeVibrationMode = 1,
+    Map<String, Vector3>? modalShapeOffsets,
   })  : nodes = nodes ?? [],
-        members = members ?? [];
+        members = members ?? [],
+        modalShapeOffsets = modalShapeOffsets ?? {};
 
   StructuralNode? getNode(String id) {
     try {
@@ -340,3 +346,313 @@ class StructuralModel {
         'members': members.map((m) => m.toJson()).toList(),
       };
 }
+
+class OptimizationMetric {
+  final double initialTotalWeightKg;
+  final double optimizedTotalWeightKg;
+  final double weightReductionKg;
+  final double weightReductionPct;
+  final double initialMaxDcr;
+  final double optimizedMaxDcr;
+  final int iterationsRun;
+  final String algorithmUsed;
+  final String status;
+
+  OptimizationMetric({
+    required this.initialTotalWeightKg,
+    required this.optimizedTotalWeightKg,
+    required this.weightReductionKg,
+    required this.weightReductionPct,
+    required this.initialMaxDcr,
+    required this.optimizedMaxDcr,
+    required this.iterationsRun,
+    required this.algorithmUsed,
+    required this.status,
+  });
+
+  factory OptimizationMetric.fromJson(Map<String, dynamic> json) => OptimizationMetric(
+        initialTotalWeightKg: (json['initial_total_weight_kg'] as num).toDouble(),
+        optimizedTotalWeightKg: (json['optimized_total_weight_kg'] as num).toDouble(),
+        weightReductionKg: (json['weight_reduction_kg'] as num).toDouble(),
+        weightReductionPct: (json['weight_reduction_pct'] as num).toDouble(),
+        initialMaxDcr: (json['initial_max_dcr'] as num).toDouble(),
+        optimizedMaxDcr: (json['optimized_max_dcr'] as num).toDouble(),
+        iterationsRun: json['iterations_run'] ?? 35,
+        algorithmUsed: json['algorithm_used'] ?? 'CMA-ES Optimizer',
+        status: json['status'] ?? 'OPTIMIZED_COMPLIANT',
+      );
+}
+
+class MemberOptimizationDetail {
+  final String memberId;
+  final String originalSection;
+  final String optimizedSection;
+  final double originalWeightKg;
+  final double optimizedWeightKg;
+  final double weightSavedPct;
+  final double originalDcr;
+  final double optimizedDcr;
+  final String status;
+
+  MemberOptimizationDetail({
+    required this.memberId,
+    required this.originalSection,
+    required this.optimizedSection,
+    required this.originalWeightKg,
+    required this.optimizedWeightKg,
+    required this.weightSavedPct,
+    required this.originalDcr,
+    required this.optimizedDcr,
+    required this.status,
+  });
+
+  factory MemberOptimizationDetail.fromJson(Map<String, dynamic> json) => MemberOptimizationDetail(
+        memberId: json['member_id'],
+        originalSection: json['original_section'],
+        optimizedSection: json['optimized_section'],
+        originalWeightKg: (json['original_weight_kg'] as num).toDouble(),
+        optimizedWeightKg: (json['optimized_weight_kg'] as num).toDouble(),
+        weightSavedPct: (json['weight_saved_pct'] as num).toDouble(),
+        originalDcr: (json['original_dcr'] as num).toDouble(),
+        optimizedDcr: (json['optimized_dcr'] as num).toDouble(),
+        status: json['status'] ?? 'OPTIMAL_REDUCED',
+      );
+}
+
+class GenerativeOptimizationResult {
+  final OptimizationMetric summary;
+  final Map<String, String> optimizedSectionsMap;
+  final List<MemberOptimizationDetail> memberDetails;
+  final bool codeComplianceVerified;
+
+  GenerativeOptimizationResult({
+    required this.summary,
+    required this.optimizedSectionsMap,
+    required this.memberDetails,
+    required this.codeComplianceVerified,
+  });
+
+  factory GenerativeOptimizationResult.fromJson(Map<String, dynamic> json) {
+    final rawMap = json['optimized_sections_map'] as Map<String, dynamic>;
+    final secMap = rawMap.map((k, v) => MapEntry(k, v.toString()));
+    final details = (json['member_details'] as List)
+        .map((d) => MemberOptimizationDetail.fromJson(d))
+        .toList();
+
+    return GenerativeOptimizationResult(
+      summary: OptimizationMetric.fromJson(json['summary']),
+      optimizedSectionsMap: secMap,
+      memberDetails: details,
+      codeComplianceVerified: json['code_compliance_verified'] ?? true,
+    );
+  }
+}
+
+class ModeShapePoint {
+  final String nodeId;
+  final double deltaX;
+  final double deltaY;
+  final double deltaZ;
+
+  ModeShapePoint({
+    required this.nodeId,
+    required this.deltaX,
+    required this.deltaY,
+    required this.deltaZ,
+  });
+
+  factory ModeShapePoint.fromJson(Map<String, dynamic> json) => ModeShapePoint(
+        nodeId: json['node_id'],
+        deltaX: (json['delta_x'] as num).toDouble(),
+        deltaY: (json['delta_y'] as num).toDouble(),
+        deltaZ: (json['delta_z'] as num).toDouble(),
+      );
+}
+
+class VibrationMode {
+  final int modeNumber;
+  final double periodSeconds;
+  final double frequencyHz;
+  final double modalMassParticipationPct;
+  final String description;
+  final List<ModeShapePoint> modeShapeOffsets;
+
+  VibrationMode({
+    required this.modeNumber,
+    required this.periodSeconds,
+    required this.frequencyHz,
+    required this.modalMassParticipationPct,
+    required this.description,
+    required this.modeShapeOffsets,
+  });
+
+  factory VibrationMode.fromJson(Map<String, dynamic> json) => VibrationMode(
+        modeNumber: json['mode_number'],
+        periodSeconds: (json['period_seconds'] as num).toDouble(),
+        frequencyHz: (json['frequency_hz'] as num).toDouble(),
+        modalMassParticipationPct: (json['modal_mass_participation_pct'] as num).toDouble(),
+        description: json['description'] ?? '',
+        modeShapeOffsets: (json['mode_shape_offsets'] as List)
+            .map((p) => ModeShapePoint.fromJson(p))
+            .toList(),
+      );
+}
+
+class SeismicAnalysisResult {
+  final double fundamentalPeriodT1;
+  final String seismicDesignCategory;
+  final double spectralAccelerationSds;
+  final double responseModificationR;
+  final double importanceFactorIe;
+  final double seismicResponseCoeffCs;
+  final double totalEffectiveSeismicWeightKn;
+  final double baseShearVBaseKn;
+  final double interStoryDriftRatioPct;
+  final String driftComplianceStatus;
+  final List<VibrationMode> modes;
+
+  SeismicAnalysisResult({
+    required this.fundamentalPeriodT1,
+    required this.seismicDesignCategory,
+    required this.spectralAccelerationSds,
+    required this.responseModificationR,
+    required this.importanceFactorIe,
+    required this.seismicResponseCoeffCs,
+    required this.totalEffectiveSeismicWeightKn,
+    required this.baseShearVBaseKn,
+    required this.interStoryDriftRatioPct,
+    required this.driftComplianceStatus,
+    required this.modes,
+  });
+
+  factory SeismicAnalysisResult.fromJson(Map<String, dynamic> json) => SeismicAnalysisResult(
+        fundamentalPeriodT1: (json['fundamental_period_t1'] as num).toDouble(),
+        seismicDesignCategory: json['seismic_design_category'] ?? 'D',
+        spectralAccelerationSds: (json['spectral_acceleration_sds'] as num).toDouble(),
+        responseModificationR: (json['response_modification_r'] as num).toDouble(),
+        importanceFactorIe: (json['importance_factor_ie'] as num).toDouble(),
+        seismicResponseCoeffCs: (json['seismic_response_coeff_cs'] as num).toDouble(),
+        totalEffectiveSeismicWeightKn:
+            (json['total_effective_seismic_weight_kn'] as num).toDouble(),
+        baseShearVBaseKn: (json['base_shear_v_base_kn'] as num).toDouble(),
+        interStoryDriftRatioPct: (json['inter_story_drift_ratio_pct'] as num).toDouble(),
+        driftComplianceStatus: json['drift_compliance_status'] ?? 'COMPLIANT',
+        modes: (json['modes'] as List).map((m) => VibrationMode.fromJson(m)).toList(),
+      );
+}
+
+class MemberCarbonDetail {
+  final String memberId;
+  final String section;
+  final String material;
+  final double lengthM;
+  final double weightKg;
+  final double standardCarbonKgCo2e;
+  final double lowCarbonEafKgCo2e;
+  final double carbonSavingsPotentialKgCo2e;
+
+  MemberCarbonDetail({
+    required this.memberId,
+    required this.section,
+    required this.material,
+    required this.lengthM,
+    required this.weightKg,
+    required this.standardCarbonKgCo2e,
+    required this.lowCarbonEafKgCo2e,
+    required this.carbonSavingsPotentialKgCo2e,
+  });
+
+  factory MemberCarbonDetail.fromJson(Map<String, dynamic> json) => MemberCarbonDetail(
+        memberId: json['member_id'],
+        section: json['section'],
+        material: json['material'],
+        lengthM: (json['length_m'] as num).toDouble(),
+        weightKg: (json['weight_kg'] as num).toDouble(),
+        standardCarbonKgCo2e: (json['standard_carbon_kgco2e'] as num).toDouble(),
+        lowCarbonEafKgCo2e: (json['low_carbon_eaf_kgco2e'] as num).toDouble(),
+        carbonSavingsPotentialKgCo2e:
+            (json['carbon_savings_potential_kgco2e'] as num).toDouble(),
+      );
+}
+
+class EmbodiedCarbonReport {
+  final double totalSteelWeightKg;
+  final double baselineEmbodiedCarbonKgCo2e;
+  final double optimizedLowCarbonKgCo2e;
+  final double potentialCarbonReductionPct;
+  final String leedCreditStatus;
+  final String se2050ComplianceStatus;
+  final List<MemberCarbonDetail> memberBreakdowns;
+  final List<String> greenRecommendations;
+
+  EmbodiedCarbonReport({
+    required this.totalSteelWeightKg,
+    required this.baselineEmbodiedCarbonKgCo2e,
+    required this.optimizedLowCarbonKgCo2e,
+    required this.potentialCarbonReductionPct,
+    required this.leedCreditStatus,
+    required this.se2050ComplianceStatus,
+    required this.memberBreakdowns,
+    required this.greenRecommendations,
+  });
+
+  factory EmbodiedCarbonReport.fromJson(Map<String, dynamic> json) => EmbodiedCarbonReport(
+        totalSteelWeightKg: (json['total_steel_weight_kg'] as num).toDouble(),
+        baselineEmbodiedCarbonKgCo2e:
+            (json['baseline_embodied_carbon_kgco2e'] as num).toDouble(),
+        optimizedLowCarbonKgCo2e: (json['optimized_low_carbon_kgco2e'] as num).toDouble(),
+        potentialCarbonReductionPct:
+            (json['potential_carbon_reduction_pct'] as num).toDouble(),
+        leedCreditStatus: json['leed_credit_status'] ?? '',
+        se2050ComplianceStatus: json['se2050_compliance_status'] ?? '',
+        memberBreakdowns: (json['member_breakdowns'] as List)
+            .map((b) => MemberCarbonDetail.fromJson(b))
+            .toList(),
+        greenRecommendations: List<String>.from(json['green_recommendations'] ?? []),
+      );
+}
+
+class CopilotAction {
+  final String actionType;
+  final String description;
+  final Map<String, dynamic>? suggestedModifications;
+
+  CopilotAction({
+    required this.actionType,
+    required this.description,
+    this.suggestedModifications,
+  });
+
+  factory CopilotAction.fromJson(Map<String, dynamic> json) => CopilotAction(
+        actionType: json['action_type'],
+        description: json['description'],
+        suggestedModifications: json['suggested_modifications'] != null
+            ? Map<String, dynamic>.from(json['suggested_modifications'])
+            : null,
+      );
+}
+
+class CopilotResponse {
+  final String query;
+  final String executiveSummary;
+  final List<String> technicalInsights;
+  final List<CopilotAction> actions;
+  final List<String> suggestedPrompts;
+
+  CopilotResponse({
+    required this.query,
+    required this.executiveSummary,
+    required this.technicalInsights,
+    required this.actions,
+    required this.suggestedPrompts,
+  });
+
+  factory CopilotResponse.fromJson(Map<String, dynamic> json) => CopilotResponse(
+        query: json['query'],
+        executiveSummary: json['executive_summary'],
+        technicalInsights: List<String>.from(json['technical_insights'] ?? []),
+        actions: (json['actions'] as List).map((a) => CopilotAction.fromJson(a)).toList(),
+        suggestedPrompts: List<String>.from(json['suggested_prompts'] ?? []),
+      );
+}
+

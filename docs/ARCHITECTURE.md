@@ -143,9 +143,49 @@ $$V_u \le \phi (V_c + V_s) = \phi \left[ 2 \sqrt{f'_c} b_w d + \frac{A_v f_{yt} 
 }
 ```
 
+### 6. AI Engine Architecture & Formulations (`backend/app/ai/`)
+
+#### 6.1 PyTorch Physics-Informed GNN (`PyTorchStructuralGNN`)
+- **Dimensionless Scaling Layer**:
+  $$x_{\text{scaled}} = \text{LayerNorm}(x) \odot \left[\frac{L_{\text{char}}}{H}, \frac{10^8}{E \cdot I_{\text{ref}}}, \dots \right]$$
+- **Directional Edge-Augmented Message Passing**:
+  $$m_{ij} = \phi_m \left( h_i, h_j, e_{ij} \right), \quad h_i^{(l+1)} = \sigma \left( W_v h_i^{(l)} + \sum_{j \in \mathcal{N}(i)} \alpha_{ij} m_{ij} \right)$$
+- **Dirichlet Hard Projection Operator**:
+  $$u_{\text{enforced}} = u_{\text{pred}} \odot (\mathbf{1} - R)$$
+  guarantees $u \equiv 0$ strictly at all constrained boundary DOFs ($R_i = 1$).
+- **Epistemic Uncertainty Head**:
+  $$\sigma^2 = \text{Softplus}\left( W_\sigma h_{\text{latent}} + b_\sigma \right)$$
+  When $\max(\sigma) > 0.08$, execution automatically falls back to full Direct Stiffness Matrix factorization.
+
+#### 6.2 Generative Structural Section & Topology Optimizer (`GenerativeStructuralOptimizer`)
+- **Objective Function**:
+  $$\min_{\mathbf{s} \in \mathcal{S}^M} W(\mathbf{s}) = \sum_{m=1}^M \rho \cdot A(s_m) \cdot L_m$$
+  $$\text{subject to: } \text{DCR}_m(\mathbf{s}) \le 0.95 \quad \forall m \in \{1, \dots, M\}$$
+  $$\frac{KL_m}{r(s_m)} \le 200$$
+- **Evolutionary Genetic Search**: Maintains a population of candidate section assignments across AISC W-shapes, iteratively evaluating combined P-M interaction (Eq H1-1a/b) with elitist mutation and crossover.
+
+#### 6.3 Dynamic Modal & Seismic Response Engine (`ModalSeismicAIEngine`)
+- **Generalized Dynamic Eigenvalue Problem**:
+  $$\left( [K] - \omega_n^2 [M] \right) \{\phi_n\} = \{0\}$$
+  $$T_n = \frac{2\pi}{\omega_n}, \quad f_n = \frac{1}{T_n}$$
+- **ASCE 7-16 Equivalent Lateral Force (ELF) Seismic Base Shear**:
+  $$V_{\text{base}} = C_s \cdot W = \frac{S_{DS}}{\left(\frac{R}{I_e}\right)} \cdot W$$
+  $$\text{Upper Limit: } C_s \le \frac{S_{D1}}{T \left(\frac{R}{I_e}\right)}, \quad \text{Lower Limit: } C_s \ge 0.044 S_{DS} I_e \ge 0.01$$
+
+#### 6.4 Embodied Carbon & Sustainability LCA Engine (`EmbodiedCarbonEngine`)
+- **Cradle-to-Gate Scope (A1–A3)**:
+  $$\text{GWP}_{\text{total}} = \sum_{m=1}^M m_{\text{steel}, m} \cdot \text{EF}_{\text{steel}}$$
+  $$\text{EF}_{\text{BOF}} = 1.98 \, \text{kg CO}_2\text{e} / \text{kg}, \quad \text{EF}_{\text{EAF (93\% scrap)}} = 0.43 \, \text{kg CO}_2\text{e} / \text{kg}$$
+  $$\Delta \text{CO}_2\text{e}_{\text{savings}} = \text{GWP}_{\text{BOF}} - \text{GWP}_{\text{EAF}} \quad (\approx 78\% \text{ reduction})$$
+- Evaluates compliance with LEED v4.1 MR Credit (Building Life-Cycle Impact Reduction) and the SE 2050 Commitment toward net-zero embodied carbon.
+
+#### 6.5 Structural Intelligence Copilot (`StructuralIntelligenceCopilot`)
+- Natural language query understanding and structural graph intent extraction.
+- Maps engineering questions into structural diagnostics (critical load paths, deflections, governing members, seismic vulnerability, and carbon reduction strategies).
+
 ---
 
-### 6. Benchmark Verification Certification
+### 7. Benchmark Verification Certification
 Continuous integration validates against canonical closed-form structural engineering textbooks:
 1. **Timoshenko & Gere (Mechanics of Materials, Sec 5.4)**: Cantilever tip deflection $\delta = \frac{P L^3}{3 E I}$. Error: $0.0000\%$.
 2. **Hibbeler (Structural Analysis 10th Ed., Ex 8-3)**: Simply supported midspan deflection $\delta = \frac{P L^3}{48 E I}$. Error: $0.0000\%$.

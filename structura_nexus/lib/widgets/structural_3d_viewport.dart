@@ -23,7 +23,8 @@ class Structural3DViewport extends StatefulWidget {
   State<Structural3DViewport> createState() => _Structural3DViewportState();
 }
 
-class _Structural3DViewportState extends State<Structural3DViewport> {
+class _Structural3DViewportState extends State<Structural3DViewport>
+    with SingleTickerProviderStateMixin {
   // Camera angles (spherical coordinates)
   double _yaw = 0.75; // Azimuth
   double _pitch = 0.35; // Elevation
@@ -31,6 +32,35 @@ class _Structural3DViewportState extends State<Structural3DViewport> {
   Offset _panOffset = const Offset(0, 40);
 
   Offset? _lastPanPos;
+  late AnimationController _vibrationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _vibrationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    if (widget.model.displayMode == DisplayMode.modalVibration) {
+      _vibrationController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Structural3DViewport oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.model.displayMode == DisplayMode.modalVibration && !_vibrationController.isAnimating) {
+      _vibrationController.repeat();
+    } else if (widget.model.displayMode != DisplayMode.modalVibration && _vibrationController.isAnimating) {
+      _vibrationController.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _vibrationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,17 +91,23 @@ class _Structural3DViewportState extends State<Structural3DViewport> {
         color: const Color(0xFF090D14),
         child: Stack(
           children: [
-            CustomPaint(
-              size: Size.infinite,
-              painter: _StructuralFramePainter(
-                model: widget.model,
-                yaw: _yaw,
-                pitch: _pitch,
-                zoom: _zoom,
-                panOffset: _panOffset,
-                selectedNodeId: widget.selectedNodeId,
-                selectedMemberId: widget.selectedMemberId,
-              ),
+            AnimatedBuilder(
+              animation: _vibrationController,
+              builder: (context, _) {
+                return CustomPaint(
+                  size: Size.infinite,
+                  painter: _StructuralFramePainter(
+                    model: widget.model,
+                    yaw: _yaw,
+                    pitch: _pitch,
+                    zoom: _zoom,
+                    panOffset: _panOffset,
+                    selectedNodeId: widget.selectedNodeId,
+                    selectedMemberId: widget.selectedMemberId,
+                    vibrationPhase: _vibrationController.value,
+                  ),
+                );
+              },
             ),
             // Floating 3D Navigation Gizmo & Reset View Button
             Positioned(
@@ -100,6 +136,61 @@ class _Structural3DViewportState extends State<Structural3DViewport> {
               top: 16,
               child: _buildCompass(),
             ),
+            // Live Vibration Mode Banner (Top Center)
+            if (widget.model.displayMode == DisplayMode.modalVibration)
+              Positioned(
+                top: 16,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D1117).withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF00F0FF)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.25),
+                          blurRadius: 12,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.waves_rounded, size: 16, color: Color(0xFF00F0FF)),
+                        const SizedBox(width: 8),
+                        Text(
+                          'SIMULATING DYNAMIC MODE ${widget.model.activeVibrationMode} VIBRATION',
+                          style: const TextStyle(
+                            color: Color(0xFF00F0FF),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              widget.model.displayMode = DisplayMode.geometry;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF21262D),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text('Exit', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -235,6 +326,7 @@ class _StructuralFramePainter extends CustomPainter {
   final Offset panOffset;
   final String? selectedNodeId;
   final String? selectedMemberId;
+  final double vibrationPhase;
 
   _StructuralFramePainter({
     required this.model,
@@ -244,6 +336,7 @@ class _StructuralFramePainter extends CustomPainter {
     required this.panOffset,
     this.selectedNodeId,
     this.selectedMemberId,
+    this.vibrationPhase = 0.0,
   });
 
   @override
@@ -280,19 +373,30 @@ class _StructuralFramePainter extends CustomPainter {
       final isSelected = member.id == selectedMemberId;
 
       // Calculate deformed coordinates if applicable
-      final defScale = model.deformationScale;
-      final defI = ni.coords +
-          vm.Vector3(
-            ni.displacements[0] * defScale,
-            ni.displacements[1] * defScale,
-            ni.displacements[2] * defScale,
-          );
-      final defJ = nj.coords +
-          vm.Vector3(
-            nj.displacements[0] * defScale,
-            nj.displacements[1] * defScale,
-            nj.displacements[2] * defScale,
-          );
+      final vm.Vector3 defI;
+      final vm.Vector3 defJ;
+
+      if (model.displayMode == DisplayMode.modalVibration) {
+        final offI = model.modalShapeOffsets[ni.id] ?? vm.Vector3.zero();
+        final offJ = model.modalShapeOffsets[nj.id] ?? vm.Vector3.zero();
+        final sway = math.sin(vibrationPhase * 2.0 * math.pi) * 0.7;
+        defI = ni.coords + offI * sway;
+        defJ = nj.coords + offJ * sway;
+      } else {
+        final defScale = model.deformationScale;
+        defI = ni.coords +
+            vm.Vector3(
+              ni.displacements[0] * defScale,
+              ni.displacements[1] * defScale,
+              ni.displacements[2] * defScale,
+            );
+        defJ = nj.coords +
+            vm.Vector3(
+              nj.displacements[0] * defScale,
+              nj.displacements[1] * defScale,
+              nj.displacements[2] * defScale,
+            );
+      }
 
       final pUndeformedI = project(ni.coords);
       final pUndeformedJ = project(nj.coords);
@@ -325,13 +429,21 @@ class _StructuralFramePainter extends CustomPainter {
     // 3. Draw Nodes & Supports
     for (final node in model.nodes) {
       final isSelected = node.id == selectedNodeId;
-      final defScale = model.deformationScale;
-      final defCoords = node.coords +
-          vm.Vector3(
-            node.displacements[0] * defScale,
-            node.displacements[1] * defScale,
-            node.displacements[2] * defScale,
-          );
+      final vm.Vector3 defCoords;
+
+      if (model.displayMode == DisplayMode.modalVibration) {
+        final off = model.modalShapeOffsets[node.id] ?? vm.Vector3.zero();
+        final sway = math.sin(vibrationPhase * 2.0 * math.pi) * 0.7;
+        defCoords = node.coords + off * sway;
+      } else {
+        final defScale = model.deformationScale;
+        defCoords = node.coords +
+            vm.Vector3(
+              node.displacements[0] * defScale,
+              node.displacements[1] * defScale,
+              node.displacements[2] * defScale,
+            );
+      }
 
       final pt = (model.displayMode == DisplayMode.geometry)
           ? project(node.coords)
@@ -463,6 +575,11 @@ class _StructuralFramePainter extends CustomPainter {
         } else {
           memberColor = const Color(0xFF10B981); // Green pass
         }
+        break;
+
+      case DisplayMode.modalVibration:
+        memberColor = isSelected ? const Color(0xFF00F0FF) : const Color(0xFF38BDF8);
+        strokeWidth = 3.2;
         break;
     }
 

@@ -8,6 +8,10 @@ import 'widgets/workstation_header.dart';
 import 'widgets/structural_3d_viewport.dart';
 import 'widgets/inspector_panel.dart';
 import 'widgets/code_compliance_panel.dart';
+import 'widgets/ai_copilot_dialog.dart';
+import 'widgets/generative_optimizer_dialog.dart';
+import 'widgets/seismic_modal_dialog.dart';
+import 'widgets/embodied_carbon_dialog.dart';
 
 void main() {
   runApp(const StructuraNexusApp());
@@ -140,6 +144,35 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
             onPresetSelected: _loadPreset,
             onSolveTriggered: _triggerSolve,
+            onOpenCopilot: () => AiCopilotDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: _triggerSolve,
+            ),
+            onOpenGenerativeOptimizer: () => GenerativeOptimizerDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: _triggerSolve,
+            ),
+            onOpenSeismicModal: () => SeismicModalDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onActivateVibration: (modeIndex, offsets) {
+                setState(() {
+                  _model.activeVibrationMode = modeIndex;
+                  _model.modalShapeOffsets = offsets;
+                  _model.displayMode = DisplayMode.modalVibration;
+                });
+              },
+            ),
+            onOpenEmbodiedCarbon: () => EmbodiedCarbonDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+            ),
           ),
           // 2. Middle Viewport & Inspector
           Expanded(

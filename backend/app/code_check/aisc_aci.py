@@ -176,6 +176,8 @@ AISC_W_SHAPES: Dict[str, Dict[str, float]] = {
     },
 }
 
+AISC_ORDERED_PROFILES: List[str] = list(AISC_W_SHAPES.keys())
+
 MATERIALS: Dict[str, Dict[str, float]] = {
     "A992_STEEL": {
         "elastic_modulus_pa": 200.0e9,
