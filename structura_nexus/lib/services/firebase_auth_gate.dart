@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_auth_service.dart';
 import '../screens/auth_screen.dart';
+import '../screens/splash_screen.dart';
 
 class AuthGate extends StatefulWidget {
   final Widget Function(BuildContext context, User? user) builder;
@@ -76,55 +77,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF080C14),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Image.asset(
-                  'assets/structura_nexus_icon.jpeg',
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1F6FEB), Color(0xFF00F0FF)],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.architecture_rounded, size: 30, color: Colors.black),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFF00F0FF),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Connecting to Structura Nexus...',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const SplashScreen();
     }
 
     // If authenticated OR visitor activated guest session -> enter workstation
