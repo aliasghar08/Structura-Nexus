@@ -19,6 +19,7 @@ class WorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenAuth;
   final VoidCallback? onOpenPePacket;
   final VoidCallback? onOpenGenerativeBracing;
+  final VoidCallback? onOpenDrawer;
 
   const WorkstationHeader({
     super.key,
@@ -38,6 +39,7 @@ class WorkstationHeader extends StatelessWidget {
     this.onOpenAuth,
     this.onOpenPePacket,
     this.onOpenGenerativeBracing,
+    this.onOpenDrawer,
   });
 
   @override
@@ -64,6 +66,48 @@ class WorkstationHeader extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
+            // 0. Tools & Suite Drawer Button
+            if (onOpenDrawer != null) ...[
+              Tooltip(
+                message: 'Open Tools Suite Drawer',
+                child: InkWell(
+                  onTap: onOpenDrawer,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1F6FEB), Color(0xFF00F0FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.menu_rounded, size: 16, color: Colors.black),
+                        SizedBox(width: 6),
+                        Text(
+                          'TOOLS & SUITE',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+            ],
             // 1. Branding
             Row(
               children: [

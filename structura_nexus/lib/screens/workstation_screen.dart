@@ -12,7 +12,7 @@ import '../services/embedded_fea_solver.dart';
 import '../services/firebase_auth_service.dart';
 import 'auth_screen.dart';
 import '../widgets/workstation_header.dart';
-import '../widgets/workstation_sidebar.dart';
+import '../widgets/workstation_drawer.dart';
 import '../widgets/structural_3d_viewport.dart';
 import '../widgets/inspector_panel.dart';
 import '../widgets/code_compliance_panel.dart';
@@ -36,6 +36,7 @@ class WorkstationScreen extends StatefulWidget {
 }
 
 class _WorkstationScreenState extends State<WorkstationScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late StructuralModel _model;
   final StructuralApiService _apiService = StructuralApiService();
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
@@ -155,6 +156,125 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: WorkstationDrawer(
+        onOpenCopilot: () => _requireAuth(
+          featureName: 'AI Structural Copilot',
+          onAuthenticated: () => AiCopilotDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: _triggerSolve,
+          ),
+        ),
+        onOpenGenerativeOptimizer: () => _requireAuth(
+          featureName: 'Generative AI Section Auto-Sizer',
+          onAuthenticated: () => GenerativeOptimizerDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: _triggerSolve,
+          ),
+        ),
+        onOpenGenerativeBracing: () => _requireAuth(
+          featureName: 'Generative Bracing Synthesizer',
+          onAuthenticated: () => GenerativeBracingDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          ),
+        ),
+        onOptimize: () => _requireAuth(
+          featureName: 'AISC Section Auto-Sizer',
+          onAuthenticated: _optimizeSections,
+        ),
+        onOpenCadStudio: () => _requireAuth(
+          featureName: 'Structural CAD Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => StructuralCadEditorDialog(
+                initialModel: _model,
+                onModelCommitted: (newModel) {
+                  setState(() {
+                    _model = newModel;
+                    _selectedNodeId = null;
+                    _selectedMemberId = null;
+                    _triggerSolve();
+                  });
+                },
+              ),
+            );
+          },
+        ),
+        onOpenLibrary: () => _requireAuth(
+          featureName: 'AISC Structural Library & DXF Export',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => StructuralLibraryDialog(
+                currentModel: _model,
+                onModelSelected: (newModel) {
+                  setState(() {
+                    _model = newModel;
+                    _selectedNodeId = null;
+                    _selectedMemberId = null;
+                    _triggerSolve();
+                  });
+                },
+              ),
+            );
+          },
+        ),
+        onOpenSeismicModal: () => _requireAuth(
+          featureName: 'Dynamic Modal Vibration Analysis',
+          onAuthenticated: () => SeismicModalDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onActivateVibration: (modeIndex, offsets) {
+              setState(() {
+                _model.activeVibrationMode = modeIndex;
+                _model.modalShapeOffsets = offsets;
+                _model.displayMode = DisplayMode.modalVibration;
+              });
+            },
+          ),
+        ),
+        onOpenLateralStability: () => _requireAuth(
+          featureName: 'ASCE 7 Lateral Hazard & Stability Engine',
+          onAuthenticated: () {
+            LateralStabilityDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () {
+                setState(() {
+                  _triggerSolve();
+                });
+              },
+            );
+          },
+        ),
+        onOpenPePacket: () => _requireAuth(
+          featureName: 'PE Stamped Calculation Packet',
+          onAuthenticated: () => PePacketDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          ),
+        ),
+        onOpenEmbodiedCarbon: () => _requireAuth(
+          featureName: 'Embodied Carbon Life Cycle Assessment',
+          onAuthenticated: () => EmbodiedCarbonDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           Column(
@@ -163,6 +283,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               WorkstationHeader(
                 model: _model,
                 isBackendConnected: _apiService.isConnected,
+                onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
                 onEngineChanged: (engine) {
                   _requireAuth(
                     featureName: 'Solver Engine Switcher',
@@ -207,129 +328,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   }
                 },
               ),
-              // 2. Middle Viewport & Inspector with Left Tool Sidebar
+              // 2. Middle Viewport & Inspector
               Expanded(
                 child: Row(
                   children: [
-                    // Left Tool Suite Sidebar
-                    WorkstationSidebar(
-                      onOpenCopilot: () => _requireAuth(
-                        featureName: 'AI Structural Copilot',
-                        onAuthenticated: () => AiCopilotDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                          onStructureModified: _triggerSolve,
-                        ),
-                      ),
-                      onOpenGenerativeOptimizer: () => _requireAuth(
-                        featureName: 'Generative AI Section Auto-Sizer',
-                        onAuthenticated: () => GenerativeOptimizerDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                          onStructureModified: _triggerSolve,
-                        ),
-                      ),
-                      onOpenGenerativeBracing: () => _requireAuth(
-                        featureName: 'Generative Bracing Synthesizer',
-                        onAuthenticated: () => GenerativeBracingDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                          onStructureModified: () => setState(() => _triggerSolve()),
-                        ),
-                      ),
-                      onOptimize: () => _requireAuth(
-                        featureName: 'AISC Section Auto-Sizer',
-                        onAuthenticated: _optimizeSections,
-                      ),
-                      onOpenCadStudio: () => _requireAuth(
-                        featureName: 'Structural CAD Studio',
-                        onAuthenticated: () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => StructuralCadEditorDialog(
-                              initialModel: _model,
-                              onModelCommitted: (newModel) {
-                                setState(() {
-                                  _model = newModel;
-                                  _selectedNodeId = null;
-                                  _selectedMemberId = null;
-                                  _triggerSolve();
-                                });
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      onOpenLibrary: () => _requireAuth(
-                        featureName: 'AISC Structural Library & DXF Export',
-                        onAuthenticated: () {
-                          showDialog(
-                            context: context,
-                            builder: (ctx) => StructuralLibraryDialog(
-                              currentModel: _model,
-                              onModelSelected: (newModel) {
-                                setState(() {
-                                  _model = newModel;
-                                  _selectedNodeId = null;
-                                  _selectedMemberId = null;
-                                  _triggerSolve();
-                                });
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                      onOpenSeismicModal: () => _requireAuth(
-                        featureName: 'Dynamic Modal Vibration Analysis',
-                        onAuthenticated: () => SeismicModalDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                          onActivateVibration: (modeIndex, offsets) {
-                            setState(() {
-                              _model.activeVibrationMode = modeIndex;
-                              _model.modalShapeOffsets = offsets;
-                              _model.displayMode = DisplayMode.modalVibration;
-                            });
-                          },
-                        ),
-                      ),
-                      onOpenLateralStability: () => _requireAuth(
-                        featureName: 'ASCE 7 Lateral Hazard & Stability Engine',
-                        onAuthenticated: () {
-                          LateralStabilityDialog.show(
-                            context,
-                            model: _model,
-                            apiService: _apiService,
-                            onStructureModified: () {
-                              setState(() {
-                                _triggerSolve();
-                              });
-                            },
-                          );
-                        },
-                      ),
-                      onOpenPePacket: () => _requireAuth(
-                        featureName: 'PE Stamped Calculation Packet',
-                        onAuthenticated: () => PePacketDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                          onStructureModified: () => setState(() => _triggerSolve()),
-                        ),
-                      ),
-                      onOpenEmbodiedCarbon: () => _requireAuth(
-                        featureName: 'Embodied Carbon Life Cycle Assessment',
-                        onAuthenticated: () => EmbodiedCarbonDialog.show(
-                          context,
-                          model: _model,
-                          apiService: _apiService,
-                        ),
-                      ),
-                    ),
                     Expanded(
                       child: Structural3DViewport(
                         model: _model,

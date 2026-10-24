@@ -36,7 +36,11 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
     await tester.pumpAndSettle();
 
-    // Tap AI Copilot button in toolbar
+    // Open TOOLS & SUITE drawer
+    await tester.tap(find.text('TOOLS & SUITE'));
+    await tester.pumpAndSettle();
+
+    // Tap AI Copilot button in drawer
     await tester.tap(find.text('AI Copilot'));
     await tester.pumpAndSettle();
 
