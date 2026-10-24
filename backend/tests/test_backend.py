@@ -181,3 +181,36 @@ def test_copilot_endpoint():
     assert "Generative optimization" in data["executive_summary"]
     assert len(data["actions"]) >= 1
     assert data["actions"][0]["action_type"] == "OPTIMIZE_SECTIONS"
+
+def test_gemini_tools_endpoint():
+    response = client.get("/api/v1/ai/agent/tools")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ONLINE"
+    assert len(data["tools"]) >= 6
+    names = data["supported_functions"]
+    assert "generate_structural_topology" in names
+    assert "execute_structural_solve" in names
+    assert "audit_code_compliance" in names
+    assert "update_member_sections" in names
+    assert "run_autonomous_optimization_loop" in names
+    assert "calculate_embodied_carbon" in names
+
+def test_gemini_agent_autonomous_turn():
+    payload = {
+        "prompt": "Generate a 3-story moment frame, run FEA solve, check AISC compliance, and optimize steel mass",
+        "graph": None
+    }
+    response = client.post("/api/v1/ai/agent/chat", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SUCCESS"
+    assert len(data["tool_calls_executed"]) >= 3
+    assert data["updated_graph"] is not None
+    assert len(data["updated_graph"]["nodes"]) > 0
+    assert len(data["updated_graph"]["members"]) > 0
+    assert data["solver_summary"] is not None
+    assert data["solver_summary"]["equilibrium_verified"] is True
+    assert data["compliance_summary"] is not None
+    assert data["embodied_carbon_summary"] is not None
+    assert "Autonomous Structural Engineering Assessment" in data["reply"]

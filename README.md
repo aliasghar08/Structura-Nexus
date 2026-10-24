@@ -54,6 +54,23 @@
      - Natural Language & AutoCAD Generative Command Line (`LINE 0,0,0 6,4,0 W16X26`, `FIX BASE`, `POINT`, `add 3-story frame`, `cross-bracing`, `wind 25`, `subdivide`).
      - Live AISC W-Shape section selector and Undo/Redo history stack.
 
+5. **Gemini Autonomous Agent Loop & Structured Function Calling**:
+   - Multi-turn autonomous planning and execution engine exposing structured tools:
+     - `generate_structural_topology`: Procedural 3D frame and truss geometry generator.
+     - `execute_structural_solve`: Authoritative 3D Direct Stiffness Matrix FEA solver.
+     - `audit_code_compliance`: AISC 360-16 and ASCE 7-16 statutory compliance gatekeeper.
+     - `update_member_sections`: Dynamic AISC cross-section assignment by member ID or structural role.
+     - `run_autonomous_optimization_loop`: Evolutionary optimization targeting DCR $\le 0.95$ and minimal steel tonnage.
+     - `calculate_embodied_carbon`: Cradle-to-gate LCA, comparing EAF recycled vs BOF virgin steel with LEED v4.1 credits.
+   - Live execution trace and function call cards rendered in the workstation UI with one-click model commit.
+
+6. **Hardware-Accelerated Three.js WebGL Viewport**:
+   - Hardware-accelerated WebGL scene with continuous 3D OrbitControls (pan, rotate, zoom).
+   - Extruded 3D Bending Moment Diagram (BMD) ribbon meshes illustrating continuous moment envelopes.
+   - Dynamic sinusoidal deformation magnification ($\alpha \in [10, 500]$) for modal shapes and lateral sway.
+   - Demand-to-Capacity Ratio (DCR) stress color gradients (Emerald Green $\le 0.70$, Amber Gold $0.70-0.95$, Critical Red $> 1.0$).
+   - Dual-engine switcher allowing seamless toggling between **WebGL 3D (GPU)** and **Vector 2.5D Canvas**.
+
 ---
 
 ## 📂 Repository Structure
@@ -62,9 +79,10 @@
 Structura Nexus Repo/
 ├── backend/                        # FastAPI High-Performance Analytics Server
 │   ├── app/
-│   │   ├── main.py                 # REST & WebSocket endpoints (PyTorch endpoints integrated)
+│   │   ├── main.py                 # REST & WebSocket endpoints (PyTorch & Gemini Agent endpoints)
 │   │   ├── models/schema.py        # Pydantic v2 graph contracts & protocols
-│   │   ├── ai/                     # World-Class PyTorch AI Architecture Suite
+│   │   ├── ai/                     # World-Class PyTorch & Gemini AI Architecture Suite
+│   │   │   ├── gemini_agent.py     # Gemini Autonomous Agent & Function Calling Tools
 │   │   │   ├── gnn_model.py        # Edge-augmented GNN, Dirichlet projection, MPS/CUDA
 │   │   │   ├── generative_optimizer.py # Multi-objective evolutionary section auto-sizer
 │   │   │   ├── dynamic_modal_engine.py # Dynamic eigenvalue modal extraction & ASCE 7-16 ELF
@@ -84,20 +102,26 @@ Structura Nexus Repo/
 │   │   │   ├── firebase_auth_service.dart # Email, Google, Guest authentication & Firestore sync
 │   │   │   ├── structural_library_service.dart # Cloud storage, DXF/CSV BOM/JSON file codecs
 │   │   │   ├── embedded_fea_solver.dart  # Pure Dart 3D DSM solver (offline resilience)
-│   │   │   └── structural_api_service.dart # Real-time duplex WebSocket & PyTorch REST client
+│   │   │   └── structural_api_service.dart # WebSocket, PyTorch REST & Gemini Agent client
 │   │   ├── data/benchmark_presets.dart   # Standard textbook & multi-story presets
 │   │   └── widgets/
-│   │       ├── structural_3d_viewport.dart # 3D projection canvas with sinusoidal modal vibration
+│   │       ├── structural_3d_viewport.dart # Dual-engine 3D viewport with Three.js toggle & BMD
+│   │       ├── three_js_view.dart        # Conditional exporter for WebGL Three.js viewport
+│   │       ├── three_js_view_web.dart    # WebGL Three.js platform view implementation
+│   │       ├── three_js_view_stub.dart   # Cross-platform stub for desktop & unit tests
 │   │       ├── auth_dialog.dart          # Glassmorphic Firebase authentication dialog
 │   │       ├── structural_library_dialog.dart # Certified models, Cloud files & DXF/BOM export
 │   │       ├── cad_editor_dialog.dart    # Professional AI CAD Studio & generative command line
-│   │       ├── ai_copilot_dialog.dart    # Natural language structural assistant dialog
+│   │       ├── ai_copilot_dialog.dart    # Gemini Autonomous Agent & function call dialog
 │   │       ├── generative_optimizer_dialog.dart # AI section mass optimization dialog
 │   │       ├── seismic_modal_dialog.dart # Dynamic modal & seismic base shear dialog
 │   │       ├── embodied_carbon_dialog.dart # Embodied carbon & EAF green steel dialog
 │   │       ├── inspector_panel.dart       # Joint coordinate & 6-DOF boundary editor
 │   │       ├── code_compliance_panel.dart # DCR, ASCE 7 combinations & auto-sizer
 │   │       └── workstation_header.dart    # AI action triggers, presets, CAD & Cloud access
+│   ├── web/
+│   │   ├── index.html              # Web entrypoint with Three.js & OrbitControls scripts
+│   │   └── three_viewport.js       # Hardware-accelerated WebGL Three.js engine
 │   └── test/widget_test.dart       # Flutter test suite (embedded solver, codecs & UI)
 ├── scripts/
 │   ├── run_backend.sh              # Backend server launch script
@@ -108,7 +132,7 @@ Structura Nexus Repo/
 ├── .firebaserc                     # Firebase project mapping (structura-nexus)
 ├── docs/
 │   └── ARCHITECTURE.md             # Blueprint specification & mathematical formulations
-├── requirements.txt                # Python environment dependencies (torch, fastapi, etc.)
+├── requirements.txt                # Python environment dependencies (torch, google-genai, etc.)
 └── README.md                       # Documentation & quickstart guide
 ```
 

@@ -207,6 +207,43 @@ def structural_copilot(request: CopilotQueryRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from .ai.gemini_agent import (
+    GEMINI_STRUCTURAL_TOOLS,
+    gemini_structural_agent,
+    AgentResponse,
+    AgentChatMessage,
+    AgentChatRequest,
+)
+
+
+@app.get("/api/v1/ai/agent/tools")
+def get_gemini_tools():
+    """
+    Returns the structured Gemini Function Calling schema definitions for autonomous execution.
+    """
+    return {
+        "status": "ONLINE",
+        "tools": GEMINI_STRUCTURAL_TOOLS,
+        "supported_functions": [t["name"] for t in GEMINI_STRUCTURAL_TOOLS],
+    }
+
+
+@app.post("/api/v1/ai/agent/chat", response_model=AgentResponse)
+def gemini_agent_chat(request: AgentChatRequest):
+    """
+    Autonomous Structural Engineering Agent execution turn using Gemini Function Calling.
+    """
+    try:
+        return gemini_structural_agent.process_turn(
+            prompt=request.prompt,
+            current_graph=request.graph,
+            history=request.history,
+        )
+    except Exception as e:
+        logger.error(f"Gemini Agent turn error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/v1/optimize")
 def optimize_structure(payload: StructuralGraphPayload):
     try:

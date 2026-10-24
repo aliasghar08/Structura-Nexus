@@ -1,7 +1,9 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import '../models/structural_models.dart';
+import 'three_js_view.dart';
 
 class Structural3DViewport extends StatefulWidget {
   final StructuralModel model;
@@ -25,6 +27,11 @@ class Structural3DViewport extends StatefulWidget {
 
 class _Structural3DViewportState extends State<Structural3DViewport>
     with SingleTickerProviderStateMixin {
+  // WebGL GPU acceleration mode (default on web)
+  bool _useThreeJs = kIsWeb;
+  bool _showBmd = false;
+  bool _showDeformation = false;
+
   // Camera angles (spherical coordinates)
   double _yaw = 0.75; // Azimuth
   double _pitch = 0.35; // Elevation
@@ -91,23 +98,137 @@ class _Structural3DViewportState extends State<Structural3DViewport>
         color: const Color(0xFF090D14),
         child: Stack(
           children: [
-            AnimatedBuilder(
-              animation: _vibrationController,
-              builder: (context, _) {
-                return CustomPaint(
-                  size: Size.infinite,
-                  painter: _StructuralFramePainter(
-                    model: widget.model,
-                    yaw: _yaw,
-                    pitch: _pitch,
-                    zoom: _zoom,
-                    panOffset: _panOffset,
-                    selectedNodeId: widget.selectedNodeId,
-                    selectedMemberId: widget.selectedMemberId,
-                    vibrationPhase: _vibrationController.value,
-                  ),
-                );
-              },
+            if (_useThreeJs)
+              ThreeJsStructuralViewport(
+                model: widget.model,
+                showBmd: _showBmd,
+                showDeformation: _showDeformation || widget.model.displayMode == DisplayMode.modalVibration,
+                showStressGradient: true,
+              )
+            else
+              AnimatedBuilder(
+                animation: _vibrationController,
+                builder: (context, _) {
+                  return CustomPaint(
+                    size: Size.infinite,
+                    painter: _StructuralFramePainter(
+                      model: widget.model,
+                      yaw: _yaw,
+                      pitch: _pitch,
+                      zoom: _zoom,
+                      panOffset: _panOffset,
+                      selectedNodeId: widget.selectedNodeId,
+                      selectedMemberId: widget.selectedMemberId,
+                      vibrationPhase: _vibrationController.value,
+                    ),
+                  );
+                },
+              ),
+            // Top Right Viewport Controls & WebGL Switcher
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B22).withValues(alpha: 0.90),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Engine Switcher
+                    InkWell(
+                      onTap: () => setState(() => _useThreeJs = !_useThreeJs),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _useThreeJs ? const Color(0xFF00F0FF).withValues(alpha: 0.2) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.transparent,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _useThreeJs ? Icons.view_in_ar : Icons.brush,
+                              size: 14,
+                              color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _useThreeJs ? 'WebGL 3D (GPU)' : 'Vector 2.5D',
+                              style: TextStyle(
+                                color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // BMD Ribbon Toggle
+                    InkWell(
+                      onTap: () => setState(() => _showBmd = !_showBmd),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _showBmd ? Colors.pinkAccent.withValues(alpha: 0.25) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _showBmd ? Colors.pinkAccent : Colors.transparent,
+                          ),
+                        ),
+                        child: Text(
+                          'BMD',
+                          style: TextStyle(
+                            color: _showBmd ? Colors.pinkAccent : Colors.white54,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Deformation Toggle
+                    InkWell(
+                      onTap: () => setState(() => _showDeformation = !_showDeformation),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _showDeformation ? Colors.purpleAccent.withValues(alpha: 0.25) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _showDeformation ? Colors.purpleAccent : Colors.transparent,
+                          ),
+                        ),
+                        child: Text(
+                          'Deflection ×50',
+                          style: TextStyle(
+                            color: _showDeformation ? Colors.purpleAccent : Colors.white54,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             // Floating 3D Navigation Gizmo & Reset View Button
             Positioned(
