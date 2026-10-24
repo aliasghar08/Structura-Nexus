@@ -293,25 +293,72 @@ class _Structural3DViewportState extends State<Structural3DViewport>
                 ),
               ),
             ),
-            // Floating 3D Navigation Gizmo & Reset View Button
+            // Floating 3D Navigation Gizmo & View Preset Buttons
             Positioned(
               right: 16,
               bottom: 16,
-              child: Row(
-                children: [
-                  _buildNavButton(Icons.zoom_in, () => setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0))),
-                  const SizedBox(width: 8),
-                  _buildNavButton(Icons.zoom_out, () => setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0))),
-                  const SizedBox(width: 8),
-                  _buildNavButton(Icons.center_focus_strong, () {
-                    setState(() {
-                      _yaw = 0.75;
-                      _pitch = 0.35;
-                      _zoom = 42.0;
-                      _panOffset = const Offset(0, 40);
-                    });
-                  }),
-                ],
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF161B22).withValues(alpha: 0.90),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildViewPresetBtn('ISO', () {
+                      setState(() {
+                        _yaw = 0.75;
+                        _pitch = 0.35;
+                        _zoom = 42.0;
+                        _panOffset = const Offset(0, 40);
+                      });
+                    }),
+                    const SizedBox(width: 4),
+                    _buildViewPresetBtn('TOP', () {
+                      setState(() {
+                        _yaw = 0.0;
+                        _pitch = 1.54;
+                        _zoom = 42.0;
+                        _panOffset = const Offset(0, 0);
+                      });
+                    }),
+                    const SizedBox(width: 4),
+                    _buildViewPresetBtn('FRONT', () {
+                      setState(() {
+                        _yaw = 0.0;
+                        _pitch = 0.0;
+                        _zoom = 42.0;
+                        _panOffset = const Offset(0, 0);
+                      });
+                    }),
+                    Container(
+                      height: 16,
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      color: Colors.white12,
+                    ),
+                    _buildNavButton(Icons.zoom_in, 'Zoom In', () => setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0))),
+                    const SizedBox(width: 4),
+                    _buildNavButton(Icons.zoom_out, 'Zoom Out', () => setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0))),
+                    const SizedBox(width: 4),
+                    _buildNavButton(Icons.center_focus_strong, 'Recenter View', () {
+                      setState(() {
+                        _yaw = 0.75;
+                        _pitch = 0.35;
+                        _zoom = 42.0;
+                        _panOffset = const Offset(0, 40);
+                      });
+                    }),
+                  ],
+                ),
               ),
             ),
             // Axis Compass Indicator (Top Left)
@@ -381,18 +428,46 @@ class _Structural3DViewportState extends State<Structural3DViewport>
     );
   }
 
-  Widget _buildNavButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF161B22).withValues(alpha: 0.85),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          borderRadius: BorderRadius.circular(8),
+  Widget _buildViewPresetBtn(String label, VoidCallback onTap) {
+    return Tooltip(
+      message: '$label Camera View',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
-        child: Icon(icon, size: 18, color: Colors.white70),
+      ),
+    );
+  }
+
+  Widget _buildNavButton(IconData icon, String tooltip, VoidCallback onTap) {
+    return Tooltip(
+      message: tooltip,
+      waitDuration: const Duration(milliseconds: 300),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon, size: 16, color: Colors.white70),
+        ),
       ),
     );
   }

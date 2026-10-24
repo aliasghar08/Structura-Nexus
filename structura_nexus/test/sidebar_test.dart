@@ -84,5 +84,58 @@ void main() {
       expect(find.text('TOOLS & SUITE'), findsNothing);
       expect(find.byTooltip('Expand Menu'), findsOneWidget);
     });
+
+    testWidgets('Filtering tools with search query updates displayed items', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: WorkstationSidebar(initialExpanded: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Enter "copilot" in search field
+      await tester.enterText(find.byType(TextField), 'copilot');
+      await tester.pumpAndSettle();
+
+      expect(find.text('AI Copilot'), findsOneWidget);
+      expect(find.text('CAD Studio'), findsNothing);
+
+      // Clear search
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pumpAndSettle();
+
+      expect(find.text('AI Copilot'), findsOneWidget);
+      expect(find.text('CAD Studio'), findsOneWidget);
+    });
+
+    testWidgets('Tapping Controls & Shortcuts displays shortcuts help modal', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: WorkstationSidebar(initialExpanded: true),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Controls & Shortcuts'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workstation Navigation & Shortcuts'), findsOneWidget);
+      expect(find.text('Orbit 3D Viewport'), findsOneWidget);
+
+      await tester.tap(find.text('Got It'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Workstation Navigation & Shortcuts'), findsNothing);
+    });
   });
 }
