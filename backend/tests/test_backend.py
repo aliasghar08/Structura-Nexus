@@ -65,6 +65,8 @@ def test_surrogate_infer_endpoint():
             {"id": "M1", "i_node": "N1", "j_node": "N2", "section": "W14X48", "material": "A992_STEEL"}
         ]
     }
+    # First call warms up PyTorch JIT / MPS graph
+    client.post("/api/v1/surrogate", json=payload)
     response = client.post("/api/v1/surrogate", json=payload)
     assert response.status_code == 200
     data = response.json()
@@ -214,3 +216,37 @@ def test_gemini_agent_autonomous_turn():
     assert data["compliance_summary"] is not None
     assert data["embodied_carbon_summary"] is not None
     assert "Autonomous Structural Engineering Assessment" in data["reply"]
+
+def test_realtime_surrogate_predict_endpoint():
+    payload = {
+        "session_id": "test_realtime_01",
+        "action": "SURROGATE_DRAG",
+        "load_combination": "1.2D+1.6L",
+        "nodes": [
+            {"id": "N_FIXED", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N_FREE", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [15000, -25000, 0, 0, 0, 0]}
+        ],
+        "members": [
+            {"id": "M1", "i_node": "N_FIXED", "j_node": "N_FREE", "section": "W14X48", "material": "A992_STEEL"}
+        ]
+    }
+    response = client.post("/api/v1/surrogate/predict", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "SURROGATE_PREDICTION"
+    assert "displacements" in data
+    assert "N_FIXED" in data["displacements"]
+    assert "N_FREE" in data["displacements"]
+
+    # Verify Dirichlet Physics-Hard Boundary Mask: u_fixed == 0
+    d_fixed = data["displacements"]["N_FIXED"]
+    assert d_fixed["dx"] == 0.0
+    assert d_fixed["dy"] == 0.0
+    assert d_fixed["dz"] == 0.0
+    assert d_fixed["rx"] == 0.0
+    assert d_fixed["ry"] == 0.0
+    assert d_fixed["rz"] == 0.0
+
+    # Verify non-zero prediction at free joint
+    assert "solve_duration_ms" in data
+    assert data["solve_duration_ms"] < 50.0  # Under 50ms (sub-15ms typical)

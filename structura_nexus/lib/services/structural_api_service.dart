@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -529,4 +530,49 @@ class SolverResponseUpdate {
         maxDriftRatio: (json['max_drift_ratio'] as num?)?.toDouble() ?? 0.0,
         uncertainty: (json['surrogate_uncertainty'] as num?)?.toDouble() ?? 0.02,
       );
+}
+
+/// Real-time 60 FPS surrogate telemetry streamer for live interactive UI node dragging.
+/// Debounces requests to 16ms and bypasses stiffness matrix inversion via the PyTorch GNN surrogate.
+class RealtimeSurrogateStreamer {
+  final String backendUrl;
+  Timer? _debounceTimer;
+  bool _isPredicting = false;
+
+  RealtimeSurrogateStreamer({this.backendUrl = 'http://localhost:8000'});
+
+  void onNodeDragged({
+    required StructuralModel model,
+    required Function(Map<String, dynamic> displacements) onDisplacementsUpdated,
+  }) {
+    // Drop frames if backend is still processing previous pointer delta
+    if (_isPredicting) return;
+
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 16), () async {
+      _isPredicting = true;
+      try {
+        final response = await http.post(
+          Uri.parse('$backendUrl/api/v1/surrogate/predict'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(model.toGraphPayload('SURROGATE_DRAG')),
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          if (data['displacements'] != null) {
+            onDisplacementsUpdated(data['displacements'] as Map<String, dynamic>);
+          }
+        }
+      } catch (e) {
+        // Fallback silently without blocking the 3D interaction loop
+      } finally {
+        _isPredicting = false;
+      }
+    });
+  }
+
+  void dispose() {
+    _debounceTimer?.cancel();
+  }
 }

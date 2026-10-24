@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List
 
-from .models.schema import StructuralGraphPayload, SolverResponse
+from .models.schema import (
+    StructuralGraphPayload,
+    SolverResponse,
+    RealtimeSurrogatePredictionResponse,
+)
 from .solvers.fea_engine import FEA3DSpaceFrameSolver
 from .surrogate.gnn_surrogate import GNNSurrogateEngine
 from .code_check.aisc_aci import AISC_W_SHAPES, MATERIALS, AISC360CodeChecker
@@ -127,6 +131,19 @@ def surrogate_infer(payload: StructuralGraphPayload):
         return GNNSurrogateEngine.infer(payload)
     except Exception as e:
         logger.error(f"Surrogate error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/surrogate/predict", response_model=RealtimeSurrogatePredictionResponse)
+def predict_realtime_response(payload: StructuralGraphPayload):
+    """
+    Sub-15ms PyTorch Geometric GNN forward pass with physics-hard boundary condition masking.
+    Bypasses stiffness matrix inversion during live interactive UI joint dragging.
+    """
+    try:
+        return GNNSurrogateEngine.predict_realtime(payload)
+    except Exception as e:
+        logger.error(f"Surrogate predict error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

@@ -90,3 +90,18 @@ class SolverResponse(BaseModel):
     max_drift_ratio: float
     surrogate_uncertainty: Optional[float] = None
     code_compliance_summary: Dict[str, Any]
+
+class NodeDisplacement(BaseModel):
+    dx: float
+    dy: float
+    dz: float
+    rx: float
+    ry: float
+    rz: float
+
+class RealtimeSurrogatePredictionResponse(BaseModel):
+    status: str = "SURROGATE_PREDICTION"
+    max_deflection_mm: float
+    displacements: Dict[str, NodeDisplacement]
+    member_forces: Optional[Dict[str, List[float]]] = None
+    solve_duration_ms: float
