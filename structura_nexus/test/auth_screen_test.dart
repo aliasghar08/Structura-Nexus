@@ -19,7 +19,7 @@ void main() {
       expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
       expect(find.text('SIGN IN'), findsOneWidget);
       expect(find.text('REGISTER'), findsOneWidget);
-      expect(find.text('Professional Email'), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
       expect(find.text('Password'), findsOneWidget);
       expect(find.text('Forgot password?'), findsOneWidget);
       expect(find.text('AUTHENTICATE & ENTER'), findsOneWidget);
@@ -38,7 +38,7 @@ void main() {
       await tester.tap(find.text('REGISTER'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Full Engineer Name'), findsOneWidget);
+      expect(find.text('Full Name'), findsOneWidget);
       expect(find.text('CREATE ENGINEERING ACCOUNT'), findsOneWidget);
       expect(find.text('Forgot password?'), findsNothing);
     });
@@ -55,7 +55,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Reset Password'), findsOneWidget);
-      expect(find.text('Registered Email'), findsOneWidget);
+      expect(find.text('Email'), findsWidgets);
       expect(find.text('Dispatch Reset Link'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
 

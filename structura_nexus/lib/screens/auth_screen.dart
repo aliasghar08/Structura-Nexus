@@ -88,7 +88,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     final name = _nameController.text.trim();
 
     if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your engineering email address.');
+      setState(() => _errorMessage = 'Please enter your email address.');
       return;
     }
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
@@ -222,7 +222,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Enter your engineering account email address. We will dispatch a secure link to reset your password.',
+                    'Enter your email address to receive a secure link to reset your password.',
                     style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13, height: 1.4),
                   ),
                   const SizedBox(height: 16),
@@ -231,7 +231,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                     style: const TextStyle(color: Colors.white, fontSize: 14),
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Registered Email',
+                      labelText: 'Email',
                       labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                       prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF00F0FF), size: 18),
                       filled: true,
@@ -526,7 +526,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           controller: _nameController,
                           style: const TextStyle(color: Colors.white, fontSize: 14),
                           decoration: InputDecoration(
-                            labelText: 'Full Engineer Name',
+                            labelText: 'Full Name',
                             labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
                             prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF00F0FF), size: 18),
                             filled: true,
@@ -549,7 +549,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         keyboardType: TextInputType.emailAddress,
                         style: const TextStyle(color: Colors.white, fontSize: 14),
                         decoration: InputDecoration(
-                          labelText: 'Professional Email',
+                          labelText: 'Email',
                           labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
                           prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF00F0FF), size: 18),
                           filled: true,

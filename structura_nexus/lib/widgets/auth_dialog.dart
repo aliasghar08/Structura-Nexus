@@ -59,7 +59,7 @@ class _AuthDialogState extends State<AuthDialog> {
     final name = _nameController.text.trim();
 
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorMessage = 'Please enter a valid engineering email.');
+      setState(() => _errorMessage = 'Please enter a valid email address.');
       return;
     }
     if (password.length < 6) {
@@ -430,7 +430,7 @@ class _AuthDialogState extends State<AuthDialog> {
             controller: _nameController,
             style: const TextStyle(color: Colors.white, fontSize: 13),
             decoration: InputDecoration(
-              labelText: 'Engineer Full Name',
+              labelText: 'Full Name',
               labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
               prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: Colors.white54),
               filled: true,
@@ -453,7 +453,7 @@ class _AuthDialogState extends State<AuthDialog> {
           style: const TextStyle(color: Colors.white, fontSize: 13),
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(
-            labelText: 'Professional Email',
+            labelText: 'Email',
             labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
             prefixIcon: const Icon(Icons.email_outlined, size: 18, color: Colors.white54),
             filled: true,
