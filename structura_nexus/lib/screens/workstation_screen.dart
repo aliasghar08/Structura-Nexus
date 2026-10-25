@@ -11,11 +11,8 @@ import '../services/structural_api_service.dart';
 import '../services/embedded_fea_solver.dart';
 import '../services/firebase_auth_service.dart';
 import 'auth_screen.dart';
-import '../widgets/workstation_header.dart';
 import '../widgets/workstation_drawer.dart';
 import '../widgets/structural_3d_viewport.dart';
-import '../widgets/inspector_panel.dart';
-import '../widgets/code_compliance_panel.dart';
 import '../widgets/ai_copilot_dialog.dart';
 import '../widgets/generative_optimizer_dialog.dart';
 import '../widgets/seismic_modal_dialog.dart';
@@ -26,7 +23,11 @@ import '../widgets/cad_editor_dialog.dart';
 import '../widgets/lateral_stability_dialog.dart';
 import '../widgets/pe_packet_dialog.dart';
 import '../widgets/generative_bracing_dialog.dart';
-import '../widgets/workstation_status_bar.dart';
+import '../widgets/glass_pod.dart';
+import '../widgets/floating_telemetry_dock.dart';
+import '../widgets/floating_inspector_panel.dart';
+import '../widgets/floating_workstation_header.dart';
+import '../widgets/floating_copyright_watermark.dart';
 
 class WorkstationScreen extends StatefulWidget {
   const WorkstationScreen({super.key});
@@ -42,6 +43,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
+  bool _isInspectorOpen = true;
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
@@ -281,66 +283,27 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       ),
     );
 
+    double maxDcr = 0.0;
+    int passCount = 0;
+    int failCount = 0;
+    int warnCount = 0;
+
+    for (final m in _model.members) {
+      if (m.governingDcr > maxDcr) maxDcr = m.governingDcr;
+      if (m.governingDcr > 1.0) {
+        failCount++;
+      } else if (m.governingDcr > 0.85) {
+        warnCount++;
+      } else {
+        passCount++;
+      }
+    }
+
+    final isOverallPass = failCount == 0;
+
     return Scaffold(
       key: _scaffoldKey,
-      appBar: WorkstationHeader(
-        model: _model,
-        isBackendConnected: _apiService.isConnected,
-        onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
-        onOpenCopilot: onOpenCopilot,
-        onOpenGenerativeOptimizer: onOpenGenerativeOptimizer,
-        onOpenGenerativeBracing: onOpenGenerativeBracing,
-        onOpenCadStudio: onOpenCadStudio,
-        onOpenLibrary: onOpenLibrary,
-        onOpenSeismicModal: onOpenSeismicModal,
-        onOpenLateralStability: onOpenLateralStability,
-        onOpenPePacket: onOpenPePacket,
-        onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
-        onOptimize: onOptimize,
-        onEngineChanged: (engine) {
-          _requireAuth(
-            featureName: 'Solver Engine Switcher',
-            onAuthenticated: () {
-              setState(() {
-                _model.activeEngine = engine;
-                _triggerSolve();
-              });
-            },
-          );
-        },
-        onModeChanged: (mode) => setState(() => _model.displayMode = mode),
-        onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
-        onPresetSelected: (presetKey) {
-          _requireAuth(
-            featureName: 'Benchmark Presets',
-            onAuthenticated: () => _loadPreset(presetKey),
-          );
-        },
-        onSolveTriggered: () {
-          _requireAuth(
-            featureName: 'Finite Element Solver',
-            onAuthenticated: _triggerSolve,
-          );
-        },
-        onOpenAuth: () {
-          if (_isUserLoggedIn) {
-            showDialog(
-              context: context,
-              builder: (ctx) => AuthDialog(
-                onAuthSuccess: () => setState(() {}),
-              ),
-            );
-          } else {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => AuthScreen(
-                  onLoginSuccess: () => setState(() {}),
-                ),
-              ),
-            );
-          }
-        },
-      ),
+      backgroundColor: const Color(0xFF070B12), // Deep canvas black
       drawer: WorkstationDrawer(
         onOpenCopilot: onOpenCopilot,
         onOpenGenerativeOptimizer: onOpenGenerativeOptimizer,
@@ -353,85 +316,197 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOpenPePacket: onOpenPePacket,
         onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Middle Viewport & Inspector
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Structural3DViewport(
-                    model: _model,
-                    selectedNodeId: _selectedNodeId,
-                    selectedMemberId: _selectedMemberId,
-                    onNodeSelected: (id) {
-                      setState(() {
-                        _selectedNodeId = id;
-                        if (id != null) _selectedMemberId = null;
-                      });
-                    },
-                    onMemberSelected: (id) {
-                      setState(() {
-                        _selectedMemberId = id;
-                        if (id != null) _selectedNodeId = null;
-                      });
-                    },
-                    onNodeDragged: (nodeId, x, y, z) {
-                      if (!_isUserLoggedIn) {
-                        _requireAuth(
-                          featureName: 'Kinetic Real-Time Geometry Morphing',
-                          onAuthenticated: () {},
-                        );
-                        return;
-                      }
-                      _model.updateNodeCoords(nodeId, x, y, z);
-                      _surrogateStreamer.onNodeDragged(
-                        model: _model,
-                        onDisplacementsUpdated: (displacements) {
-                          setState(() {
-                            _model.updatePredictedDisplacements(displacements);
-                          });
-                        },
-                      );
-                    },
-                    onNodeDragEnd: (nodeId, x, y, z) {
-                      if (!_isUserLoggedIn) return;
-                      setState(() {
-                        _model.updateNodeCoords(nodeId, x, y, z);
-                        EmbeddedFeaSolver.solve(_model);
-                        _triggerSolve();
-                      });
-                    },
-                  ),
-                ),
-                InspectorPanel(
+          // 1. Layer 0: Fullscreen Hardware-Accelerated 3D WebGL Canvas
+          Positioned.fill(
+            child: Structural3DViewport(
+              model: _model,
+              selectedNodeId: _selectedNodeId,
+              selectedMemberId: _selectedMemberId,
+              onNodeSelected: (id) {
+                setState(() {
+                  _selectedNodeId = id;
+                  if (id != null) {
+                    _selectedMemberId = null;
+                    _isInspectorOpen = true;
+                  }
+                });
+              },
+              onMemberSelected: (id) {
+                setState(() {
+                  _selectedMemberId = id;
+                  if (id != null) {
+                    _selectedNodeId = null;
+                    _isInspectorOpen = true;
+                  }
+                });
+              },
+              onNodeDragged: (nodeId, x, y, z) {
+                if (!_isUserLoggedIn) {
+                  _requireAuth(
+                    featureName: 'Kinetic Real-Time Geometry Morphing',
+                    onAuthenticated: () {},
+                  );
+                  return;
+                }
+                _model.updateNodeCoords(nodeId, x, y, z);
+                _surrogateStreamer.onNodeDragged(
                   model: _model,
-                  selectedNodeId: _selectedNodeId,
-                  selectedMemberId: _selectedMemberId,
-                  onModelChanged: () {
-                    _requireAuth(
-                      featureName: 'Structural Model Editor',
-                      onAuthenticated: _triggerSolve,
-                    );
+                  onDisplacementsUpdated: (displacements) {
+                    setState(() {
+                      _model.updatePredictedDisplacements(displacements);
+                    });
                   },
-                ),
-              ],
+                );
+              },
+              onNodeDragEnd: (nodeId, x, y, z) {
+                if (!_isUserLoggedIn) return;
+                setState(() {
+                  _model.updateNodeCoords(nodeId, x, y, z);
+                  EmbeddedFeaSolver.solve(_model);
+                  _triggerSolve();
+                });
+              },
             ),
           ),
-          // Bottom Code Compliance & ASCE 7 Panel
-          CodeCompliancePanel(
-            model: _model,
-            onOptimize: onOptimize,
-            onCombinationChanged: (combo) {
-              setState(() {
-                _model.loadCombination = combo;
-                _triggerSolve();
-              });
-            },
-            onOpenLateralStability: onOpenLateralStability,
+
+          // 2. Layer 1: Floating Header Island (Top)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: FloatingWorkstationHeader(
+              model: _model,
+              isBackendConnected: _apiService.isConnected,
+              onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
+              onOpenCopilot: onOpenCopilot,
+              onOpenGenerativeOptimizer: onOpenGenerativeOptimizer,
+              onOpenGenerativeBracing: onOpenGenerativeBracing,
+              onOpenCadStudio: onOpenCadStudio,
+              onOpenLibrary: onOpenLibrary,
+              onOpenSeismicModal: onOpenSeismicModal,
+              onOpenLateralStability: onOpenLateralStability,
+              onOpenPePacket: onOpenPePacket,
+              onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
+              onOptimize: onOptimize,
+              onEngineChanged: (engine) {
+                _requireAuth(
+                  featureName: 'Solver Engine Switcher',
+                  onAuthenticated: () {
+                    setState(() {
+                      _model.activeEngine = engine;
+                      _triggerSolve();
+                    });
+                  },
+                );
+              },
+              onModeChanged: (mode) => setState(() => _model.displayMode = mode),
+              onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
+              onPresetSelected: (presetKey) {
+                _requireAuth(
+                  featureName: 'Benchmark Presets',
+                  onAuthenticated: () => _loadPreset(presetKey),
+                );
+              },
+              onSolveTriggered: () {
+                _requireAuth(
+                  featureName: 'Finite Element Solver',
+                  onAuthenticated: _triggerSolve,
+                );
+              },
+              onOpenAuth: () {
+                if (_isUserLoggedIn) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AuthDialog(
+                      onAuthSuccess: () => setState(() {}),
+                    ),
+                  );
+                } else {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => AuthScreen(
+                        onLoginSuccess: () => setState(() {}),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
           ),
-          // Clean In-Flow Status & DMCA Copyright Bar (Never blocks any UI button)
-          const WorkstationStatusBar(),
+
+          // 3. Layer 2: Floating Telemetry Dock (Bottom Island)
+          Positioned(
+            bottom: 12,
+            left: 0,
+            right: 0,
+            child: FloatingTelemetryDock(
+              maxDcr: maxDcr,
+              isPass: isOverallPass,
+              passCount: passCount,
+              warnCount: warnCount,
+              failCount: failCount,
+              baseShearKn: _model.baseShearN / 1000.0,
+              driftRatio: _model.maxDriftRatio,
+              alphaCr: _model.alphaCr,
+              b2Amp: _model.b2SwayMultiplier,
+              activeLoadCombination: _model.loadCombination,
+              onCombinationChanged: (combo) {
+                setState(() {
+                  _model.loadCombination = combo;
+                  _triggerSolve();
+                });
+              },
+              onAutoSizerPressed: onOptimize,
+              onStabilityPressed: onOpenLateralStability,
+            ),
+          ),
+
+          // 4. Layer 3: Floating Right Inspector Card
+          if (_isInspectorOpen)
+            Positioned(
+              top: 76,
+              right: 20,
+              bottom: 230,
+              child: FloatingInspectorPanel(
+                model: _model,
+                selectedNodeId: _selectedNodeId,
+                selectedMemberId: _selectedMemberId,
+                onModelChanged: () {
+                  _requireAuth(
+                    featureName: 'Structural Model Editor',
+                    onAuthenticated: _triggerSolve,
+                  );
+                },
+                onClose: () => setState(() => _isInspectorOpen = false),
+              ),
+            ),
+
+          if (!_isInspectorOpen)
+            Positioned(
+              top: 86,
+              right: 20,
+              child: GlassPod(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                borderRadius: 16,
+                onTap: () => setState(() => _isInspectorOpen = true),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.tune_rounded, size: 14, color: Color(0xFF00F0FF)),
+                    SizedBox(width: 6),
+                    Text(
+                      "INSPECTOR",
+                      style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // 5. Layer 4: Floating Copyright Watermark (Pass-through clicks)
+          const FloatingCopyrightWatermark(),
         ],
       ),
     );

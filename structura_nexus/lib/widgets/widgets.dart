@@ -28,6 +28,12 @@ export 'pe_packet_dialog.dart';
 export 'seismic_modal_dialog.dart';
 export 'structural_library_dialog.dart';
 
+// Glassmorphic Apple / visionOS Widgets
+export 'glass_pod.dart';
+export 'floating_telemetry_dock.dart';
+export 'floating_inspector_panel.dart';
+export 'floating_workstation_header.dart';
+
 // Common Overlays
 export 'floating_copyright_watermark.dart';
 export 'workstation_status_bar.dart';

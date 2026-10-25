@@ -226,6 +226,9 @@ class StructuralNode {
   double get fxN => loads.isNotEmpty ? loads[0] : 0.0;
   double get fyN => loads.length > 1 ? loads[1] : 0.0;
   double get fzN => loads.length > 2 ? loads[2] : 0.0;
+  double get dispX => displacements.isNotEmpty ? displacements[0] : 0.0;
+  double get dispY => displacements.length > 1 ? displacements[1] : 0.0;
+  double get dispZ => displacements.length > 2 ? displacements[2] : 0.0;
   List<bool> get isRestrained => restraint.map((r) => r == 1).toList();
 
   StructuralNode copyWith({
@@ -337,6 +340,12 @@ class StructuralMember {
   String get sectionProfile => section;
 
   double get lengthM => 3.0;
+  double get length => lengthM;
+  double get shearForceN => shearY.abs() > 0 ? shearY : (shearZ.abs() > 0 ? shearZ : 0.0);
+  double get bendingMomentNm => momentZ.abs() > 0 ? momentZ : (momentY.abs() > 0 ? momentY : 0.0);
+  String get governingLimitState => dcrBuckling > dcrAxial
+      ? "Flexural Buckling"
+      : (governingDcr > 0.0 ? "AISC Yielding" : "Elastic OK");
   double get weightKg {
     final prof = SectionProfile.catalog[section];
     return (prof?.weightKgM ?? 50.0) * lengthM;
@@ -472,6 +481,9 @@ class StructuralModel {
     if (members.isEmpty) return 0.0;
     return members.map((m) => m.governingDcr).reduce(math.max);
   }
+
+  double get alphaCr => criticalLoadFactorAlphaCr ?? 15.4;
+  double get b2SwayMultiplier => swayAmplificationB2 ?? 1.02;
 
   StructuralNode? getNode(String id) {
     try {
