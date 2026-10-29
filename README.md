@@ -19,12 +19,13 @@ The workstation operates on a **Dual Inference Execution Architecture**:
 
 ---
 
-## 💎 Apple visionOS Glassmorphic Interface
+## 💎 Apple visionOS Glassmorphic & Mobile-Responsive Interface
 
-Designed from the ground up to transcend traditional, rigid desktop CAD boxes:
-- **Spatial Liquid Glassmorphism (`GlassPod`)**: Multi-layered backdrop blurs (`sigmaX: 20, sigmaY: 20`), linear gradient specular rim borders, and ambient drop shadows.
-- **Floating Island Navigation HUD**: Decoupled top header capsule, floating inspector panel, and detached telemetry dock that glide into view with staggered spring physics.
-- **Continuous Squircle Geometry**: Strict continuous curvature borders (`ContinuousRectangleBorder`) matching Apple human interface guidelines.
+Designed from the ground up to transcend traditional, rigid desktop CAD boxes across both desktop workstations (`1440×900+`) and mobile screens (e.g., iPhone 13 `390×844`):
+- **Spatial Liquid Glassmorphism (`GlassPod`)**: Multi-layered backdrop blurs (`sigmaX: 20, sigmaY: 20`), linear gradient specular rim borders, ambient drop shadows, and automatic responsive scaling on mobile viewports.
+- **Unified Single Scrolling Top Option Bar (`FloatingWorkstationHeader`)**: Houses only active 3D canvas controls (`TOOLS & SUITE` drawer launcher, benchmark presets, solver engine switcher, display mode selector, deformation magnification slider, WebGL 3D / Vector 2.5D renderer toggle, `ISO / TOP / FRONT` camera views, and `X • Y • Z` compass) with interactive `‹` / `›` chevron buttons and mouse/touch drag scrolling.
+- **Categorized Slide-Out App Drawer (`WorkstationDrawer`)**: All 17 specialized engineering studios, AI copilot, CAD/BIM editors, and environmental stimulators are cleanly organized in the slide-out drawer.
+- **Zero-Overlap Mobile & Desktop Layout**: Auto-collapsing Selection Inspector pill on compact screens and horizontal scrolling telemetry dock (`FloatingTelemetryDock`).
 - **Dynamic 3D Canvas Integration**: Full edge-to-edge hardware-accelerated WebGL Three.js space frame viewport with extruded 3D Bending Moment Diagrams (BMD) and real-time sinusoidal vibration animations.
 - **Zero-Friction Discovery**: Complete unauthenticated guest inspection with automated auth gates on computational project commits.
 
