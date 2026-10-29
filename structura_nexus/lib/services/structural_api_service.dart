@@ -7,20 +7,36 @@ import '../models/structural_models.dart';
 import 'embedded_fea_solver.dart';
 
 class StructuralApiService {
-  static const String defaultHttpBase = 'http://localhost:8000';
-  static const String defaultWsUrl = 'ws://localhost:8000/ws/structural-graph';
+  static String get defaultHttpBase {
+    if (kIsWeb) {
+      final origin = Uri.base.origin;
+      if (origin.isNotEmpty && origin != 'null' && !origin.startsWith('file:')) {
+        return origin;
+      }
+      return 'https://structura-nexus-api-413099324256.us-central1.run.app';
+    }
+    return 'http://localhost:8000';
+  }
+
+  static String get defaultWsUrl {
+    if (kIsWeb) {
+      return 'wss://structura-nexus-api-413099324256.us-central1.run.app/ws/structural-graph';
+    }
+    return 'ws://localhost:8000/ws/structural-graph';
+  }
 
   WebSocketChannel? _channel;
   bool isConnected = false;
   Function(SolverResponseUpdate)? onResponseReceived;
 
   void connectWebSocket({
-    String url = defaultWsUrl,
+    String? url,
     Function(SolverResponseUpdate)? onUpdate,
   }) {
+    final targetUrl = url ?? defaultWsUrl;
     onResponseReceived = onUpdate;
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(url));
+      _channel = WebSocketChannel.connect(Uri.parse(targetUrl));
       _channel?.stream.listen(
         (data) {
           isConnected = true;

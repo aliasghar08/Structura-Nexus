@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.pytest_cache
+.vscode
+.DS_Store
+structura_nexus
+docs
+data
+*.pyc
+__pycache__
+
