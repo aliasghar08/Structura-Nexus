@@ -359,7 +359,7 @@ class FEA3DSpaceFrameSolver:
 
         return SolverResponse(
             session_id=payload.session_id,
-            engine_type="EXACT_FEA_PYNITE",
+            engine_type="EXACT_FEA_PROPRIETARY_DSM",
             status="SUCCESS",
             inference_latency_ms=round(elapsed_ms, 2),
             nodes=node_results,

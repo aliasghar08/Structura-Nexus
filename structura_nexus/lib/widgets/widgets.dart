@@ -33,6 +33,7 @@ export 'glass_pod.dart';
 export 'floating_telemetry_dock.dart';
 export 'floating_inspector_panel.dart';
 export 'floating_workstation_header.dart';
+export 'concrete_pm_dialog.dart';
 
 // Common Overlays
 export 'floating_copyright_watermark.dart';

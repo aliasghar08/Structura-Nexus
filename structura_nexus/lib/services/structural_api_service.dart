@@ -63,7 +63,7 @@ class StructuralApiService {
     onResponseReceived?.call(SolverResponseUpdate(
       engineType: model.activeEngine == EngineType.surrogateGnn
           ? 'SURROGATE_GNN'
-          : 'EXACT_FEA_PYNITE',
+          : 'EXACT_FEA_PROPRIETARY_DSM',
       latencyMs: 1.85,
       isEquilibrated: model.isEquilibrated,
       baseShearN: model.baseShearN,

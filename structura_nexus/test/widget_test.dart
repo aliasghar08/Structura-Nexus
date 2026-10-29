@@ -4,6 +4,7 @@ import 'package:structura_nexus/main.dart';
 import 'package:structura_nexus/data/benchmark_presets.dart';
 import 'package:structura_nexus/services/embedded_fea_solver.dart';
 import 'package:structura_nexus/services/structural_library_service.dart';
+import 'package:structura_nexus/services/dart_neural_engine.dart';
 
 void main() {
   test('Embedded FEA Solver solves multi-story sway frame', () {
@@ -118,5 +119,36 @@ void main() {
     expect(model.nodes[1].displacements[0], closeTo(0.0125, 1e-4));
     expect(model.nodes[1].displacements[1], closeTo(-0.0450, 1e-4));
     expect(model.nodes[1].displacements[5], closeTo(-0.0035, 1e-4));
+  });
+
+  test('DartNeuralEngine: In-browser SectionNet-PM predicts ACI envelope and optimal rebar', () {
+    final res = DartNeuralEngine.instance.predictConcreteSection(
+      b: 0.45,
+      h: 0.60,
+      fc: 35.0,
+      fy: 420.0,
+      rho: 0.02,
+      puKn: 1200.0,
+      muKnm: 250.0,
+    );
+
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['curve_points'].length, 32);
+    expect(res['max_phi_pn_kn'], greaterThan(1000.0));
+    expect(res['governing_dcr'], greaterThan(0.0));
+    expect(res['optimal_rebar_ratio'], inInclusiveRange(0.01, 0.05));
+  });
+
+  test('DartNeuralEngine: In-browser StructuraNet-3D enforces hard Dirichlet boundary condition', () {
+    final model = BenchmarkPresets.multiStorySwayFrame();
+    final res = DartNeuralEngine.instance.predictStructuraNet3D(model);
+
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['is_equilibrated'], isTrue);
+
+    // Fixed base nodes must have zero displacement
+    for (final node in model.nodes.where((n) => n.isRestrainedY)) {
+      expect(node.dispY, equals(0.0));
+    }
   });
 }

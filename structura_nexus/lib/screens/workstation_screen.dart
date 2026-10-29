@@ -28,6 +28,8 @@ import '../widgets/floating_telemetry_dock.dart';
 import '../widgets/floating_inspector_panel.dart';
 import '../widgets/floating_workstation_header.dart';
 import '../widgets/floating_copyright_watermark.dart';
+import '../widgets/concrete_pm_dialog.dart';
+import '../services/dart_neural_engine.dart';
 
 class WorkstationScreen extends StatefulWidget {
   const WorkstationScreen({super.key});
@@ -83,6 +85,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     super.initState();
     _model = BenchmarkPresets.multiStorySwayFrame();
     EmbeddedFeaSolver.solve(_model);
+    DartNeuralEngine.instance.initialize();
 
     // Initialize live API WebSocket connection
     _apiService.connectWebSocket(
@@ -283,6 +286,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       ),
     );
 
+    void onOpenConcreteStudio() => _requireAuth(
+      featureName: 'Proprietary Concrete Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => ConcretePmDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
     double maxDcr = 0.0;
     int passCount = 0;
     int failCount = 0;
@@ -389,6 +404,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenLateralStability: onOpenLateralStability,
               onOpenPePacket: onOpenPePacket,
               onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
+              onOpenConcreteStudio: onOpenConcreteStudio,
               onOptimize: onOptimize,
               onEngineChanged: (engine) {
                 _requireAuth(

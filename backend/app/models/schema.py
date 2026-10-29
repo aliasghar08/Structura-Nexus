@@ -85,7 +85,7 @@ class EquilibriumResidual(BaseModel):
 
 class SolverResponse(BaseModel):
     session_id: str
-    engine_type: str = Field(..., description="EXACT_FEA_PYNITE | SURROGATE_GNN | HYBRID_DUAL")
+    engine_type: str = Field(..., description="EXACT_FEA_PROPRIETARY_DSM | SURROGATE_GNN | HYBRID_DUAL")
     status: str = "SUCCESS"
     inference_latency_ms: float
     nodes: List[NodeResult]

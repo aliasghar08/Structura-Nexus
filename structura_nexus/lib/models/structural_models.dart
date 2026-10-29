@@ -229,7 +229,32 @@ class StructuralNode {
   double get dispX => displacements.isNotEmpty ? displacements[0] : 0.0;
   double get dispY => displacements.length > 1 ? displacements[1] : 0.0;
   double get dispZ => displacements.length > 2 ? displacements[2] : 0.0;
+  set dispX(double val) {
+    if (displacements.isEmpty) {
+      displacements = [val, 0, 0, 0, 0, 0];
+    } else {
+      displacements[0] = val;
+    }
+  }
+  set dispY(double val) {
+    while (displacements.length < 2) {
+      displacements.add(0.0);
+    }
+    displacements[1] = val;
+  }
+  set dispZ(double val) {
+    while (displacements.length < 3) {
+      displacements.add(0.0);
+    }
+    displacements[2] = val;
+  }
   List<bool> get isRestrained => restraint.map((r) => r == 1).toList();
+  bool get isRestrainedX => restraint.isNotEmpty && restraint[0] == 1;
+  bool get isRestrainedY => restraint.length > 1 && restraint[1] == 1;
+  bool get isRestrainedZ => restraint.length > 2 && restraint[2] == 1;
+  bool get isRestrainedRx => restraint.length > 3 && restraint[3] == 1;
+  bool get isRestrainedRy => restraint.length > 4 && restraint[4] == 1;
+  bool get isRestrainedRz => restraint.length > 5 && restraint[5] == 1;
 
   StructuralNode copyWith({
     String? id,

@@ -98,7 +98,7 @@ def root():
         },
         "engines": {
             "surrogate": "PyTorch Physics-Informed GNN (<40ms)",
-            "exact_fea": "Direct Stiffness Matrix (DSM) + PyNiteFEA Core",
+            "exact_fea": "Proprietary 3D Direct Stiffness Matrix (DSM) Core",
             "generative_optimizer": "CMA-ES / Evolutionary Section Reducer (15-25% mass reduction)",
             "modal_seismic": "ASCE 7-16 Dynamic Modal Eigenvalue & Drift Engine",
             "embodied_carbon": "SE 2050 / LEED v4.1 LCA Sustainability Engine",

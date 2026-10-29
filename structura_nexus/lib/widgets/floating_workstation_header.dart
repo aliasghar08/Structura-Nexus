@@ -26,6 +26,7 @@ class FloatingWorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenLateralStability;
   final VoidCallback? onOpenPePacket;
   final VoidCallback? onOpenEmbodiedCarbon;
+  final VoidCallback? onOpenConcreteStudio;
   final VoidCallback? onOptimize;
   final VoidCallback? onOpenAuth;
   final VoidCallback? onOpenDrawer;
@@ -48,6 +49,7 @@ class FloatingWorkstationHeader extends StatelessWidget {
     this.onOpenLateralStability,
     this.onOpenPePacket,
     this.onOpenEmbodiedCarbon,
+    this.onOpenConcreteStudio,
     this.onOptimize,
     this.onOpenAuth,
     this.onOpenDrawer,
@@ -203,6 +205,14 @@ class FloatingWorkstationHeader extends StatelessWidget {
                         badge: 'DXF',
                         onTap: onOpenLibrary,
                       ),
+                      _MenuItemDef(
+                        icon: Icons.architecture,
+                        color: const Color(0xFF00F0FF),
+                        title: 'Concrete Studio',
+                        subtitle: 'SectionNet-PM Fiber P-M (<0.2ms)',
+                        badge: 'ACI 318',
+                        onTap: onOpenConcreteStudio,
+                      ),
                     ],
                   ),
                   const SizedBox(width: 6),
@@ -263,9 +273,9 @@ class FloatingWorkstationHeader extends StatelessWidget {
                 children: [
                   _engineBadge(EngineType.hybridDual, "HYBRID DUAL"),
                   const SizedBox(width: 4),
-                  _engineBadge(EngineType.surrogateGnn, "GNN SURROGATE (<40ms)"),
+                  _engineBadge(EngineType.surrogateGnn, "STRUCTURANET-3D (<2ms)"),
                   const SizedBox(width: 4),
-                  _engineBadge(EngineType.exactFea, "EXACT MATRIX FEA"),
+                  _engineBadge(EngineType.exactFea, "PROPRIETARY DSM"),
                 ],
               ),
             ),
@@ -354,6 +364,14 @@ class FloatingWorkstationHeader extends StatelessWidget {
           subtitle: 'AISC Catalog & DXF / BOM Export',
           badge: 'DXF',
           onTap: onOpenLibrary,
+        ),
+        _buildPopupItem(
+          icon: Icons.architecture,
+          color: const Color(0xFF00F0FF),
+          title: 'Concrete Studio',
+          subtitle: 'SectionNet-PM Fiber P-M (<0.2ms)',
+          badge: 'ACI 318',
+          onTap: onOpenConcreteStudio,
         ),
         const PopupMenuDivider(),
         _buildCategoryHeader('ANALYSIS & DESIGN'),
