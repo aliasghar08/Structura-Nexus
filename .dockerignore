@@ -4,7 +4,14 @@
 .pytest_cache
 .vscode
 .DS_Store
-structura_nexus
+structura_nexus/lib/
+structura_nexus/test/
+structura_nexus/android/
+structura_nexus/ios/
+structura_nexus/macos/
+structura_nexus/windows/
+structura_nexus/linux/
+structura_nexus/.dart_tool/
 docs
 data
 *.pyc
