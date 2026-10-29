@@ -84,3 +84,4 @@ class FoundationNetSSI(nn.Module):
         for k, v in self.state_dict().items():
             out[k] = v.cpu().numpy().tolist()
         return out
+
