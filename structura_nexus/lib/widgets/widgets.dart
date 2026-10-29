@@ -4,7 +4,7 @@
 // ============================================================================
 
 // Header & Navigation
-export 'workstation_header.dart';
+export 'floating_workstation_header.dart';
 export 'workstation_sidebar.dart';
 export 'workstation_drawer.dart';
 
@@ -32,7 +32,6 @@ export 'structural_library_dialog.dart';
 export 'glass_pod.dart';
 export 'floating_telemetry_dock.dart';
 export 'floating_inspector_panel.dart';
-export 'floating_workstation_header.dart';
 export 'concrete_pm_dialog.dart';
 export 'steel_connection_dialog.dart';
 export 'geotechnical_foundation_dialog.dart';

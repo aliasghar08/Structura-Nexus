@@ -49,6 +49,22 @@
       package: "com.dartnexuslab.structuranexus",
       notice: "Unauthorized mirroring, scraping, or rehosting constitutes copyright infringement subject to immediate DMCA takedown and copyright strikes."
     };
+
+    // Ensure stale service workers and old cached bundles are immediately purged
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
   </script>
 
   <!-- Hardware-Accelerated Three.js WebGL Engine -->
