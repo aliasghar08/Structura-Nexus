@@ -55,6 +55,9 @@ from .ai.generative_optimizer import generative_optimizer, GenerativeOptimizatio
 from .ai.dynamic_modal_engine import modal_seismic_engine, SeismicAnalysisResult
 from .ai.embodied_carbon_engine import embodied_carbon_engine, EmbodiedCarbonReport
 from .ai.copilot import copilot_engine, CopilotResponse
+from .ai.vision_to_bim import VisionToBimProcessor, VisionToBimRequest, VisionToBimResponse
+from .solvers.geotechnical_engine import GeotechnicalEngine, SoilSpringsRequest, GeotechnicalAnalysisResponse
+from .solvers.nltha_engine import NlthaEngine, NlthaRequest, NlthaResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("structura_nexus")
@@ -804,6 +807,70 @@ def optimize_structure(payload: StructuralGraphPayload):
         return generative_optimizer.optimize_structure(payload, target_max_dcr=0.95)
     except Exception as e:
         logger.error(f"Optimization error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
+# Phase 6: Vision-to-BIM, Geotechnical Soil Springs & NLTHA Endpoints
+# -------------------------------------------------------------
+class GeotechnicalEvaluateRequest(BaseModel):
+    graph: StructuralGraphPayload
+    spring_params: Optional[SoilSpringsRequest] = None
+
+
+class NlthaRunRequest(BaseModel):
+    graph: StructuralGraphPayload
+    nltha_params: Optional[NlthaRequest] = None
+
+
+@app.post("/api/v1/ai/vision-to-bim", response_model=VisionToBimResponse)
+def vision_to_bim(request: VisionToBimRequest):
+    """
+    Multimodal Vision-to-BIM Floorplan Ingestion:
+    Extracts structural gridlines, column locations, shear walls, and synthesizes 3D space frame.
+    """
+    try:
+        return VisionToBimProcessor.process_floorplan(request)
+    except Exception as e:
+        logger.error(f"Vision-to-BIM processing error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/geotechnical/evaluate", response_model=GeotechnicalAnalysisResponse)
+def evaluate_geotechnical_foundations(request: GeotechnicalEvaluateRequest):
+    """
+    Evaluates 6-DOF Winkler soil springs, contact pressure distributions, and ACI 318-19 punching shear.
+    """
+    try:
+        return GeotechnicalEngine.evaluate_foundations(
+            payload=request.graph,
+            req=request.spring_params or SoilSpringsRequest(),
+        )
+    except Exception as e:
+        logger.error(f"Geotechnical evaluation error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/solvers/nltha/earthquakes")
+def list_nltha_earthquakes():
+    """
+    Returns available canonical earthquake accelerogram records.
+    """
+    return NlthaEngine.get_available_earthquakes()
+
+
+@app.post("/api/v1/solvers/nltha", response_model=NlthaResponse)
+def run_nltha(request: NlthaRunRequest):
+    """
+    Non-Linear Time History Analysis (NLTHA) using Newmark-Beta integration with Rayleigh damping.
+    """
+    try:
+        return NlthaEngine.solve_nltha(
+            payload=request.graph,
+            req=request.nltha_params or NlthaRequest(),
+        )
+    except Exception as e:
+        logger.error(f"NLTHA engine execution error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

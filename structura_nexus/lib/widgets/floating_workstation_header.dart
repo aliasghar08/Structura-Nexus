@@ -43,6 +43,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenWindCfd;
   final VoidCallback? onOpenCompositeFloor;
   final VoidCallback? onOpenEnvironmentalStimulator;
+  final VoidCallback? onOpenVisionToBim;
+  final VoidCallback? onOpenNltha;
   final VoidCallback? onOptimize;
 
   const FloatingWorkstationHeader({
@@ -77,6 +79,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenWindCfd,
     this.onOpenCompositeFloor,
     this.onOpenEnvironmentalStimulator,
+    this.onOpenVisionToBim,
+    this.onOpenNltha,
     this.onOptimize,
   });
 
@@ -287,6 +291,11 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         icon: Icons.apartment_rounded,
                         onTap: () => _showModalMenu(context, "CAD & BIM INTEROPERABILITY", [
                           _MenuAction(
+                            label: "Vision-to-BIM 2D Plan Ingestion",
+                            icon: Icons.document_scanner_rounded,
+                            onTap: () => widget.onOpenVisionToBim?.call(),
+                          ),
+                          _MenuAction(
                             label: "PE Calculation Packet & Digital Seal",
                             icon: Icons.assignment_turned_in_rounded,
                             onTap: () => widget.onOpenPePacket?.call(),
@@ -315,6 +324,16 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         icon: Icons.analytics_rounded,
                         onTap: () => _showModalMenu(context, "ANALYSIS & DESIGN ENGINES", [
                           _MenuAction(
+                            label: "Dynamic Time History (NLTHA) Player",
+                            icon: Icons.movie_filter_rounded,
+                            onTap: () => widget.onOpenNltha?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Foundation SSI (Winkler Springs & ACI 318-19)",
+                            icon: Icons.terrain_rounded,
+                            onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
+                          ),
+                          _MenuAction(
                             label: "Lateral Stability & 12x12 [Kg] Buckling",
                             icon: Icons.sync_alt_rounded,
                             onTap: () => widget.onOpenLateralStability?.call(),
@@ -338,11 +357,6 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                             label: "AeroNet Wind Boundary Layer CFD",
                             icon: Icons.air_rounded,
                             onTap: () => widget.onOpenWindCfd?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Foundation SSI (Winkler Springs)",
-                            icon: Icons.terrain_rounded,
-                            onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
                           ),
                           _MenuAction(
                             label: "Composite Floor Vibrations (DG 11)",

@@ -830,5 +830,110 @@ def test_ai_neural_engines_endpoints():
     assert "potential_reduction_pct" in d8
 
 
+def test_phase6_vision_to_bim():
+    """Verify Vision-to-BIM 2D floorplan ingestion synthesizes a valid 3D space frame."""
+    req_payload = {
+        "num_stories": 3,
+        "story_height_m": 3.5,
+        "default_column_section": "W14X90",
+        "default_beam_section": "W18X50",
+    }
+    response = client.post("/api/v1/ai/vision-to-bim", json=req_payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert data["node_count"] > 0
+    assert data["member_count"] > 0
+    assert len(data["synthesized_model"]["nodes"]) == data["node_count"]
+    assert len(data["synthesized_model"]["members"]) == data["member_count"]
+    assert data["total_height_m"] > 0.0
+
+
+def test_phase6_geotechnical_evaluation():
+    """Verify GeotechnicalEngine computes 6-DOF Winkler springs & ACI 318-19 punching shear."""
+    model_payload = {
+        "session_id": "test_geotech_01",
+        "nodes": [
+            {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N2", "coords": [6.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N3", "coords": [0.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, -120000, 0, 0, 0, 0]},
+            {"id": "N4", "coords": [6.0, 4.0, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, -120000, 0, 0, 0, 0]},
+        ],
+        "members": [
+            {"id": "C1", "i_node": "N1", "j_node": "N3", "section": "W14X90", "material": "A992_STEEL"},
+            {"id": "C2", "i_node": "N2", "j_node": "N4", "section": "W14X90", "material": "A992_STEEL"},
+            {"id": "B1", "i_node": "N3", "j_node": "N4", "section": "W18X50", "material": "A992_STEEL"},
+        ],
+    }
+    request = {
+        "graph": model_payload,
+        "spring_params": {
+            "subgrade_modulus_ks_kn_m3": 40000.0,
+            "footing_width_b_m": 2.5,
+            "footing_length_l_m": 2.5,
+            "footing_thickness_t_m": 0.65,
+            "allowable_bearing_kpa": 300.0,
+        },
+    }
+    response = client.post("/api/v1/geotechnical/evaluate", json=request)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    assert "ky_vertical_kn_m" in data["winkler_springs"]
+    assert len(data["support_pressure_points"]) >= 2
+    assert data["max_bearing_dcr"] > 0.0
+    assert data["max_punching_dcr"] >= 0.0
+    assert "ACI 318-19" in data["foundation_report_markdown"]
+
+
+def test_phase6_nltha_engine():
+    """Verify NLTHA Newmark-Beta integration and canonical earthquake records."""
+    # 1. Test earthquake list
+    eq_response = client.get("/api/v1/solvers/nltha/earthquakes")
+    assert eq_response.status_code == 200
+    eq_list = eq_response.json()
+    assert len(eq_list) >= 3
+    eq_names = [e["name"] for e in eq_list]
+    assert "El Centro 1940" in eq_names
+
+    # 2. Test NLTHA dynamic solver run
+    model_payload = {
+        "session_id": "test_nltha_01",
+        "nodes": [
+            {"id": "N1", "coords": [0.0, 0.0, 0.0], "restraint": [1, 1, 1, 1, 1, 1], "loads": [0, 0, 0, 0, 0, 0]},
+            {"id": "N2", "coords": [0.0, 3.5, 0.0], "restraint": [0, 0, 0, 0, 0, 0], "loads": [0, -50000, 0, 0, 0, 0]},
+        ],
+        "members": [
+            {"id": "C1", "i_node": "N1", "j_node": "N2", "section": "W14X90", "material": "A992_STEEL"},
+        ],
+    }
+    nltha_req = {
+        "graph": model_payload,
+        "nltha_params": {
+            "earthquake_name": "El Centro 1940",
+            "scale_factor": 1.0,
+            "duration_sec": 4.0,
+            "delta_t_sec": 0.02,
+            "damping_ratio": 0.05,
+        },
+    }
+    response = client.post("/api/v1/solvers/nltha", json=nltha_req)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["earthquake_name"] == "El Centro 1940"
+    assert len(data["time_steps"]) > 50
+    assert len(data["roof_drift_history_mm"]) == len(data["time_steps"])
+    assert len(data["base_shear_history_kn"]) == len(data["time_steps"])
+    assert data["max_base_shear_kn"] > 0.0
+    assert "N2" in data["node_trajectories"]
+    assert data["structural_performance_level"] in [
+        "OPERATIONAL",
+        "IMMEDIATE_OCCUPANCY",
+        "LIFE_SAFETY",
+        "COLLAPSE_PREVENTION",
+    ]
+
+
+
 
 

@@ -5,6 +5,10 @@ import 'package:structura_nexus/data/benchmark_presets.dart';
 import 'package:structura_nexus/services/embedded_fea_solver.dart';
 import 'package:structura_nexus/services/structural_library_service.dart';
 import 'package:structura_nexus/services/dart_neural_engine.dart';
+import 'package:structura_nexus/services/structural_api_service.dart';
+import 'package:structura_nexus/widgets/vision_ingestion_dialog.dart';
+import 'package:structura_nexus/widgets/foundation_studio_dialog.dart';
+import 'package:structura_nexus/widgets/time_history_player.dart';
 
 void main() {
   test('Embedded FEA Solver solves multi-story sway frame', () {
@@ -19,7 +23,7 @@ void main() {
   });
 
   testWidgets('Workstation screen renders correctly', (WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    await tester.binding.setSurfaceSize(const Size(1440, 1400));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
@@ -276,5 +280,90 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.text('SELECTION INSPECTOR'), findsOneWidget);
+  });
+
+  testWidgets('VisionIngestionDialog renders and synthesizes 3D frame', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final api = StructuralApiService();
+    var synthesized = false;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: VisionIngestionDialog(
+          apiService: api,
+          onModelSynthesized: (model) {
+            synthesized = true;
+          },
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('VISION-TO-BIM STUDIO'), findsOneWidget);
+    expect(find.text('Process Floorplan'), findsOneWidget);
+
+    await tester.tap(find.text('Process Floorplan'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Synthesize 3D Frame'), findsOneWidget);
+    await tester.ensureVisible(find.text('Synthesize 3D Frame'));
+    await tester.tap(find.text('Synthesize 3D Frame'));
+    await tester.pumpAndSettle();
+    expect(synthesized, isTrue);
+  });
+
+  testWidgets('FoundationStudioDialog computes ACI 318-19 punching shear & Winkler springs', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final model = BenchmarkPresets.multiStorySwayFrame();
+    EmbeddedFeaSolver.solve(model);
+    final api = StructuralApiService();
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: FoundationStudioDialog(
+          model: model,
+          apiService: api,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('GEOTECHNICAL FOUNDATION STUDIO'), findsOneWidget);
+    expect(find.textContaining('FOUNDATION SYSTEM CERTIFIED PASS'), findsOneWidget);
+    expect(find.textContaining('6-DOF WINKLER ELASTIC SPRING MATRIX'), findsOneWidget);
+  });
+
+  testWidgets('TimeHistoryPlayer renders and plays NLTHA dynamic timeline', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final model = BenchmarkPresets.multiStorySwayFrame();
+    final api = StructuralApiService();
+    var closed = false;
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: TimeHistoryPlayer(
+          model: model,
+          apiService: api,
+          onClose: () => closed = true,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.text('NLTHA DYNAMICS'), findsOneWidget);
+    expect(find.text('El Centro 1940'), findsOneWidget);
+    expect(find.byIcon(Icons.replay_rounded), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Exit NLTHA Mode'));
+    await tester.pumpAndSettle();
+    expect(closed, isTrue);
   });
 }

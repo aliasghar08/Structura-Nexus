@@ -23,6 +23,8 @@ class WorkstationDrawer extends StatefulWidget {
   final VoidCallback? onOpenWindCfd;
   final VoidCallback? onOpenCompositeFloor;
   final VoidCallback? onOpenEnvironmentalStimulator;
+  final VoidCallback? onOpenVisionToBim;
+  final VoidCallback? onOpenNltha;
   final VoidCallback? onOptimize;
   final Function(String)? onPresetSelected;
 
@@ -44,6 +46,8 @@ class WorkstationDrawer extends StatefulWidget {
     this.onOpenWindCfd,
     this.onOpenCompositeFloor,
     this.onOpenEnvironmentalStimulator,
+    this.onOpenVisionToBim,
+    this.onOpenNltha,
     this.onOptimize,
     this.onPresetSelected,
   });
@@ -133,6 +137,15 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
 
     // MODELING & CAD
     _DrawerToolDef(
+      label: 'Vision-to-BIM',
+      subtitle: '2D Architectural Plan Ingestion',
+      icon: Icons.document_scanner_rounded,
+      color: const Color(0xFF00F0FF),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenVisionToBim,
+      badge: 'GEMINI',
+    ),
+    _DrawerToolDef(
       label: 'CAD Studio',
       subtitle: '2D / 3D Parametric Framing',
       icon: Icons.architecture_rounded,
@@ -188,6 +201,15 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
     ),
 
     // ANALYSIS & DESIGN
+    _DrawerToolDef(
+      label: 'NLTHA Dynamics',
+      subtitle: 'Non-Linear Time History Player',
+      icon: Icons.movie_filter_rounded,
+      color: const Color(0xFFF97316),
+      category: 'ANALYSIS & DESIGN',
+      onTap: widget.onOpenNltha,
+      badge: 'NEWMARK-β',
+    ),
     _DrawerToolDef(
       label: 'Modal Seismic',
       subtitle: 'Dynamic Frequency & Vibrations',

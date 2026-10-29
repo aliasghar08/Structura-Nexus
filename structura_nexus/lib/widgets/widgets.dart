@@ -39,6 +39,9 @@ export 'pushover_analysis_dialog.dart';
 export 'wind_cfd_dialog.dart';
 export 'composite_floor_dialog.dart';
 export 'environmental_stimulator_dialog.dart';
+export 'vision_ingestion_dialog.dart';
+export 'foundation_studio_dialog.dart';
+export 'time_history_player.dart';
 
 // Common Overlays
 export 'floating_copyright_watermark.dart';

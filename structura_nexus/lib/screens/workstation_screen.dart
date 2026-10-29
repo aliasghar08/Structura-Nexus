@@ -30,11 +30,13 @@ import '../widgets/floating_workstation_header.dart';
 import '../widgets/floating_copyright_watermark.dart';
 import '../widgets/concrete_pm_dialog.dart';
 import '../widgets/steel_connection_dialog.dart';
-import '../widgets/geotechnical_foundation_dialog.dart';
 import '../widgets/pushover_analysis_dialog.dart';
 import '../widgets/wind_cfd_dialog.dart';
 import '../widgets/composite_floor_dialog.dart';
 import '../widgets/environmental_stimulator_dialog.dart';
+import '../widgets/vision_ingestion_dialog.dart';
+import '../widgets/foundation_studio_dialog.dart';
+import '../widgets/time_history_player.dart';
 import '../services/dart_neural_engine.dart';
 
 class WorkstationScreen extends StatefulWidget {
@@ -53,6 +55,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   String? _selectedNodeId;
   String? _selectedMemberId;
   bool? _isInspectorOpen;
+  bool _isNlthaActive = false;
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
@@ -318,14 +321,37 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     );
 
     void onOpenGeotechnicalFoundation() => _requireAuth(
-      featureName: 'Foundation & SSI Studio',
+      featureName: 'Geotechnical Foundation Studio (ACI 318-19)',
+      onAuthenticated: () => FoundationStudioDialog.show(
+        context,
+        model: _model,
+        apiService: _apiService,
+        onStructureModified: () => setState(() => _triggerSolve()),
+      ),
+    );
+
+    void onOpenVisionToBim() => _requireAuth(
+      featureName: 'Vision-to-BIM Floorplan Ingestion',
+      onAuthenticated: () => VisionIngestionDialog.show(
+        context,
+        apiService: _apiService,
+        onModelSynthesized: (newModel) {
+          setState(() {
+            _model = newModel;
+            _selectedNodeId = null;
+            _selectedMemberId = null;
+            _triggerSolve();
+          });
+        },
+      ),
+    );
+
+    void onOpenNltha() => _requireAuth(
+      featureName: 'Dynamic Non-Linear Time History Analysis (NLTHA)',
       onAuthenticated: () {
-        showDialog(
-          context: context,
-          builder: (ctx) => GeotechnicalFoundationDialog(
-            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
-          ),
-        );
+        setState(() {
+          _isNlthaActive = true;
+        });
       },
     );
 
@@ -431,6 +457,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOpenPePacket: onOpenPePacket,
         onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
         onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
+        onOpenVisionToBim: onOpenVisionToBim,
+        onOpenNltha: onOpenNltha,
         onPresetSelected: (presetKey) {
           _requireAuth(
             featureName: 'Benchmark Presets',
@@ -527,6 +555,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenWindCfd: onOpenWindCfd,
               onOpenCompositeFloor: onOpenCompositeFloor,
               onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
+              onOpenVisionToBim: onOpenVisionToBim,
+              onOpenNltha: onOpenNltha,
               onOptimize: onOptimize,
               onEngineChanged: (engine) {
                 _requireAuth(
@@ -575,6 +605,30 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           ),
 
           // 3. Layer 2: Floating Telemetry Dock (Bottom Island)
+          if (_isNlthaActive)
+            Positioned(
+              bottom: MediaQuery.paddingOf(context).bottom + (isCompact ? 175.0 : 160.0),
+              left: isCompact ? 10 : 20,
+              right: isCompact ? 10 : 20,
+              child: TimeHistoryPlayer(
+                model: _model,
+                apiService: _apiService,
+                onClose: () => setState(() => _isNlthaActive = false),
+                onTimeStepChanged: (timeSec, nodeOffsets) {
+                  setState(() {
+                    for (final entry in nodeOffsets.entries) {
+                      final n = _model.getNode(entry.key);
+                      if (n != null && entry.value.isNotEmpty) {
+                        n.dispX = entry.value[0];
+                        if (entry.value.length > 1) n.dispY = entry.value[1];
+                        if (entry.value.length > 2) n.dispZ = entry.value[2];
+                      }
+                    }
+                  });
+                },
+              ),
+            ),
+
           Positioned(
             bottom: MediaQuery.paddingOf(context).bottom + 6,
             left: 0,

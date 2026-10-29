@@ -35,12 +35,14 @@ void main() {
       expect(find.text('AI Copilot'), findsOneWidget);
       expect(find.text('Generative Opt'), findsOneWidget);
       expect(find.text('Gen Bracing'), findsOneWidget);
+      expect(find.text('Vision-to-BIM'), findsOneWidget);
       expect(find.text('CAD Studio'), findsOneWidget);
       expect(find.text('Cloud Library'), findsOneWidget);
       expect(find.text('Concrete Studio'), findsOneWidget);
       expect(find.text('Steel Connections'), findsOneWidget);
       expect(find.text('Foundation & SSI'), findsOneWidget);
       expect(find.text('Composite Floor'), findsOneWidget);
+      expect(find.text('NLTHA Dynamics'), findsOneWidget);
       expect(find.text('Modal Seismic'), findsOneWidget);
       expect(find.text('Lateral Stability'), findsOneWidget);
       expect(find.text('Non-Linear Pushover'), findsOneWidget);
