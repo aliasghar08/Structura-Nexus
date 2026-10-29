@@ -297,9 +297,12 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
           children: const [
             Icon(Icons.keyboard_outlined, color: Color(0xFF00F0FF), size: 22),
             SizedBox(width: 10),
-            Text(
-              'Workstation Navigation & Shortcuts',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            Expanded(
+              child: Text(
+                'Workstation Navigation & Shortcuts',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),

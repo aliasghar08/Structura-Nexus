@@ -230,4 +230,50 @@ void main() {
     expect(res['max_roof_drift_mm'], greaterThan(0.0));
     expect(res['structural_health_score'], inInclusiveRange(0.0, 100.0));
   });
+
+  testWidgets('Top scrolling option bar and viewport sub-bar do not overlap on desktop', (WidgetTester tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
+    await tester.pumpAndSettle();
+
+    final headerDrawerRect = tester.getRect(find.text('TOOLS & SUITE'));
+    final viewportBadgeRect = tester.getRect(find.textContaining('DETERMINISTIC FEA GROUND TRUTH'));
+    final inspectorHeaderRect = tester.getRect(find.text('SELECTION INSPECTOR'));
+
+    // Viewport sub-bar sits strictly below the top option bar (zero vertical overlap)
+    expect(viewportBadgeRect.top, greaterThan(headerDrawerRect.bottom));
+    // Selection Inspector sits strictly below the viewport sub-bar
+    expect(inspectorHeaderRect.top, greaterThan(viewportBadgeRect.bottom));
+  });
+
+  testWidgets('Workstation renders cleanly on iPhone 13 portrait (390x844) and scrolls top option bar', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1.0;
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('TOOLS & SUITE'), findsOneWidget);
+
+    // Scroll top option bar right using chevron button
+    await tester.tap(find.byIcon(Icons.chevron_right_rounded));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    // Toggle Inspector open and closed on mobile
+    expect(find.text('INSPECTOR'), findsOneWidget);
+    await tester.tap(find.text('INSPECTOR'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text('SELECTION INSPECTOR'), findsOneWidget);
+  });
 }

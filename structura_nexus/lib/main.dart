@@ -3,6 +3,7 @@
 // Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
 // ============================================================================
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,6 +13,19 @@ import 'screens/workstation_screen.dart';
 
 // Re-export WorkstationScreen for testing & backward compatibility
 export 'screens/workstation_screen.dart';
+
+class _WorkstationScrollBehavior extends MaterialScrollBehavior {
+  const _WorkstationScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => const {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.unknown,
+      };
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +46,7 @@ class StructuraNexusApp extends StatelessWidget {
     return MaterialApp(
       title: 'Structura Forge AI / Structura Nexus',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: const _WorkstationScrollBehavior(),
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF090D14),

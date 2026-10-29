@@ -15,6 +15,10 @@ class FloatingInspectorPanel extends StatefulWidget {
   final VoidCallback onModelChanged;
   final VoidCallback onClose;
 
+  /// Panel width. Defaults to 330 (desktop side card); pass `double.infinity`
+  /// for full-width phone bottom sheets.
+  final double width;
+
   const FloatingInspectorPanel({
     super.key,
     required this.model,
@@ -22,6 +26,7 @@ class FloatingInspectorPanel extends StatefulWidget {
     this.selectedMemberId,
     required this.onModelChanged,
     required this.onClose,
+    this.width = 330,
   });
 
   @override
@@ -77,7 +82,7 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         );
       },
       child: GlassPod(
-        width: 330,
+        width: widget.width,
         borderRadius: 26,
         padding: const EdgeInsets.all(18),
         child: Column(

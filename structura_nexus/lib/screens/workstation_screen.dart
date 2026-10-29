@@ -51,7 +51,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
-  bool _isInspectorOpen = true;
+  bool? _isInspectorOpen;
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
@@ -403,6 +403,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
 
     final isOverallPass = failCount == 0;
+    final screenSize = MediaQuery.sizeOf(context);
+    final isCompact = screenSize.width < 700 || screenSize.height < 500;
+    final showInspector = _isInspectorOpen ?? !isCompact;
+    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 104.0 : 114.0);
+    final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -487,9 +492,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ),
           ),
 
-          // 2. Layer 1: Floating Header Island (Top)
+          // 2. Layer 1: Floating Header Island (Top Scrolling Option Bar)
           Positioned(
-            top: 0,
+            top: MediaQuery.paddingOf(context).top,
             left: 0,
             right: 0,
             child: FloatingWorkstationHeader(
@@ -561,7 +566,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
           // 3. Layer 2: Floating Telemetry Dock (Bottom Island)
           Positioned(
-            bottom: 12,
+            bottom: MediaQuery.paddingOf(context).bottom + 6,
             left: 0,
             right: 0,
             child: FloatingTelemetryDock(
@@ -586,13 +591,15 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ),
           ),
 
-          // 4. Layer 3: Floating Right Inspector Card
-          if (_isInspectorOpen)
+          // 4. Layer 3: Floating Right Inspector Card (Responsive Desktop Card / Mobile Overlay)
+          if (showInspector)
             Positioned(
-              top: 76,
-              right: 20,
-              bottom: 230,
+              top: inspectorTopOffset,
+              right: isCompact ? 10 : 20,
+              left: isCompact ? 10 : null,
+              bottom: inspectorBottomOffset,
               child: FloatingInspectorPanel(
+                width: isCompact ? double.infinity : 330,
                 model: _model,
                 selectedNodeId: _selectedNodeId,
                 selectedMemberId: _selectedMemberId,
@@ -604,14 +611,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 },
                 onClose: () => setState(() => _isInspectorOpen = false),
               ),
-            ),
-
-          if (!_isInspectorOpen)
+            )
+          else
             Positioned(
-              top: 86,
-              right: 20,
+              top: inspectorTopOffset,
+              right: isCompact ? 10 : 20,
               child: GlassPod(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 borderRadius: 16,
                 onTap: () => setState(() => _isInspectorOpen = true),
                 child: Row(

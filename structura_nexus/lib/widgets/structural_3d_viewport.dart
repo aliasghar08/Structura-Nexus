@@ -137,291 +137,270 @@ class _Structural3DViewportState extends State<Structural3DViewport>
                   );
                 },
               ),
-            // Top Right Viewport Controls & WebGL Switcher
+            // Unified Horizontal Scrolling Viewport Sub-Bar (Below Main Header — Zero Overlap)
             Positioned(
-              top: 16,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161B22).withValues(alpha: 0.90),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
+              top: MediaQuery.paddingOf(context).top + (MediaQuery.sizeOf(context).width < 700 ? 60 : 68),
+              left: MediaQuery.sizeOf(context).width < 700 ? 10 : 16,
+              right: MediaQuery.sizeOf(context).width < 700 ? 10 : 16,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Engine Switcher
-                    InkWell(
-                      onTap: () => setState(() => _useThreeJs = !_useThreeJs),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _useThreeJs ? const Color(0xFF00F0FF).withValues(alpha: 0.2) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.transparent,
+                    // 1. Axis Compass Indicator (X / Y / Z)
+                    _buildCompass(),
+                    const SizedBox(width: 8),
+
+                    // 2. Surrogate / Deterministic FEA Status Pill
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: _isSurrogateStreaming
+                            ? const Color(0xFF00F0FF).withValues(alpha: 0.18)
+                            : const Color(0xFF161B22).withValues(alpha: 0.90),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _isSurrogateStreaming
+                              ? const Color(0xFF00F0FF)
+                              : Colors.white.withValues(alpha: 0.12),
+                        ),
+                        boxShadow: [
+                          if (_isSurrogateStreaming)
+                            BoxShadow(
+                              color: const Color(0xFF00F0FF).withValues(alpha: 0.35),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isSurrogateStreaming ? Icons.bolt_rounded : Icons.verified_rounded,
+                            color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : const Color(0xFF10B981),
+                            size: 14,
                           ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isSurrogateStreaming
+                                ? 'SURROGATE INFERENCE (MPNN 1.85ms • 60 FPS)'
+                                : 'DETERMINISTIC FEA GROUND TRUTH (12×12 DSM)',
+                            style: TextStyle(
+                              color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : Colors.white70,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // 3. Renderer Switcher (WebGL 3D GPU / Vector 2.5D) & Ribbon Toggles
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161B22).withValues(alpha: 0.90),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () => setState(() => _useThreeJs = !_useThreeJs),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: _useThreeJs ? const Color(0xFF00F0FF).withValues(alpha: 0.2) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.transparent,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _useThreeJs ? Icons.view_in_ar : Icons.brush,
+                                    size: 13,
+                                    color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    _useThreeJs ? 'WebGL 3D (GPU)' : 'Vector 2.5D',
+                                    style: TextStyle(
+                                      color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+                                      fontSize: 10.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => setState(() => _showBmd = !_showBmd),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: _showBmd ? Colors.pinkAccent.withValues(alpha: 0.25) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _showBmd ? Colors.pinkAccent : Colors.transparent,
+                                ),
+                              ),
+                              child: Text(
+                                'BMD',
+                                style: TextStyle(
+                                  color: _showBmd ? Colors.pinkAccent : Colors.white54,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          InkWell(
+                            onTap: () => setState(() => _showDeformation = !_showDeformation),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: _showDeformation ? Colors.purpleAccent.withValues(alpha: 0.25) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: _showDeformation ? Colors.purpleAccent : Colors.transparent,
+                                ),
+                              ),
+                              child: Text(
+                                'Deflection ×50',
+                                style: TextStyle(
+                                  color: _showDeformation ? Colors.purpleAccent : Colors.white54,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // 4. Camera View Presets (ISO / TOP / FRONT) & Zoom Controls
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161B22).withValues(alpha: 0.90),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildViewPresetBtn('ISO', () {
+                            setState(() {
+                              _yaw = 0.75;
+                              _pitch = 0.35;
+                              _zoom = 42.0;
+                              _panOffset = const Offset(0, 40);
+                            });
+                          }),
+                          const SizedBox(width: 4),
+                          _buildViewPresetBtn('TOP', () {
+                            setState(() {
+                              _yaw = 0.0;
+                              _pitch = 1.54;
+                              _zoom = 42.0;
+                              _panOffset = const Offset(0, 0);
+                            });
+                          }),
+                          const SizedBox(width: 4),
+                          _buildViewPresetBtn('FRONT', () {
+                            setState(() {
+                              _yaw = 0.0;
+                              _pitch = 0.0;
+                              _zoom = 42.0;
+                              _panOffset = const Offset(0, 0);
+                            });
+                          }),
+                          Container(
+                            height: 14,
+                            width: 1,
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            color: Colors.white12,
+                          ),
+                          _buildNavButton(Icons.zoom_in, 'Zoom In', () => setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0))),
+                          const SizedBox(width: 3),
+                          _buildNavButton(Icons.zoom_out, 'Zoom Out', () => setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0))),
+                          const SizedBox(width: 3),
+                          _buildNavButton(Icons.center_focus_strong, 'Recenter View', () {
+                            setState(() {
+                              _yaw = 0.75;
+                              _pitch = 0.35;
+                              _zoom = 42.0;
+                              _panOffset = const Offset(0, 40);
+                            });
+                          }),
+                        ],
+                      ),
+                    ),
+
+                    // 5. Live Vibration Mode Banner (when active)
+                    if (widget.model.displayMode == DisplayMode.modalVibration) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0D1117).withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF00F0FF)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              _useThreeJs ? Icons.view_in_ar : Icons.brush,
-                              size: 14,
-                              color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
-                            ),
+                            const Icon(Icons.waves_rounded, size: 14, color: Color(0xFF00F0FF)),
                             const SizedBox(width: 6),
                             Text(
-                              _useThreeJs ? 'WebGL 3D (GPU)' : 'Vector 2.5D',
-                              style: TextStyle(
-                                color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
-                                fontSize: 11,
+                              'MODE ${widget.model.activeVibrationMode} VIBRATION',
+                              style: const TextStyle(
+                                color: Color(0xFF00F0FF),
+                                fontSize: 10.5,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  widget.model.displayMode = DisplayMode.geometry;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF21262D),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text('Exit', style: TextStyle(color: Colors.white70, fontSize: 9.5)),
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    // BMD Ribbon Toggle
-                    InkWell(
-                      onTap: () => setState(() => _showBmd = !_showBmd),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _showBmd ? Colors.pinkAccent.withValues(alpha: 0.25) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: _showBmd ? Colors.pinkAccent : Colors.transparent,
-                          ),
-                        ),
-                        child: Text(
-                          'BMD',
-                          style: TextStyle(
-                            color: _showBmd ? Colors.pinkAccent : Colors.white54,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    // Deformation Toggle
-                    InkWell(
-                      onTap: () => setState(() => _showDeformation = !_showDeformation),
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _showDeformation ? Colors.purpleAccent.withValues(alpha: 0.25) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: _showDeformation ? Colors.purpleAccent : Colors.transparent,
-                          ),
-                        ),
-                        child: Text(
-                          'Deflection ×50',
-                          style: TextStyle(
-                            color: _showDeformation ? Colors.purpleAccent : Colors.white54,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
             ),
-            // Top Left Surrogate Engine Telemetry HUD
-            Positioned(
-              top: 16,
-              left: 16,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: _isSurrogateStreaming
-                      ? const Color(0xFF00F0FF).withValues(alpha: 0.18)
-                      : const Color(0xFF161B22).withValues(alpha: 0.88),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: _isSurrogateStreaming
-                        ? const Color(0xFF00F0FF)
-                        : Colors.white.withValues(alpha: 0.12),
-                  ),
-                  boxShadow: [
-                    if (_isSurrogateStreaming)
-                      BoxShadow(
-                        color: const Color(0xFF00F0FF).withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        spreadRadius: 1,
-                      ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _isSurrogateStreaming ? Icons.bolt_rounded : Icons.verified_rounded,
-                      color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : const Color(0xFF10B981),
-                      size: 15,
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      _isSurrogateStreaming
-                          ? 'SURROGATE INFERENCE (MPNN 1.85ms • 60 FPS)'
-                          : 'DETERMINISTIC FEA GROUND TRUTH (12×12 DSM)',
-                      style: TextStyle(
-                        color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : Colors.white70,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Floating 3D Navigation Gizmo & View Preset Buttons
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF161B22).withValues(alpha: 0.90),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildViewPresetBtn('ISO', () {
-                      setState(() {
-                        _yaw = 0.75;
-                        _pitch = 0.35;
-                        _zoom = 42.0;
-                        _panOffset = const Offset(0, 40);
-                      });
-                    }),
-                    const SizedBox(width: 4),
-                    _buildViewPresetBtn('TOP', () {
-                      setState(() {
-                        _yaw = 0.0;
-                        _pitch = 1.54;
-                        _zoom = 42.0;
-                        _panOffset = const Offset(0, 0);
-                      });
-                    }),
-                    const SizedBox(width: 4),
-                    _buildViewPresetBtn('FRONT', () {
-                      setState(() {
-                        _yaw = 0.0;
-                        _pitch = 0.0;
-                        _zoom = 42.0;
-                        _panOffset = const Offset(0, 0);
-                      });
-                    }),
-                    Container(
-                      height: 16,
-                      width: 1,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      color: Colors.white12,
-                    ),
-                    _buildNavButton(Icons.zoom_in, 'Zoom In', () => setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0))),
-                    const SizedBox(width: 4),
-                    _buildNavButton(Icons.zoom_out, 'Zoom Out', () => setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0))),
-                    const SizedBox(width: 4),
-                    _buildNavButton(Icons.center_focus_strong, 'Recenter View', () {
-                      setState(() {
-                        _yaw = 0.75;
-                        _pitch = 0.35;
-                        _zoom = 42.0;
-                        _panOffset = const Offset(0, 40);
-                      });
-                    }),
-                  ],
-                ),
-              ),
-            ),
-            // Axis Compass Indicator (Top Left)
-            Positioned(
-              left: 16,
-              top: 16,
-              child: _buildCompass(),
-            ),
-            // Live Vibration Mode Banner (Top Center)
-            if (widget.model.displayMode == DisplayMode.modalVibration)
-              Positioned(
-                top: 16,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0D1117).withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFF00F0FF)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00F0FF).withValues(alpha: 0.25),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.waves_rounded, size: 16, color: Color(0xFF00F0FF)),
-                        const SizedBox(width: 8),
-                        Text(
-                          'SIMULATING DYNAMIC MODE ${widget.model.activeVibrationMode} VIBRATION',
-                          style: const TextStyle(
-                            color: Color(0xFF00F0FF),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        InkWell(
-                          onTap: () {
-                            setState(() {
-                              widget.model.displayMode = DisplayMode.geometry;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF21262D),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Text('Exit', style: TextStyle(color: Colors.white70, fontSize: 10)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),

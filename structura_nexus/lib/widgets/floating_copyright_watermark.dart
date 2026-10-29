@@ -10,7 +10,12 @@ import 'package:flutter/material.dart';
 /// viewport. Wraps its visual tree in [IgnorePointer] so touch, mouse, scroll,
 /// and click events pass through unobstructed to underlying widgets.
 class FloatingCopyrightWatermark extends StatelessWidget {
-  const FloatingCopyrightWatermark({super.key});
+  /// When true (default) the badge positions itself at the bottom of the
+  /// enclosing [Stack]. When false it renders inline so a parent layout
+  /// (e.g. a Column of HUD islands) can reserve space and avoid overlap.
+  final bool positioned;
+
+  const FloatingCopyrightWatermark({super.key, this.positioned = true});
 
   static const String ownerName = 'Ali Asghar';
   static const String ownerEmail = 'aliasgharinnocent@yahoo.com';
@@ -19,16 +24,9 @@ class FloatingCopyrightWatermark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final isMobile = media.size.width < 600;
-    final bottomOffset = isMobile
-        ? kBottomNavigationBarHeight + media.padding.bottom + 8.0
-        : (media.padding.bottom > 0 ? media.padding.bottom + 6.0 : 8.0);
+    final bottomOffset = media.padding.bottom > 0 ? media.padding.bottom + 4.0 : 6.0;
 
-    return Positioned(
-      bottom: bottomOffset,
-      left: 16,
-      right: 16,
-      child: Center(
+    final badge = Center(
         child: IgnorePointer(
           ignoring: true,
           child: LayoutBuilder(
@@ -91,7 +89,15 @@ class FloatingCopyrightWatermark extends StatelessWidget {
             },
           ),
         ),
-      ),
+    );
+
+    if (!positioned) return badge;
+
+    return Positioned(
+      bottom: bottomOffset,
+      left: 16,
+      right: 16,
+      child: badge,
     );
   }
 }

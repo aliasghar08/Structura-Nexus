@@ -374,33 +374,15 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // Optional Back Button (if navigated from workstation)
-          if (Navigator.of(context).canPop())
-            Positioned(
-              top: 20,
-              left: 20,
-              child: TextButton.icon(
-                onPressed: () => Navigator.of(context).pop(false),
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
-                label: const Text(
-                  'Back to Workstation',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFF161B22),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
-                ),
-              ),
-            ),
-
           // Main Card View
           Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                MediaQuery.paddingOf(context).top + (Navigator.of(context).canPop() ? 64 : 28),
+                16,
+                48,
+              ),
               child: FadeTransition(
                 opacity: _fadeAnim,
                 child: Container(
@@ -417,7 +399,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                       ),
                     ],
                   ),
-                  padding: const EdgeInsets.all(32),
+                  padding: EdgeInsets.all(MediaQuery.sizeOf(context).width < 480 ? 20 : 32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -784,6 +766,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         icon: const Icon(Icons.arrow_forward_rounded, size: 16, color: Color(0xFF8B949E)),
                         label: const Text(
                           'Explore Workstation as Guest Engineer',
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: Color(0xFF8B949E), fontSize: 12),
                         ),
                       ),
@@ -793,6 +776,29 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               ),
             ),
           ),
+
+          // Optional Back Button (rendered above scroll view so it is never covered on mobile)
+          if (Navigator.of(context).canPop())
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 14,
+              left: 16,
+              child: TextButton.icon(
+                onPressed: () => Navigator.of(context).pop(false),
+                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+                label: const Text(
+                  'Back to Workstation',
+                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFF161B22),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                ),
+              ),
+            ),
 
           // Floating Copyright Watermark
           const FloatingCopyrightWatermark(),

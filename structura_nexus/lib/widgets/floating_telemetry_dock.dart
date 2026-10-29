@@ -92,11 +92,18 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
   @override
   Widget build(BuildContext context) {
     final statusColor = widget.isPass ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
+    final podPadding = isCompact ? const EdgeInsets.all(11) : const EdgeInsets.all(16);
 
     return Padding(
-      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 28),
+      padding: EdgeInsets.only(
+        left: isCompact ? 10 : 20,
+        right: isCompact ? 10 : 20,
+        bottom: isCompact ? 34 : 28,
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         clipBehavior: Clip.none,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -106,7 +113,8 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
               index: 0,
               width: 245,
               child: GlassPod(
-                borderRadius: 24,
+                padding: podPadding,
+                borderRadius: 22,
                 glowColor: statusColor.withValues(alpha: 0.3),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,9 +202,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
             // 2. ASCE 7-16 Load Combinations Glass Island
             _buildStaggeredPod(
               index: 1,
-              width: 300,
+              width: 295,
               child: GlassPod(
-                borderRadius: 24,
+                padding: podPadding,
+                borderRadius: 22,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -230,9 +239,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
             // 3. Telemetry & Quick Action Auto-Sizer
             _buildStaggeredPod(
               index: 2,
-              width: 290,
+              width: 285,
               child: GlassPod(
-                borderRadius: 24,
+                padding: podPadding,
+                borderRadius: 22,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -274,9 +284,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
             // 4. Lateral & Stability Glass Pod
             _buildStaggeredPod(
               index: 3,
-              width: 280,
+              width: 275,
               child: GlassPod(
-                borderRadius: 24,
+                padding: podPadding,
+                borderRadius: 22,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,

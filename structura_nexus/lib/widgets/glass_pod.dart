@@ -37,7 +37,7 @@ class GlassPod extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final pod = Container(
       width: width,
       height: height,
       margin: margin,
@@ -88,5 +88,26 @@ class GlassPod extends StatelessWidget {
         ),
       ),
     );
+
+    if (width != null && width! >= 480 && width!.isFinite) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final needsScale = (constraints.maxWidth.isFinite && constraints.maxWidth < width!) ||
+              (height != null && height!.isFinite && constraints.maxHeight.isFinite && constraints.maxHeight < height!);
+          if (!needsScale) return pod;
+          return FittedBox(
+            fit: BoxFit.contain,
+            alignment: Alignment.center,
+            child: SizedBox(
+              width: width,
+              height: height,
+              child: pod,
+            ),
+          );
+        },
+      );
+    }
+
+    return pod;
   }
 }
