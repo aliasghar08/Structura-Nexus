@@ -77,10 +77,6 @@ class _AuthDialogState extends State<AuthDialog> {
       if (_isSignUp) {
         await _authService.registerWithEmail(email, password, displayName: name.isNotEmpty ? name : null);
         if (mounted) {
-          setState(() {
-            _successMessage = 'Account created successfully! Welcome to Structura Nexus.';
-            _isLoading = false;
-          });
           widget.onAuthSuccess?.call();
           Navigator.of(context).pop();
         }
@@ -95,6 +91,11 @@ class _AuthDialogState extends State<AuthDialog> {
       if (mounted) {
         setState(() {
           _errorMessage = _cleanError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -116,6 +117,11 @@ class _AuthDialogState extends State<AuthDialog> {
       if (mounted) {
         setState(() {
           _errorMessage = _cleanError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -137,6 +143,11 @@ class _AuthDialogState extends State<AuthDialog> {
       if (mounted) {
         setState(() {
           _errorMessage = _cleanError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -155,13 +166,17 @@ class _AuthDialogState extends State<AuthDialog> {
       if (mounted) {
         setState(() {
           _successMessage = 'Password reset instructions dispatched to $email.';
-          _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = _cleanError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }

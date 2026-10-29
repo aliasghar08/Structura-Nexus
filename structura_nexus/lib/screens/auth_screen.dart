@@ -125,12 +125,23 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         widget.onLoginSuccess?.call();
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
+        } else {
+          setState(() {
+            _successMessage = _isLogin
+                ? 'Signed in successfully! Redirecting...'
+                : 'Account created successfully! Welcome to Structura Nexus.';
+          });
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = _cleanError(e);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
           _isLoading = false;
         });
       }

@@ -85,5 +85,41 @@ void main() {
 
       expect(successCalled, isTrue);
     });
+
+    testWidgets('Register tab validates empty fields and shows prompt', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('REGISTER'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('CREATE ENGINEERING ACCOUNT'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Please enter your email address.'), findsOneWidget);
+    });
+
+    testWidgets('Register tab validates weak password under 6 chars', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('REGISTER'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.widgetWithText(TextField, 'Email'), 'engineer@structura.io');
+      await tester.enterText(find.widgetWithText(TextField, 'Password'), '12345');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('CREATE ENGINEERING ACCOUNT'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Password must be at least 6 characters.'), findsOneWidget);
+    });
   });
 }

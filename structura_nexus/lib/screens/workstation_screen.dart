@@ -4,6 +4,7 @@
 // Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
 // ============================================================================
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 import '../data/benchmark_presets.dart';
@@ -56,6 +57,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   String? _selectedMemberId;
   bool? _isInspectorOpen;
   bool _isNlthaActive = false;
+  StreamSubscription<dynamic>? _authSubscription;
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
@@ -109,10 +111,16 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         });
       },
     );
+
+    // Reactively refresh UI when authentication state changes
+    _authSubscription = FirebaseAuthService().authStateChanges.listen((_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     _surrogateStreamer.dispose();
     _apiService.dispose();
     super.dispose();

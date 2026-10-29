@@ -63,7 +63,12 @@ class FirebaseAuthService {
     if (_persistenceConfigured) return;
     _persistenceConfigured = true;
     try {
-      await _auth?.setPersistence(Persistence.LOCAL);
+      await _auth?.setPersistence(Persistence.LOCAL).timeout(
+        const Duration(seconds: 3),
+        onTimeout: () {
+          debugPrint('Local persistence setting timed out; continuing without blocking.');
+        },
+      );
     } catch (e) {
       debugPrint('Persistence config note: $e');
     }
@@ -92,16 +97,21 @@ class FirebaseAuthService {
       final db = _db;
       if (db == null) return;
       final docRef = db.collection('users').doc(user.uid);
-      final snapshot = await docRef.get();
       final data = <String, dynamic>{
         'uid': user.uid,
         'email': user.email,
-        'displayName': user.displayName ?? (user.isAnonymous ? 'Guest Engineer' : user.email?.split('@').first),
+        'displayName': user.displayName ??
+            (user.isAnonymous ? 'Guest Engineer' : user.email?.split('@').first ?? 'Engineer'),
         'isAnonymous': user.isAnonymous,
         'lastSeen': FieldValue.serverTimestamp(),
-        if (!snapshot.exists) 'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
-      await docRef.set(data, SetOptions(merge: true));
+      await docRef.set(data, SetOptions(merge: true)).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          debugPrint('Firestore profile sync timed out (non-blocking).');
+        },
+      );
       _lastSyncedAt = now;
       _lastSyncedUid = user.uid;
     } catch (e) {
@@ -114,9 +124,14 @@ class FirebaseAuthService {
     if (a == null) throw Exception('Firebase is not initialized.');
     _ensureListener();
     await _ensureLocalPersistence();
-    final cred = await a.signInWithEmailAndPassword(email: email.trim(), password: password);
+    final cred = await a
+        .signInWithEmailAndPassword(email: email.trim(), password: password)
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException('Sign-in request timed out. Please check your network connection.'),
+        );
     if (cred.user != null) {
-      await _syncUserProfile(cred.user!);
+      unawaited(_syncUserProfile(cred.user!));
     }
     return cred;
   }
@@ -126,14 +141,24 @@ class FirebaseAuthService {
     if (a == null) throw Exception('Firebase is not initialized.');
     _ensureListener();
     await _ensureLocalPersistence();
-    final cred = await a.createUserWithEmailAndPassword(email: email.trim(), password: password);
+    final cred = await a
+        .createUserWithEmailAndPassword(email: email.trim(), password: password)
+        .timeout(
+          const Duration(seconds: 15),
+          onTimeout: () => throw TimeoutException('Account registration timed out. Please check your network connection.'),
+        );
     if (cred.user != null) {
       if (displayName != null && displayName.trim().isNotEmpty) {
         try {
-          await cred.user!.updateDisplayName(displayName.trim());
+          await cred.user!.updateDisplayName(displayName.trim()).timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              debugPrint('Display name update timed out (non-blocking).');
+            },
+          );
         } catch (_) {}
       }
-      await _syncUserProfile(cred.user!);
+      unawaited(_syncUserProfile(cred.user!));
     }
     return cred;
   }
@@ -143,12 +168,20 @@ class FirebaseAuthService {
     if (a == null) throw Exception('Firebase is not initialized.');
     _ensureListener();
     await _ensureLocalPersistence();
-    final cred = await a.signInAnonymously();
+    final cred = await a
+        .signInAnonymously()
+        .timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => throw TimeoutException('Guest authentication timed out.'),
+        );
     if (cred.user != null) {
       try {
-        await cred.user!.updateDisplayName('Engineer (Guest)');
+        await cred.user!.updateDisplayName('Engineer (Guest)').timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {},
+        );
       } catch (_) {}
-      await _syncUserProfile(cred.user!);
+      unawaited(_syncUserProfile(cred.user!));
     }
     return cred;
   }
@@ -159,9 +192,14 @@ class FirebaseAuthService {
     _ensureListener();
     await _ensureLocalPersistence();
     final googleProvider = GoogleAuthProvider();
-    final cred = await a.signInWithPopup(googleProvider);
+    final cred = await a
+        .signInWithPopup(googleProvider)
+        .timeout(
+          const Duration(seconds: 45),
+          onTimeout: () => throw TimeoutException('Google Sign-In popup timed out.'),
+        );
     if (cred.user != null) {
-      await _syncUserProfile(cred.user!);
+      unawaited(_syncUserProfile(cred.user!));
     }
     return cred;
   }

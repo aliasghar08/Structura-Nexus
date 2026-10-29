@@ -415,10 +415,6 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
 
                       // 10. Backend Connection Indicator & Solve Trigger
                       _buildConnectionIndicator(),
-                      const SizedBox(width: 8),
-
-                      // 11. Firebase Auth Profile
-                      _buildUserProfileButton(),
                     ],
                   ),
                 ),
@@ -433,6 +429,10 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
             tooltip: 'Scroll options right',
             onTap: () => _scrollBy(260),
           ),
+          const SizedBox(width: 8),
+
+          // Pinned Cloud Account / Sign-In Capsule (Always visible regardless of horizontal scroll)
+          _buildUserProfileButton(),
         ],
       ),
     );
