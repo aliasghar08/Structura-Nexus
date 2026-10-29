@@ -428,33 +428,158 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
 
   Widget _buildDeformationSlider() {
     return GlassPod(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       borderRadius: 18,
-      child: Row(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('MAGNIFY: ', style: TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
-          Text('${widget.model.deformationScale.toInt()}x', style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold)),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.straighten_rounded, size: 13, color: Color(0xFF00F0FF)),
+              const SizedBox(width: 5),
+              const Text(
+                'DEFLECTION SCALE',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.7,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(
+                    color: const Color(0xFF00F0FF).withValues(alpha: 0.45),
+                    width: 0.6,
+                  ),
+                ),
+                child: Text(
+                  '${widget.model.deformationScale.toInt()}×',
+                  style: const TextStyle(
+                    color: Color(0xFF00F0FF),
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              _scalePresetBadge(1.0, '1×'),
+              const SizedBox(width: 4),
+              _scalePresetBadge(25.0, '25×'),
+              const SizedBox(width: 4),
+              _scalePresetBadge(50.0, '50×'),
+              const SizedBox(width: 4),
+              _scalePresetBadge(100.0, '100×'),
+            ],
+          ),
+          const SizedBox(height: 2),
           SizedBox(
-            width: 80,
-            child: SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 2,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
-                activeTrackColor: const Color(0xFF00F0FF),
-                inactiveTrackColor: Colors.white10,
-                thumbColor: const Color(0xFF00F0FF),
-              ),
-              child: Slider(
-                value: widget.model.deformationScale,
-                min: 1.0,
-                max: 100.0,
-                onChanged: widget.onDeformationScaleChanged,
-              ),
+            width: 250,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 3,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                    activeTrackColor: const Color(0xFF00F0FF),
+                    inactiveTrackColor: Colors.white12,
+                    thumbColor: const Color(0xFF00F0FF),
+                    overlayColor: const Color(0xFF00F0FF).withValues(alpha: 0.2),
+                  ),
+                  child: Slider(
+                    value: widget.model.deformationScale.clamp(1.0, 100.0),
+                    min: 1.0,
+                    max: 100.0,
+                    onChanged: widget.onDeformationScaleChanged,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _rulerTick('1×', true),
+                      _rulerTick('', false),
+                      _rulerTick('', false),
+                      _rulerTick('25×', true),
+                      _rulerTick('', false),
+                      _rulerTick('', false),
+                      _rulerTick('50×', true),
+                      _rulerTick('', false),
+                      _rulerTick('', false),
+                      _rulerTick('75×', true),
+                      _rulerTick('', false),
+                      _rulerTick('', false),
+                      _rulerTick('100×', true),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _scalePresetBadge(double val, String label) {
+    final isSelected = (widget.model.deformationScale - val).abs() < 1.0;
+    return InkWell(
+      onTap: () => widget.onDeformationScaleChanged(val),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00F0FF).withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00F0FF) : Colors.white12,
+            width: 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? const Color(0xFF00F0FF) : Colors.white60,
+            fontSize: 9,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _rulerTick(String label, bool isMajor) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: isMajor ? 1.5 : 1.0,
+          height: isMajor ? 5.0 : 3.0,
+          color: isMajor ? Colors.white38 : Colors.white12,
+        ),
+        if (label.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.5),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white38,
+                fontSize: 7.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
