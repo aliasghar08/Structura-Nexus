@@ -253,11 +253,116 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                       ),
                       const SizedBox(width: 8),
 
-                      // 3. Benchmark Presets Dropdown
+                      // 3. Central VisionOS Capsule Navigation Pills
+                      _buildCapsulePill(
+                        label: "AI & GEN",
+                        icon: Icons.auto_awesome_rounded,
+                        onTap: () => _showModalMenu(context, "AI & GENERATIVE SUITE", [
+                          _MenuAction(
+                            label: "AI Structural Copilot (Gemini Agent)",
+                            icon: Icons.psychology_rounded,
+                            onTap: () => widget.onOpenCopilot?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Generative Bracing (Pareto Optimizer)",
+                            icon: Icons.hub_rounded,
+                            onTap: () => widget.onOpenGenerativeBracing?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Multi-Hazard Dynamic Stimulator",
+                            icon: Icons.cyclone_rounded,
+                            onTap: () => widget.onOpenEnvironmentalStimulator?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AI Section Auto-Sizer",
+                            icon: Icons.auto_fix_high_rounded,
+                            onTap: () => widget.onOptimize?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      _buildCapsulePill(
+                        label: "CAD & BIM",
+                        icon: Icons.apartment_rounded,
+                        onTap: () => _showModalMenu(context, "CAD & BIM INTEROPERABILITY", [
+                          _MenuAction(
+                            label: "PE Calculation Packet & Digital Seal",
+                            icon: Icons.assignment_turned_in_rounded,
+                            onTap: () => widget.onOpenPePacket?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AI CAD 3D Drafting Studio (.dxf)",
+                            icon: Icons.edit_road_rounded,
+                            onTap: () => widget.onOpenCadStudio?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Structural Library & BIM Takeoff (.s2k / IFC 4.3)",
+                            icon: Icons.folder_zip_rounded,
+                            onTap: () => widget.onOpenLibrary?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Embodied Carbon LCA (SE 2050)",
+                            icon: Icons.co2_rounded,
+                            onTap: () => widget.onOpenEmbodiedCarbon?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      _buildCapsulePill(
+                        label: "ANALYSIS",
+                        icon: Icons.analytics_rounded,
+                        onTap: () => _showModalMenu(context, "ANALYSIS & DESIGN ENGINES", [
+                          _MenuAction(
+                            label: "Lateral Stability & 12x12 [Kg] Buckling",
+                            icon: Icons.sync_alt_rounded,
+                            onTap: () => widget.onOpenLateralStability?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Concrete Studio (ACI 318-19 P-M Envelope)",
+                            icon: Icons.view_in_ar_rounded,
+                            onTap: () => widget.onOpenConcreteStudio?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Dynamic Modal Vibration (ASCE 7-16)",
+                            icon: Icons.waves_rounded,
+                            onTap: () => widget.onOpenSeismicModal?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Pushover Capacity Spectrum (ATC-40 PBEE)",
+                            icon: Icons.trending_up_rounded,
+                            onTap: () => widget.onOpenPushoverAnalysis?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AeroNet Wind Boundary Layer CFD",
+                            icon: Icons.air_rounded,
+                            onTap: () => widget.onOpenWindCfd?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Foundation SSI (Winkler Springs)",
+                            icon: Icons.terrain_rounded,
+                            onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Composite Floor Vibrations (DG 11)",
+                            icon: Icons.layers_rounded,
+                            onTap: () => widget.onOpenCompositeFloor?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Steel Connection Studio (AISC 360)",
+                            icon: Icons.hardware_rounded,
+                            onTap: () => widget.onOpenSteelConnections?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // 4. Benchmark Presets Dropdown
                       _buildPresetDropdown(),
                       const SizedBox(width: 8),
 
-                      // 4. Solver Engine Mode Switcher
+                      // 5. Solver Engine Mode Switcher
                       GlassPod(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         borderRadius: 18,
@@ -315,6 +420,113 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
             onTap: () => _scrollBy(260),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCapsulePill({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      borderRadius: 18,
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: const Color(0xFF00F0FF)),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 3),
+          const Icon(Icons.arrow_drop_down_rounded, size: 14, color: Colors.white38),
+        ],
+      ),
+    );
+  }
+
+  void _showModalMenu(BuildContext context, String title, List<_MenuAction> actions) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D1117).withValues(alpha: 0.96),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.6),
+              blurRadius: 24,
+              offset: const Offset(0, -6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF00F0FF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white54),
+                  onPressed: () => Navigator.of(ctx).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: actions.map((act) => InkWell(
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  act.onTap();
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161B22),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(act.icon, size: 15, color: const Color(0xFF00F0FF)),
+                      const SizedBox(width: 8),
+                      Text(
+                        act.label,
+                        style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              )).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -767,4 +979,16 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
       ),
     );
   }
+}
+
+class _MenuAction {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _MenuAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 }

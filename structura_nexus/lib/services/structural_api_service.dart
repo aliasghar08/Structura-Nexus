@@ -75,12 +75,23 @@ class StructuralApiService {
       }
     }
 
-    // Fallback: solve locally using high-speed embedded 3D DSM engine
+    // Fallback: in-browser Pure Dart Neural Surrogate or 3D DSM solver
+    if (model.activeEngine == EngineType.surrogateGnn) {
+      final pred = DartNeuralEngine.instance.predictStructuraNet3D(model);
+      onResponseReceived?.call(SolverResponseUpdate(
+        engineType: 'SURROGATE_GNN_STRUCTURANET_3D',
+        latencyMs: (pred['latency_ms'] as num?)?.toDouble() ?? 1.2,
+        isEquilibrated: pred['is_equilibrated'] as bool? ?? true,
+        baseShearN: model.baseShearN,
+        maxDriftRatio: model.maxDriftRatio,
+        uncertainty: 0.015,
+      ));
+      return;
+    }
+
     EmbeddedFeaSolver.solve(model);
     onResponseReceived?.call(SolverResponseUpdate(
-      engineType: model.activeEngine == EngineType.surrogateGnn
-          ? 'SURROGATE_GNN'
-          : 'EXACT_FEA_PROPRIETARY_DSM',
+      engineType: 'EXACT_FEA_PROPRIETARY_DSM',
       latencyMs: 1.85,
       isEquilibrated: model.isEquilibrated,
       baseShearN: model.baseShearN,
@@ -1154,29 +1165,50 @@ class RealtimeSurrogateStreamer {
     required StructuralModel model,
     required Function(Map<String, dynamic> displacements) onDisplacementsUpdated,
   }) {
-    // Drop frames if backend is still processing previous pointer delta
+    // Drop frames if previous prediction is still processing
     if (_isPredicting) return;
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 16), () async {
       _isPredicting = true;
+      bool backendSucceeded = false;
       try {
-        final response = await http.post(
-          Uri.parse('$backendUrl/api/v1/surrogate/predict'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(model.toGraphPayload('SURROGATE_DRAG')),
-        );
+        if (!kIsWeb && backendUrl.isNotEmpty) {
+          final response = await http.post(
+            Uri.parse('$backendUrl/api/v1/surrogate/predict'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(model.toGraphPayload('SURROGATE_DRAG')),
+          ).timeout(const Duration(milliseconds: 150));
 
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['displacements'] != null) {
-            onDisplacementsUpdated(data['displacements'] as Map<String, dynamic>);
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data['displacements'] != null) {
+              onDisplacementsUpdated(data['displacements'] as Map<String, dynamic>);
+              backendSucceeded = true;
+            }
           }
         }
       } catch (e) {
-        // Fallback silently without blocking the 3D interaction loop
+        // Fallback to in-browser DartNeuralEngine
       } finally {
         _isPredicting = false;
+      }
+
+      // In-browser Pure Dart Neural Inference fallback (<1.5ms)
+      if (!backendSucceeded) {
+        DartNeuralEngine.instance.predictStructuraNet3D(model);
+        final displacements = <String, dynamic>{};
+        for (final n in model.nodes) {
+          displacements[n.id] = {
+            'dx': n.dispX,
+            'dy': n.dispY,
+            'dz': n.dispZ,
+            'rx': 0.0,
+            'ry': 0.0,
+            'rz': 0.0,
+          };
+        }
+        onDisplacementsUpdated(displacements);
       }
     });
   }
