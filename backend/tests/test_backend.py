@@ -568,3 +568,33 @@ def test_fiber_section_engine_and_section_net_pm():
     assert pred_telem.shape == (2, 3)
 
 
+def test_aci318_concrete_column_pm_endpoint():
+    """Verifies ACI 318-19 column P-M interaction API endpoint."""
+    request_data = {
+        "b": 0.45,
+        "h": 0.60,
+        "fc_mpa": 35.0,
+        "fy_mpa": 420.0,
+        "rebar_ratio": 0.022,
+        "pu_kn": 1200.0,
+        "mu_knm": 280.0,
+        "vu_kn": 150.0,
+        "cover": 0.04,
+        "tie_diameter": 0.010
+    }
+    response = client.post("/api/v1/code-check/concrete/column-pm", json=request_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["b"] == 0.45
+    assert data["h"] == 0.60
+    assert data["phi_p0_kn"] > 0.0
+    assert data["phi_pn_max_kn"] == pytest.approx(0.80 * data["phi_p0_kn"], rel=1e-3)
+    assert len(data["interaction_envelope"]) > 20
+    assert "governing_dcr" in data
+    assert "shear_vc_kn" in data
+    assert "phi_vn_kn" in data
+    assert data["max_stirrup_spacing_mm"] > 0.0
+    assert data["engine"] == "ACI_318_19_FIBER_ANALYTIC"
+
+
+

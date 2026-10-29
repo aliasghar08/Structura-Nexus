@@ -26,6 +26,7 @@ from .models.schema import (
     GenerativeBracingRequest,
     GenerativeBracingResponse,
 )
+from .models.concrete_schema import ConcreteColumnPMRequest, ConcreteColumnPMResponse
 from .solvers.fea_engine import FEA3DSpaceFrameSolver
 from .solvers.asce7_loads import ASCE7WindEngine, ASCE7SeismicEngine
 from .solvers.second_order_engine import SecondOrderStabilityEngine
@@ -34,6 +35,7 @@ from .interop.s2k_ifc_engine import S2KEngine, IFC43Engine
 from .ai.generative_bracing_optimizer import GenerativeBracingOptimizer
 from .surrogate.gnn_surrogate import GNNSurrogateEngine
 from .code_check.aisc_aci import AISC_W_SHAPES, MATERIALS, AISC360CodeChecker
+from .code_check.aci_concrete import ACI318ConcreteChecker
 from .benchmarks.verification_suite import TextbookBenchmarkSuite
 
 # AI Ecosystem imports
@@ -347,6 +349,20 @@ def generative_bracing_optimization(request: GenerativeBracingRequest):
         )
     except Exception as e:
         logger.error(f"Generative bracing optimization error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/code-check/concrete/column-pm", response_model=ConcreteColumnPMResponse)
+def analyze_concrete_column_pm(request: ConcreteColumnPMRequest):
+    """
+    Evaluates reinforced concrete column & beam cross-sections per ACI 318-19.
+    Returns Whitney stress-block interaction envelopes (Mn, Pn) and design (phi*Mn, phi*Pn),
+    axial compression caps, exact DCR, and shear stirrup verification.
+    """
+    try:
+        return ACI318ConcreteChecker.analyze_column_pm(request)
+    except Exception as e:
+        logger.error(f"ACI concrete column P-M analysis error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

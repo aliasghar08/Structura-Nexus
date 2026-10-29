@@ -737,6 +737,45 @@ class StructuralApiService {
     return null;
   }
 
+  /// ACI 318-19 Reinforced Concrete Column P-M Interaction Analysis
+  Future<Map<String, dynamic>?> checkConcreteColumnPM({
+    double b = 0.45,
+    double h = 0.60,
+    double fcMpa = 35.0,
+    double fyMpa = 420.0,
+    double rebarRatio = 0.022,
+    double puKn = 1200.0,
+    double muKnm = 280.0,
+    double vuKn = 150.0,
+    double cover = 0.04,
+    double tieDiameter = 0.010,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$defaultHttpBase/api/v1/code-check/concrete/column-pm'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'b': b,
+          'h': h,
+          'fc_mpa': fcMpa,
+          'fy_mpa': fyMpa,
+          'rebar_ratio': rebarRatio,
+          'pu_kn': puKn,
+          'mu_knm': muKnm,
+          'vu_kn': vuKn,
+          'cover': cover,
+          'tie_diameter': tieDiameter,
+        }),
+      );
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      debugPrint('ACI concrete column P-M API request failed: $e');
+    }
+    return null;
+  }
+
   void dispose() {
     _channel?.sink.close();
   }

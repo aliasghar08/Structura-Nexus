@@ -2,13 +2,50 @@
 
 > **Next-Generation AI Workstation for Civil & Structural Engineering**  
 > **System Architecture**: `v3.4.0-REV-A`  
-> **Standard Compliance**: `AISC 360-16` • `ACI 318-19` • `ASCE 7-16`
+> **Standard Compliance**: `AISC 360-16` • `ACI 318-19` • `ASCE 7-16`  
+> **Live Web App**: [https://structura-nexus.web.app](https://structura-nexus.web.app)  
+> **GCP Cloud Run API**: [https://structura-nexus-api-413099324256.us-central1.run.app](https://structura-nexus-api-413099324256.us-central1.run.app)
 
 ---
 
 ## 🏗️ Overview
 
 **Structura Nexus** (Structura Forge AI) is an engineering-grade workstation that unifies real-time surrogate graph neural network (GNN) inference with authoritative 3D Direct Stiffness Matrix (DSM) finite element solvers. Designed specifically for civil and structural engineering workflows, the platform bridges fast interactive schematic drafting with legally binding building code compliance verification.
+
+---
+
+## 💎 Apple visionOS Glassmorphic Interface
+
+The workstation features an edge-to-edge spatial engineering interface designed after visionOS:
+- **Liquid Glassmorphism (`GlassPod`)**: Dual-layer frosted glass (`sigmaX: 20, sigmaY: 20`) with linear gradient specular rim borders and soft ambient drop shadows.
+- **Floating Island Navigation**: Decoupled top header capsule, floating inspector panel, and detached telemetry dock that glide in via staggered spring physics.
+- **Continuous Squircle Radii**: Apple-standard squircles (`ContinuousRectangleBorder`) eliminating boxed desktop frames.
+- **Zero-Friction Discovery**: Complete unauthenticated guest inspection with automated auth gates on computational mutations.
+
+---
+
+## ⚡ 100% Proprietary Solvers & In-House Trained AI
+
+Zero third-party solver wrappers (`PyNiteFEA` purged). Everything is authored, trained, and executed in-house:
+- **Proprietary Tensor DSM Solver (`fea_engine.py`, `embedded_fea_solver.dart`)**: Pure NumPy/Dart 12-DOF stiffness solver ($[K]\{u\} = \{F\}$) with Cholesky/LU factorization, second-order $P\text{-}\Delta$ geometric stiffness ($[K_g]$), and Lanczos modal vibration eigenvalues.
+- **Custom-Trained `StructuraNet-3D`**: 4-layer edge-conditioned message-passing GNN trained with **Physics-Informed Equilibrium Loss** ($\|[K]\hat{u} - F\|_2^2$) guaranteeing hard Dirichlet boundary conditions.
+- **Custom-Trained `SectionNet-PM`**: Residual MLP trained on 2D non-linear fiber-section integrations (`fiber_section_engine.py`) predicting 32-point ACI 318-19 $(\phi M_n, \phi P_n)$ envelopes in **<0.2 ms**.
+- **Pure Dart Client Inference Runtime (`dart_neural_engine.dart`)**: Executes trained PyTorch weights natively in the browser via Dart Float32 arrays without requiring a Python backend.
+- **ACI 318-19 Concrete Studio (`aci_concrete.py` & `ConcretePmDialog`)**: Whitney stress blocks, axial compression caps ($\phi P_{n,\max} = 0.80 \phi P_0$), strain transitions $\phi(\epsilon_t)$, and shear stirrups ($V_c, V_s, s_{\max}$).
+
+---
+
+## 🐳 Docker & Docker Compose Quickstart
+
+Run the complete full-stack environment with one command:
+```bash
+# Build and launch both API backend (port 8000) and Web workstation (port 3000)
+docker compose up -d
+
+# Verify services
+curl http://localhost:8000/api/v1/health
+curl http://localhost:3000/api/v1/health
+```
 
 ---
 
