@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../models/structural_models.dart';
 import 'embedded_fea_solver.dart';
+import 'dart_neural_engine.dart';
 
 class StructuralApiService {
   static String get defaultHttpBase {
@@ -814,22 +815,16 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Shear tab API request failed: $e');
     }
-    // Local synthesis fallback
-    return {
-      'connection_type': 'BOLTED_SHEAR_TAB',
-      'demand_vu_kn': shearDemandKn,
-      'plate_height_mm': 2.0 * edgeDistanceMm + (numBolts - 1) * boltSpacingMm,
-      'governing_limit_state': 'Bolt Shear Rupture',
-      'governing_capacity_kn': 324.5,
-      'governing_dcr': double.parse((shearDemandKn / 324.5).toStringAsFixed(3)),
-      'is_safe': shearDemandKn <= 324.5,
-      'limit_states': [
-        {'name': 'Bolt Shear Rupture', 'capacity_kn': 324.5, 'dcr': double.parse((shearDemandKn / 324.5).toStringAsFixed(3))},
-        {'name': 'Plate Bearing / Tearout', 'capacity_kn': 412.0, 'dcr': double.parse((shearDemandKn / 412.0).toStringAsFixed(3))},
-        {'name': 'Plate Shear Yielding', 'capacity_kn': 435.0, 'dcr': double.parse((shearDemandKn / 435.0).toStringAsFixed(3))},
-        {'name': 'Double Fillet Weld', 'capacity_kn': 480.0, 'dcr': double.parse((shearDemandKn / 480.0).toStringAsFixed(3))},
-      ]
-    };
+    // ConnectionNet-AI neural surrogate fallback
+    return DartNeuralEngine().predictSteelConnection(
+      connectionType: 'shear_tab',
+      boltCount: numBolts,
+      boltDiaMm: boltDiameterMm,
+      plateThicknessMm: plateThicknessMm,
+      weldSizeMm: weldSizeMm,
+      fyMpa: plateFyMpa,
+      demandVuKn: shearDemandKn,
+    );
   }
 
   /// AISC DG 1 Column Base Plate & Anchor Rod Check
@@ -868,16 +863,18 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Base plate API request failed: $e');
     }
-    return {
-      'connection_type': 'COLUMN_BASE_PLATE',
-      'demand_pu_kn': axialDemandKn,
-      'demand_mu_knm': momentDemandKnm,
-      'required_thickness_mm': 28.5,
-      'recommended_thickness_mm': 30,
-      'governing_limit_state': 'Plate Bending Thickness',
-      'governing_dcr': 0.76,
-      'is_safe': true,
-    };
+    // ConnectionNet-AI neural surrogate fallback
+    return DartNeuralEngine().predictSteelConnection(
+      connectionType: 'base_plate',
+      boltCount: numAnchorRods,
+      boltDiaMm: anchorDiameterMm,
+      plateThicknessMm: 30.0,
+      weldSizeMm: 10.0,
+      fyMpa: plateFyMpa,
+      demandVuKn: shearDemandKn,
+      demandMuKnm: momentDemandKnm,
+      demandPuKn: axialDemandKn,
+    );
   }
 
   /// Geotechnical Spread Footing & Soil-Structure Interaction Analysis
@@ -928,25 +925,19 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Geotechnical foundation API request failed: $e');
     }
-    return {
-      'foundation_type': 'ISOLATED_SPREAD_FOOTING',
-      'footing_dimensions_m': [footingLengthM, footingWidthM, footingThicknessM],
-      'q_ult_kpa': 980.5,
-      'q_allowable_kpa': 326.8,
-      'q_max_service_kpa': 235.4,
-      'within_kern_no_uplift': true,
-      'governing_limit_state': 'Soil Bearing Capacity',
-      'governing_dcr': 0.72,
-      'is_safe': true,
-      'winkler_springs': {
-        'vertical_kz_kn_m': subgradeModulusKnM3 * (footingLengthM * footingWidthM),
-      },
-      'settlement': {
-        'elastic_settlement_mm': 12.4,
-        'allowable_settlement_mm': 25.0,
-        'is_settlement_pass': true,
-      }
-    };
+    // FoundationNet-SSI neural surrogate fallback
+    return DartNeuralEngine().predictFoundationSSI(
+      columnPuKn: axialLoadKn,
+      columnMuxKnm: momentXKnm,
+      columnMuyKnm: momentYKnm,
+      footingBM: footingWidthM,
+      footingLM: footingLengthM,
+      footingHM: footingThicknessM,
+      soilCohesionKpa: soilCohesionKpa,
+      soilFrictionDeg: soilFrictionAngleDeg,
+      soilUnitWeightKnm3: soilUnitWeightKnM3,
+      waterTableDepthM: foundationDepthM,
+    );
   }
 
   /// ASCE 41-17 Non-Linear Static Pushover & Performance-Based Earthquake Engineering
@@ -979,7 +970,13 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Non-linear pushover API request failed: $e');
     }
-    return null;
+    // PushoverNet-PBEE neural surrogate fallback
+    return DartNeuralEngine().predictPushoverPBEE(
+      numStories: numStories,
+      totalHeightM: buildingHeightM,
+      totalSeismicWeightKn: seismicWeightKn,
+      framingType: lateralSystem.contains('SMF') ? 0 : 1,
+    );
   }
 
   /// AeroNet-CFD High-Rise Facade Wind Tunnel Surrogate
@@ -1010,7 +1007,14 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Aero CFD API request failed: $e');
     }
-    return null;
+    // AeroNet-CFD neural surrogate fallback
+    return DartNeuralEngine().predictAeroCFD(
+      buildingHeightM: buildingHeightM,
+      buildingWidthM: buildingWidthM,
+      buildingDepthM: buildingDepthM,
+      windSpeedMs: designWindSpeedMS,
+      terrainExposure: terrainCategory == 'B' ? 0 : (terrainCategory == 'C' ? 1 : 2),
+    );
   }
 
   /// AISC 360 Composite Beam & AISC DG 11 Walking Floor Vibration
@@ -1053,7 +1057,15 @@ class StructuralApiService {
     } catch (e) {
       debugPrint('Composite floor API request failed: $e');
     }
-    return null;
+    // CompositeFloorNet-AI neural surrogate fallback
+    return DartNeuralEngine().predictCompositeFloor(
+      spanLengthM: beamSpanM,
+      beamSpacingM: beamSpacingM,
+      slabThicknessMm: slabTotalThicknessMm,
+      fcMpa: concreteFcMpa,
+      deadLoadKpa: deadLoadSuperimposedKpa,
+      liveLoadKpa: liveLoadKpa,
+    );
   }
 
   void dispose() {

@@ -151,4 +151,75 @@ void main() {
       expect(node.dispY, equals(0.0));
     }
   });
+
+  test('DartNeuralEngine: In-browser ConnectionNet-AI predicts steel limit states and stiffness', () {
+    final res = DartNeuralEngine.instance.predictSteelConnection(
+      connectionType: 'shear_tab',
+      boltCount: 4,
+      boltDiaMm: 22.2,
+      demandVuKn: 200.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('ConnectionNet-AI'));
+    expect(res['governing_dcr'], greaterThan(0.0));
+    expect(res['limit_states'].length, equals(6));
+  });
+
+  test('DartNeuralEngine: In-browser FoundationNet-SSI predicts soil bearing, settlement and Winkler springs', () {
+    final res = DartNeuralEngine.instance.predictFoundationSSI(
+      columnPuKn: 1400.0,
+      footingBM: 3.0,
+      footingLM: 3.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('FoundationNet-SSI'));
+    expect(res['q_ult_kpa'], greaterThan(500.0));
+    expect(res['winkler_springs']['vertical_kz_kn_m'], greaterThan(0.0));
+  });
+
+  test('DartNeuralEngine: In-browser PushoverNet-PBEE predicts non-linear capacity curve and performance point', () {
+    final res = DartNeuralEngine.instance.predictPushoverPBEE(
+      numStories: 10,
+      totalHeightM: 35.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('PushoverNet-PBEE'));
+    expect(res['pushover_curve'].length, equals(20));
+    expect(res['performance_level'], equals('LIFE_SAFETY'));
+  });
+
+  test('DartNeuralEngine: In-browser AeroNet-CFD predicts facade Cp flow field and vortex frequency', () {
+    final res = DartNeuralEngine.instance.predictAeroCFD(
+      buildingHeightM: 60.0,
+      buildingWidthM: 25.0,
+      windSpeedMs: 42.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('AeroNet-CFD'));
+    expect(res['vortex_shedding_frequency_hz'], greaterThan(0.0));
+    expect(res['facade_contours'].length, equals(6));
+  });
+
+  test('DartNeuralEngine: In-browser CompositeFloorNet-AI predicts flexure capacity and DG 11 vibrations', () {
+    final res = DartNeuralEngine.instance.predictCompositeFloor(
+      spanLengthM: 10.0,
+      beamSpacingM: 3.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('CompositeFloorNet-AI'));
+    expect(res['phi_mn_knm'], greaterThan(0.0));
+    expect(res['natural_frequency_hz'], greaterThan(0.0));
+  });
+
+  test('DartNeuralEngine: In-browser HazardDynamicNet-AI predicts dynamic response and health score', () {
+    final res = DartNeuralEngine.instance.predictHazardDynamicResponse(
+      windSpeedMs: 35.0,
+      pgaG: 0.35,
+      buildingHeightM: 24.0,
+    );
+    expect(res['latency_ms'], lessThan(5.0));
+    expect(res['model_type'], contains('HazardDynamicNet-AI'));
+    expect(res['max_roof_drift_mm'], greaterThan(0.0));
+    expect(res['structural_health_score'], inInclusiveRange(0.0, 100.0));
+  });
 }

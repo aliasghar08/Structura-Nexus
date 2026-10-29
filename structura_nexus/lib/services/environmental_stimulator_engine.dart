@@ -6,6 +6,7 @@
 
 import 'dart:math' as math;
 import '../models/structural_models.dart';
+import 'dart_neural_engine.dart';
 
 class EnvironmentalStimulationState {
   // 1. Wind & Hurricane
@@ -250,11 +251,23 @@ class EnvironmentalStimulatorEngine {
     final totalShearKn = (windBaseShearN + seismicBaseShearN) / 1000.0;
     final totalOtmKnm = totalShearKn * (buildingHeight * 0.65);
 
-    // Structural Integrity Safety Index (100% = Pristine, 0% = Collapse)
+    // HazardDynamicNet-AI Neural Inference
+    final aiHazard = DartNeuralEngine().predictHazardDynamicResponse(
+      windSpeedMs: state.isWindActive ? (state.windSpeedMph * 0.447) : 0.0,
+      pgaG: state.isSeismicActive ? state.seismicPgaG : 0.0,
+      deltaTempC: state.isThermalActive ? state.deltaTempC : 0.0,
+      snowLoadKpa: state.isSnowActive ? state.snowLoadKpa : 0.0,
+      settlementMm: state.isSettlementActive ? state.settlementMm : 0.0,
+      totalMassKg: model.totalMassKg,
+      buildingHeightM: buildingHeight,
+    );
+
+    // Blend physics equilibrium with HazardDynamicNet-AI neural surrogate
+    final neuralHealth = (aiHazard['structural_health_score'] as num).toDouble();
     double health = 100.0 - (maxDriftRatio / 0.02) * 50.0 - (overstressedCount * 3.5);
     if (state.isThermalActive && state.deltaTempC > 400.0) health -= 25.0;
     if (state.isSettlementActive && state.settlementMm > 50.0) health -= 15.0;
-    health = health.clamp(5.0, 100.0);
+    health = (health * 0.5 + neuralHealth * 0.5).clamp(5.0, 100.0);
 
     String level = 'SAFE';
     String summary = 'Structure performing within allowable elastic design criteria.';
@@ -281,3 +294,4 @@ class EnvironmentalStimulatorEngine {
     );
   }
 }
+

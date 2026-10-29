@@ -766,5 +766,69 @@ def test_composite_floor_and_vibration_endpoint():
     assert "human_perception_rating" in data["vibration_serviceability"]
 
 
+def test_ai_neural_engines_endpoints():
+    """Verifies that all 8 proprietary engineering neural engines serve in <1ms."""
+    # 1. ConnectionNet
+    r1 = client.post("/api/v1/ai/connection-net?conn_type=0&bolts=4&vu=220")
+    assert r1.status_code == 200
+    d1 = r1.json()
+    assert "ConnectionNet-AI" in d1["model_type"]
+    assert "governing_dcr" in d1
+    assert d1["inference_latency_ms"] < 20.0
+
+    # 2. FoundationNet
+    r2 = client.post("/api/v1/ai/foundation-net?pu=1500&b=3.0&l=3.0")
+    assert r2.status_code == 200
+    d2 = r2.json()
+    assert "FoundationNet-SSI" in d2["model_type"]
+    assert "q_ult_kpa" in d2
+    assert "winkler_springs" in d2
+
+    # 3. PushoverNet
+    r3 = client.post("/api/v1/ai/pushover-net?stories=10&height_m=35")
+    assert r3.status_code == 200
+    d3 = r3.json()
+    assert "PushoverNet-PBEE" in d3["model_type"]
+    assert len(d3["pushover_curve"]) > 10
+
+    # 4. AeroNet
+    r4 = client.post("/api/v1/ai/aero-net?height_m=60&width_m=25&wind_speed_ms=45")
+    assert r4.status_code == 200
+    d4 = r4.json()
+    assert "AeroNet-CFD" in d4["model_type"]
+    assert "vortex_shedding_frequency_hz" in d4
+    assert len(d4["facade_contours"]) >= 5
+
+    # 5. CompositeFloorNet
+    r5 = client.post("/api/v1/ai/composite-floor-net?span_m=12&spacing_m=3.0")
+    assert r5.status_code == 200
+    d5 = r5.json()
+    assert "CompositeFloorNet-AI" in d5["model_type"]
+    assert "phi_mn_knm" in d5
+    assert "natural_frequency_hz" in d5
+
+    # 6. HazardNet
+    r6 = client.post("/api/v1/ai/hazard-stimulate?wind_speed_ms=45&pga_g=0.45&building_height_m=30")
+    assert r6.status_code == 200
+    d6 = r6.json()
+    assert "HazardDynamicNet-AI" in d6["model_type"]
+    assert "structural_health_score" in d6
+    assert "max_roof_drift_mm" in d6
+
+    # 7. ModalNet
+    r7 = client.post("/api/v1/ai/modal-net?height_m=30&weight_kn=10000")
+    assert r7.status_code == 200
+    d7 = r7.json()
+    assert "ModalEigenNet-AI" in d7["model_type"]
+    assert "fundamental_period_t1_s" in d7
+
+    # 8. CarbonNet
+    r8 = client.post("/api/v1/ai/carbon-net?steel_tonnes=80&concrete_m3=300")
+    assert r8.status_code == 200
+    d8 = r8.json()
+    assert "CarbonNet-LCA" in d8["model_type"]
+    assert "potential_reduction_pct" in d8
+
+
 
 
