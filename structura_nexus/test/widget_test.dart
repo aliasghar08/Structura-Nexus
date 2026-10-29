@@ -27,13 +27,21 @@ void main() {
 
     expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
     expect(find.text('TOOLS & SUITE'), findsOneWidget);
-    expect(find.text('AI & GEN'), findsOneWidget);
-    expect(find.text('CAD & BIM'), findsOneWidget);
-    expect(find.text('ANALYSIS'), findsOneWidget);
+    expect(find.text('DRAWER'), findsOneWidget);
+    expect(find.text('HYBRID DUAL'), findsOneWidget);
+    expect(find.text('STRUCTURANET-3D (<2ms)'), findsOneWidget);
+    expect(find.text('PROPRIETARY DSM'), findsOneWidget);
     expect(find.text('ASCE 7-16 LOAD COMBINATIONS'), findsOneWidget);
     expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
     expect(find.textContaining('aliasgharinnocent@yahoo.com'), findsOneWidget);
     expect(find.textContaining('DMCA Protected'), findsOneWidget);
+
+    // Verify all tools are accessible in the App Drawer
+    await tester.tap(find.text('TOOLS & SUITE'));
+    await tester.pumpAndSettle();
+    expect(find.text('AI & GENERATIVE'), findsOneWidget);
+    expect(find.text('MODELING & CAD'), findsOneWidget);
+    expect(find.text('ANALYSIS & DESIGN'), findsOneWidget);
   });
 
   testWidgets('Tapping a feature redirects unauthenticated user to login screen', (WidgetTester tester) async {

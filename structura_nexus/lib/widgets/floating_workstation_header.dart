@@ -1,6 +1,6 @@
 // ============================================================================
 // FloatingWorkstationHeader — Apple visionOS Floating Glass Header Island
-// Multi-layer frosted glass, specular rim-light & top-level tools menus
+// Canvas Page Controls: Presets, Solvers, Display Modes, Deformations, & Drawer
 // Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
 // ============================================================================
 
@@ -17,6 +17,10 @@ class FloatingWorkstationHeader extends StatelessWidget {
   final Function(double) onDeformationScaleChanged;
   final Function(String) onPresetSelected;
   final VoidCallback onSolveTriggered;
+  final VoidCallback? onOpenDrawer;
+  final VoidCallback? onOpenAuth;
+
+  // Optional tool callbacks (all 17 engineering tools & suites are now housed in WorkstationDrawer)
   final VoidCallback? onOpenCopilot;
   final VoidCallback? onOpenGenerativeOptimizer;
   final VoidCallback? onOpenGenerativeBracing;
@@ -34,8 +38,6 @@ class FloatingWorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenCompositeFloor;
   final VoidCallback? onOpenEnvironmentalStimulator;
   final VoidCallback? onOptimize;
-  final VoidCallback? onOpenAuth;
-  final VoidCallback? onOpenDrawer;
 
   const FloatingWorkstationHeader({
     super.key,
@@ -46,6 +48,8 @@ class FloatingWorkstationHeader extends StatelessWidget {
     required this.onDeformationScaleChanged,
     required this.onPresetSelected,
     required this.onSolveTriggered,
+    this.onOpenDrawer,
+    this.onOpenAuth,
     this.onOpenCopilot,
     this.onOpenGenerativeOptimizer,
     this.onOpenGenerativeBracing,
@@ -63,8 +67,6 @@ class FloatingWorkstationHeader extends StatelessWidget {
     this.onOpenCompositeFloor,
     this.onOpenEnvironmentalStimulator,
     this.onOptimize,
-    this.onOpenAuth,
-    this.onOpenDrawer,
   });
 
   @override
@@ -76,18 +78,51 @@ class FloatingWorkstationHeader extends StatelessWidget {
         clipBehavior: Clip.none,
         child: Row(
           children: [
-            // 0. Drawer Toggle Pill (Quick Drawer Access)
-            if (onOpenDrawer != null) ...[
-              GlassPod(
-                padding: const EdgeInsets.all(8),
-                borderRadius: 16,
-                onTap: onOpenDrawer,
-                child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
+            // 1. App Drawer Launcher Pill (Opens slide-out drawer hosting all 17 engineering tools & suites)
+            GlassPod(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              borderRadius: 18,
+              onTap: onOpenDrawer,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.menu_rounded, color: Color(0xFF00F0FF), size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    "TOOLS & SUITE",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: const Color(0xFF00F0FF).withValues(alpha: 0.4),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: const Text(
+                      "DRAWER",
+                      style: TextStyle(
+                        color: Color(0xFF00F0FF),
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-            ],
+            ),
+            const SizedBox(width: 10),
 
-            // 1. Brand Capsule
+            // 2. Brand Capsule
             GlassPod(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               borderRadius: 20,
@@ -137,7 +172,7 @@ class FloatingWorkstationHeader extends StatelessWidget {
                         ],
                       ),
                       Text(
-                        "Autonomous Workstation • AISC 360 / ACI 318",
+                        "3D Space Frame Canvas • AISC 360 / ACI 318",
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 9.5),
                       ),
                     ],
@@ -147,217 +182,11 @@ class FloatingWorkstationHeader extends StatelessWidget {
             ),
             const SizedBox(width: 10),
 
-            // 2. Central Navigation Pill (Tools & Suite, AI & Gen, CAD & BIM, Analysis)
-            GlassPod(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              borderRadius: 20,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildToolsSuiteDropdown(),
-                  const SizedBox(width: 6),
-                  _buildCategoryMenu(
-                    label: 'AI & GEN',
-                    icon: Icons.psychology_rounded,
-                    accentColor: const Color(0xFF00F0FF),
-                    items: [
-                      _MenuItemDef(
-                        icon: Icons.psychology_rounded,
-                        color: const Color(0xFF00F0FF),
-                        title: 'AI Copilot',
-                        subtitle: 'Gemini 1.5 Pro Structural Agent',
-                        badge: 'GEMINI',
-                        onTap: onOpenCopilot,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.hub_rounded,
-                        color: const Color(0xFF10B981),
-                        title: 'Generative Opt',
-                        subtitle: 'Neural Profile Auto-Sizer',
-                        badge: 'GNN',
-                        onTap: onOpenGenerativeOptimizer,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.auto_awesome_rounded,
-                        color: const Color(0xFF8B5CF6),
-                        title: 'Gen Bracing',
-                        subtitle: 'Automated Topology Placement',
-                        badge: 'TOPOLOGY',
-                        onTap: onOpenGenerativeBracing,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.tune_rounded,
-                        color: const Color(0xFF00F0FF),
-                        title: 'Auto-Sizer',
-                        subtitle: 'AISC 360 Weight Minimization',
-                        badge: 'AISC',
-                        onTap: onOptimize,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 6),
-                  _buildCategoryMenu(
-                    label: 'CAD & BIM',
-                    icon: Icons.architecture_rounded,
-                    accentColor: const Color(0xFFF59E0B),
-                    items: [
-                      _MenuItemDef(
-                        icon: Icons.architecture_rounded,
-                        color: const Color(0xFFF59E0B),
-                        title: 'CAD Studio',
-                        subtitle: '2D / 3D Parametric Framework',
-                        badge: '3D/2D',
-                        onTap: onOpenCadStudio,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.folder_special_rounded,
-                        color: const Color(0xFFA855F7),
-                        title: 'Cloud Library',
-                        subtitle: 'AISC Catalog & DXF / BOM Export',
-                        badge: 'DXF',
-                        onTap: onOpenLibrary,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.architecture,
-                        color: const Color(0xFF00F0FF),
-                        title: 'Concrete Studio',
-                        subtitle: 'SectionNet-PM Fiber P-M (<0.2ms)',
-                        badge: 'ACI 318',
-                        onTap: onOpenConcreteStudio,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.bolt_rounded,
-                        color: const Color(0xFFF59E0B),
-                        title: 'Steel Connections',
-                        subtitle: 'Shear Tabs, End & Base Plates',
-                        badge: 'AISC 360',
-                        onTap: onOpenSteelConnections,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.foundation_rounded,
-                        color: const Color(0xFF10B981),
-                        title: 'Foundation & SSI',
-                        subtitle: 'Spread Footings & Soil Springs',
-                        badge: 'WINKLER',
-                        onTap: onOpenGeotechnicalFoundation,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.layers_rounded,
-                        color: const Color(0xFF14B8A6),
-                        title: 'Composite Floor',
-                        subtitle: 'Shear Studs & Walking Vibration',
-                        badge: 'DG 11',
-                        onTap: onOpenCompositeFloor,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 6),
-                  _buildCategoryMenu(
-                    label: 'ANALYSIS',
-                    icon: Icons.waves_rounded,
-                    accentColor: const Color(0xFFEC4899),
-                    items: [
-                      _MenuItemDef(
-                        icon: Icons.waves_rounded,
-                        color: const Color(0xFFEC4899),
-                        title: 'Modal Seismic',
-                        subtitle: 'Dynamic Vibration Eigenvalues',
-                        badge: 'EIGEN',
-                        onTap: onOpenSeismicModal,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.domain_rounded,
-                        color: const Color(0xFF06B6D4),
-                        title: 'Lateral Stability',
-                        subtitle: 'ASCE 7 Drift & P-Δ Second-Order',
-                        badge: 'ASCE 7',
-                        onTap: onOpenLateralStability,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.stacked_line_chart_rounded,
-                        color: const Color(0xFF00F0FF),
-                        title: 'Non-Linear Pushover',
-                        subtitle: 'ASCE 41 Capacity Spectrum ADRS',
-                        badge: 'PBEE',
-                        onTap: onOpenPushoverAnalysis,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.air_rounded,
-                        color: const Color(0xFF06B6D4),
-                        title: 'Wind Tunnel CFD',
-                        subtitle: 'AeroNet Corner Suctions & Strouhal',
-                        badge: 'CFD',
-                        onTap: onOpenWindCfd,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.assignment_turned_in_rounded,
-                        color: const Color(0xFF10B981),
-                        title: 'PE Calcs & BIM',
-                        subtitle: 'Stamped Engineering Packet',
-                        badge: 'PE STAMP',
-                        onTap: onOpenPePacket,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.eco_rounded,
-                        color: const Color(0xFF14B8A6),
-                        title: 'Embodied Carbon',
-                        subtitle: 'EC3 Life Cycle Assessment',
-                        badge: 'EC3',
-                        onTap: onOpenEmbodiedCarbon,
-                      ),
-                      _MenuItemDef(
-                        icon: Icons.thunderstorm_rounded,
-                        color: const Color(0xFFFF5252),
-                        title: 'Dynamic Stimulator',
-                        subtitle: 'Multi-Hazard Real-Time Shaking & Wind',
-                        badge: 'LIVE 3D',
-                        onTap: onOpenEnvironmentalStimulator,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // 2.5 Quick Hazard Stimulator Capsule
-            if (onOpenEnvironmentalStimulator != null) ...[
-              GlassPod(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                borderRadius: 18,
-                onTap: onOpenEnvironmentalStimulator,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF5252).withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(Icons.thunderstorm_rounded, color: Color(0xFFFF5252), size: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "STIMULATE HAZARDS",
-                      style: TextStyle(
-                        color: Color(0xFFFF5252),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-            ],
-
-            // 3. Benchmark Presets Dropdown
+            // 3. Benchmark Presets Dropdown (Directly switches 3D model on the active canvas)
             _buildPresetDropdown(),
             const SizedBox(width: 10),
 
-            // 4. Dual Engine Mode Pill Switcher
+            // 4. Solver Engine Mode Switcher (Selects active solver for current frame)
             GlassPod(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               borderRadius: 18,
@@ -374,351 +203,22 @@ class FloatingWorkstationHeader extends StatelessWidget {
             ),
             const SizedBox(width: 10),
 
-            // 5. Display Mode Selector & Magnify Slider
+            // 5. Canvas Display Mode Selector (Directly configures 3D viewport rendering)
             _buildDisplayModeSelector(),
             const SizedBox(width: 10),
 
+            // 6. Deformation Magnification Slider (Directly scales 3D displacement)
             _buildDeformationSlider(),
             const SizedBox(width: 10),
 
-            // 6. Backend Connection Indicator & Solve Trigger
+            // 7. Backend Connection Indicator & Solve Trigger (Executes solve on current frame)
             _buildConnectionIndicator(),
             const SizedBox(width: 10),
 
-            // 7. Firebase Auth Profile
+            // 8. Firebase Auth Profile
             _buildUserProfileButton(),
           ],
         ),
-      ),
-    );
-  }
-
-  // --------------------------------------------------------------------------
-  // Primary Tools & Suite Dropdown Menu
-  // --------------------------------------------------------------------------
-  Widget _buildToolsSuiteDropdown() {
-    return PopupMenuButton<VoidCallback>(
-      tooltip: 'Engineering Tools & Suite Menu',
-      color: const Color(0xFF161B22),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.3)),
-      ),
-      offset: const Offset(0, 48),
-      onSelected: (cb) => cb(),
-      itemBuilder: (context) => [
-        _buildCategoryHeader('AI & GENERATIVE'),
-        _buildPopupItem(
-          icon: Icons.psychology_rounded,
-          color: const Color(0xFF00F0FF),
-          title: 'AI Copilot',
-          subtitle: 'Gemini 1.5 Pro Structural Agent',
-          badge: 'GEMINI',
-          onTap: onOpenCopilot,
-        ),
-        _buildPopupItem(
-          icon: Icons.hub_rounded,
-          color: const Color(0xFF10B981),
-          title: 'Generative Opt',
-          subtitle: 'Neural Profile Auto-Sizer',
-          badge: 'GNN',
-          onTap: onOpenGenerativeOptimizer,
-        ),
-        _buildPopupItem(
-          icon: Icons.auto_awesome_rounded,
-          color: const Color(0xFF8B5CF6),
-          title: 'Gen Bracing',
-          subtitle: 'Automated Topology Placement',
-          badge: 'TOPOLOGY',
-          onTap: onOpenGenerativeBracing,
-        ),
-        _buildPopupItem(
-          icon: Icons.tune_rounded,
-          color: const Color(0xFF00F0FF),
-          title: 'Auto-Sizer',
-          subtitle: 'AISC 360 Weight Minimization',
-          badge: 'AISC',
-          onTap: onOptimize,
-        ),
-        const PopupMenuDivider(),
-        _buildCategoryHeader('MODELING & CAD'),
-        _buildPopupItem(
-          icon: Icons.architecture_rounded,
-          color: const Color(0xFFF59E0B),
-          title: 'CAD Studio',
-          subtitle: '2D / 3D Parametric Framework',
-          badge: '3D/2D',
-          onTap: onOpenCadStudio,
-        ),
-        _buildPopupItem(
-          icon: Icons.folder_special_rounded,
-          color: const Color(0xFFA855F7),
-          title: 'Cloud Library',
-          subtitle: 'AISC Catalog & DXF / BOM Export',
-          badge: 'DXF',
-          onTap: onOpenLibrary,
-        ),
-        _buildPopupItem(
-          icon: Icons.architecture,
-          color: const Color(0xFF00F0FF),
-          title: 'Concrete Studio',
-          subtitle: 'SectionNet-PM Fiber P-M (<0.2ms)',
-          badge: 'ACI 318',
-          onTap: onOpenConcreteStudio,
-        ),
-        _buildPopupItem(
-          icon: Icons.bolt_rounded,
-          color: const Color(0xFFF59E0B),
-          title: 'Steel Connections',
-          subtitle: 'Shear Tabs, End & Base Plates',
-          badge: 'AISC 360',
-          onTap: onOpenSteelConnections,
-        ),
-        _buildPopupItem(
-          icon: Icons.foundation_rounded,
-          color: const Color(0xFF10B981),
-          title: 'Foundation & SSI',
-          subtitle: 'Spread Footings & Soil Springs',
-          badge: 'WINKLER',
-          onTap: onOpenGeotechnicalFoundation,
-        ),
-        _buildPopupItem(
-          icon: Icons.layers_rounded,
-          color: const Color(0xFF14B8A6),
-          title: 'Composite Floor',
-          subtitle: 'Shear Studs & Walking Vibration',
-          badge: 'DG 11',
-          onTap: onOpenCompositeFloor,
-        ),
-        const PopupMenuDivider(),
-        _buildCategoryHeader('ANALYSIS & DESIGN'),
-        _buildPopupItem(
-          icon: Icons.waves_rounded,
-          color: const Color(0xFFEC4899),
-          title: 'Modal Seismic',
-          subtitle: 'Dynamic Vibration Eigenvalues',
-          badge: 'EIGEN',
-          onTap: onOpenSeismicModal,
-        ),
-        _buildPopupItem(
-          icon: Icons.domain_rounded,
-          color: const Color(0xFF06B6D4),
-          title: 'Lateral Stability',
-          subtitle: 'ASCE 7 Drift & P-Δ Second-Order',
-          badge: 'ASCE 7',
-          onTap: onOpenLateralStability,
-        ),
-        _buildPopupItem(
-          icon: Icons.stacked_line_chart_rounded,
-          color: const Color(0xFF00F0FF),
-          title: 'Non-Linear Pushover',
-          subtitle: 'ASCE 41 Capacity Spectrum ADRS',
-          badge: 'PBEE',
-          onTap: onOpenPushoverAnalysis,
-        ),
-        _buildPopupItem(
-          icon: Icons.air_rounded,
-          color: const Color(0xFF06B6D4),
-          title: 'Wind Tunnel CFD',
-          subtitle: 'AeroNet Corner Suctions & Strouhal',
-          badge: 'CFD',
-          onTap: onOpenWindCfd,
-        ),
-        _buildPopupItem(
-          icon: Icons.assignment_turned_in_rounded,
-          color: const Color(0xFF10B981),
-          title: 'PE Calcs & BIM',
-          subtitle: 'Stamped Engineering Packet',
-          badge: 'PE STAMP',
-          onTap: onOpenPePacket,
-        ),
-        _buildPopupItem(
-          icon: Icons.eco_rounded,
-          color: const Color(0xFF14B8A6),
-          title: 'Embodied Carbon',
-          subtitle: 'EC3 Life Cycle Assessment',
-          badge: 'EC3',
-          onTap: onOpenEmbodiedCarbon,
-        ),
-        _buildPopupItem(
-          icon: Icons.thunderstorm_rounded,
-          color: const Color(0xFFFF5252),
-          title: 'Dynamic Stimulator',
-          subtitle: 'Multi-Hazard Real-Time Shaking & Wind',
-          badge: 'LIVE 3D',
-          onTap: onOpenEnvironmentalStimulator,
-        ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1F6FEB), Color(0xFF00F0FF)],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF00F0FF).withValues(alpha: 0.35),
-              blurRadius: 8,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.tune_rounded, size: 14, color: Colors.black),
-            SizedBox(width: 6),
-            Text(
-              'TOOLS & SUITE',
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.8,
-              ),
-            ),
-            SizedBox(width: 4),
-            Icon(Icons.arrow_drop_down_rounded, size: 16, color: Colors.black),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryMenu({
-    required String label,
-    required IconData icon,
-    required Color accentColor,
-    required List<_MenuItemDef> items,
-  }) {
-    return PopupMenuButton<VoidCallback>(
-      tooltip: '$label Suite Menu',
-      color: const Color(0xFF161B22),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: accentColor.withValues(alpha: 0.3)),
-      ),
-      offset: const Offset(0, 44),
-      onSelected: (cb) => cb(),
-      itemBuilder: (context) => items
-          .map(
-            (item) => _buildPopupItem(
-              icon: item.icon,
-              color: item.color,
-              title: item.title,
-              subtitle: item.subtitle,
-              badge: item.badge,
-              onTap: item.onTap,
-            ),
-          )
-          .toList(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: accentColor),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.4,
-              ),
-            ),
-            const SizedBox(width: 3),
-            const Icon(Icons.arrow_drop_down_rounded, size: 15, color: Colors.white70),
-          ],
-        ),
-      ),
-    );
-  }
-
-  PopupMenuEntry<VoidCallback> _buildCategoryHeader(String title) {
-    return PopupMenuItem<VoidCallback>(
-      enabled: false,
-      height: 24,
-      child: Text(
-        title,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.4),
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.0,
-        ),
-      ),
-    );
-  }
-
-  PopupMenuItem<VoidCallback> _buildPopupItem({
-    required IconData icon,
-    required Color color,
-    required String title,
-    required String subtitle,
-    required String badge,
-    required VoidCallback? onTap,
-  }) {
-    return PopupMenuItem<VoidCallback>(
-      value: onTap ?? () {},
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Icon(icon, size: 15, color: color),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        badge,
-                        style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  subtitle,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 9.5),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -905,22 +405,4 @@ class FloatingWorkstationHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-class _MenuItemDef {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final String badge;
-  final VoidCallback? onTap;
-
-  const _MenuItemDef({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.badge,
-    required this.onTap,
-  });
 }

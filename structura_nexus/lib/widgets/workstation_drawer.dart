@@ -24,6 +24,7 @@ class WorkstationDrawer extends StatefulWidget {
   final VoidCallback? onOpenCompositeFloor;
   final VoidCallback? onOpenEnvironmentalStimulator;
   final VoidCallback? onOptimize;
+  final Function(String)? onPresetSelected;
 
   const WorkstationDrawer({
     super.key,
@@ -44,6 +45,7 @@ class WorkstationDrawer extends StatefulWidget {
     this.onOpenCompositeFloor,
     this.onOpenEnvironmentalStimulator,
     this.onOptimize,
+    this.onPresetSelected,
   });
 
   @override
@@ -249,6 +251,37 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
       onTap: widget.onOpenEnvironmentalStimulator,
       badge: 'LIVE 3D',
     ),
+
+    // CANVAS PRESETS
+    if (widget.onPresetSelected != null) ...[
+      _DrawerToolDef(
+        label: '3D Sway Frame',
+        subtitle: 'ASCE 7 Multi-Story Sway Benchmark',
+        icon: Icons.domain_rounded,
+        color: const Color(0xFF00F0FF),
+        category: 'CANVAS PRESETS',
+        onTap: () => widget.onPresetSelected!('sway'),
+        badge: 'PRESET',
+      ),
+      _DrawerToolDef(
+        label: 'Warren Truss',
+        subtitle: 'AISC 360 Steel Bridge Truss',
+        icon: Icons.linear_scale_rounded,
+        color: const Color(0xFFF59E0B),
+        category: 'CANVAS PRESETS',
+        onTap: () => widget.onPresetSelected!('truss'),
+        badge: 'PRESET',
+      ),
+      _DrawerToolDef(
+        label: 'Timoshenko Girder',
+        subtitle: 'Analytical Cantilever Benchmark',
+        icon: Icons.straighten_rounded,
+        color: const Color(0xFF10B981),
+        category: 'CANVAS PRESETS',
+        onTap: () => widget.onPresetSelected!('cantilever'),
+        badge: 'PRESET',
+      ),
+    ],
   ];
 
   void _showShortcutsDialog() {
@@ -530,7 +563,7 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
       return tools.map((t) => _buildDrawerToolItem(t)).toList();
     }
 
-    final categories = ['AI & GENERATIVE', 'MODELING & CAD', 'ANALYSIS & DESIGN'];
+    final categories = ['AI & GENERATIVE', 'MODELING & CAD', 'ANALYSIS & DESIGN', 'CANVAS PRESETS'];
     final widgets = <Widget>[];
 
     for (var i = 0; i < categories.length; i++) {

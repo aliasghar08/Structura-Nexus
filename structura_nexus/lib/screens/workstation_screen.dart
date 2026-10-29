@@ -425,6 +425,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOpenPePacket: onOpenPePacket,
         onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
         onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
+        onPresetSelected: (presetKey) {
+          _requireAuth(
+            featureName: 'Benchmark Presets',
+            onAuthenticated: () => _loadPreset(presetKey),
+          );
+        },
       ),
       body: Stack(
         children: [
