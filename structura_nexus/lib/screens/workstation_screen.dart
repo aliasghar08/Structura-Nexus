@@ -29,6 +29,12 @@ import '../widgets/floating_inspector_panel.dart';
 import '../widgets/floating_workstation_header.dart';
 import '../widgets/floating_copyright_watermark.dart';
 import '../widgets/concrete_pm_dialog.dart';
+import '../widgets/steel_connection_dialog.dart';
+import '../widgets/geotechnical_foundation_dialog.dart';
+import '../widgets/pushover_analysis_dialog.dart';
+import '../widgets/wind_cfd_dialog.dart';
+import '../widgets/composite_floor_dialog.dart';
+import '../widgets/environmental_stimulator_dialog.dart';
 import '../services/dart_neural_engine.dart';
 
 class WorkstationScreen extends StatefulWidget {
@@ -298,6 +304,88 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       },
     );
 
+    void onOpenSteelConnections() => _requireAuth(
+      featureName: 'Steel Connection Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => SteelConnectionDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
+    void onOpenGeotechnicalFoundation() => _requireAuth(
+      featureName: 'Foundation & SSI Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => GeotechnicalFoundationDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
+    void onOpenPushoverAnalysis() => _requireAuth(
+      featureName: 'Non-Linear Pushover Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => PushoverAnalysisDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
+    void onOpenWindCfd() => _requireAuth(
+      featureName: 'Wind Tunnel CFD Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => WindCfdDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
+    void onOpenCompositeFloor() => _requireAuth(
+      featureName: 'Composite Floor Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => CompositeFloorDialog(
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
+    void onOpenEnvironmentalStimulator() => _requireAuth(
+      featureName: 'Dynamic Environmental Stimulator',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => EnvironmentalStimulatorDialog(
+            model: _model,
+            onStructureModified: () => setState(() {}),
+            onModelReplaced: (newModel) {
+              setState(() {
+                _model = newModel;
+                _selectedNodeId = null;
+                _selectedMemberId = null;
+                _triggerSolve();
+              });
+            },
+            onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+          ),
+        );
+      },
+    );
+
     double maxDcr = 0.0;
     int passCount = 0;
     int failCount = 0;
@@ -326,10 +414,17 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOptimize: onOptimize,
         onOpenCadStudio: onOpenCadStudio,
         onOpenLibrary: onOpenLibrary,
+        onOpenConcreteStudio: onOpenConcreteStudio,
+        onOpenSteelConnections: onOpenSteelConnections,
+        onOpenGeotechnicalFoundation: onOpenGeotechnicalFoundation,
+        onOpenCompositeFloor: onOpenCompositeFloor,
         onOpenSeismicModal: onOpenSeismicModal,
         onOpenLateralStability: onOpenLateralStability,
+        onOpenPushoverAnalysis: onOpenPushoverAnalysis,
+        onOpenWindCfd: onOpenWindCfd,
         onOpenPePacket: onOpenPePacket,
         onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
+        onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
       ),
       body: Stack(
         children: [
@@ -405,6 +500,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenPePacket: onOpenPePacket,
               onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
               onOpenConcreteStudio: onOpenConcreteStudio,
+              onOpenSteelConnections: onOpenSteelConnections,
+              onOpenGeotechnicalFoundation: onOpenGeotechnicalFoundation,
+              onOpenPushoverAnalysis: onOpenPushoverAnalysis,
+              onOpenWindCfd: onOpenWindCfd,
+              onOpenCompositeFloor: onOpenCompositeFloor,
+              onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
               onOptimize: onOptimize,
               onEngineChanged: (engine) {
                 _requireAuth(

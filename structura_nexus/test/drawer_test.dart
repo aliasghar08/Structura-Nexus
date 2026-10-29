@@ -10,7 +10,7 @@ import 'package:structura_nexus/widgets/workstation_drawer.dart';
 void main() {
   group('WorkstationDrawer Widget Tests', () {
     testWidgets('Renders all primary tool suite buttons inside drawer', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      await tester.binding.setSurfaceSize(const Size(1200, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -37,11 +37,16 @@ void main() {
       expect(find.text('Gen Bracing'), findsOneWidget);
       expect(find.text('CAD Studio'), findsOneWidget);
       expect(find.text('Cloud Library'), findsOneWidget);
+      expect(find.text('Concrete Studio'), findsOneWidget);
+      expect(find.text('Steel Connections'), findsOneWidget);
+      expect(find.text('Foundation & SSI'), findsOneWidget);
+      expect(find.text('Composite Floor'), findsOneWidget);
       expect(find.text('Modal Seismic'), findsOneWidget);
       expect(find.text('Lateral Stability'), findsOneWidget);
-
-      await tester.drag(find.byType(ListView), const Offset(0, -400));
-      await tester.pumpAndSettle();
+      expect(find.text('Non-Linear Pushover'), findsOneWidget);
+      expect(find.text('Wind Tunnel CFD'), findsOneWidget);
+      expect(find.text('Dynamic Stimulator'), findsOneWidget);
+      expect(find.text('PE Calcs & BIM'), findsOneWidget);
       expect(find.text('Embodied Carbon'), findsOneWidget);
     });
 

@@ -16,6 +16,13 @@ class WorkstationSidebar extends StatefulWidget {
   final VoidCallback? onOpenLateralStability;
   final VoidCallback? onOpenPePacket;
   final VoidCallback? onOpenEmbodiedCarbon;
+  final VoidCallback? onOpenConcreteStudio;
+  final VoidCallback? onOpenSteelConnections;
+  final VoidCallback? onOpenGeotechnicalFoundation;
+  final VoidCallback? onOpenPushoverAnalysis;
+  final VoidCallback? onOpenWindCfd;
+  final VoidCallback? onOpenCompositeFloor;
+  final VoidCallback? onOpenEnvironmentalStimulator;
   final VoidCallback? onOptimize;
   final bool initialExpanded;
 
@@ -30,6 +37,13 @@ class WorkstationSidebar extends StatefulWidget {
     this.onOpenLateralStability,
     this.onOpenPePacket,
     this.onOpenEmbodiedCarbon,
+    this.onOpenConcreteStudio,
+    this.onOpenSteelConnections,
+    this.onOpenGeotechnicalFoundation,
+    this.onOpenPushoverAnalysis,
+    this.onOpenWindCfd,
+    this.onOpenCompositeFloor,
+    this.onOpenEnvironmentalStimulator,
     this.onOptimize,
     this.initialExpanded = true,
   });
@@ -147,6 +161,42 @@ class _WorkstationSidebarState extends State<WorkstationSidebar> {
       onTap: widget.onOpenLibrary,
       badge: 'DXF',
     ),
+    _SidebarToolDef(
+      label: 'Concrete Studio',
+      subtitle: 'SectionNet-PM Fiber P-M (<0.2ms)',
+      icon: Icons.architecture,
+      color: const Color(0xFF00F0FF),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenConcreteStudio,
+      badge: 'ACI 318',
+    ),
+    _SidebarToolDef(
+      label: 'Steel Connections',
+      subtitle: 'Shear Tabs, End & Base Plates',
+      icon: Icons.bolt_rounded,
+      color: const Color(0xFFF59E0B),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenSteelConnections,
+      badge: 'AISC 360',
+    ),
+    _SidebarToolDef(
+      label: 'Foundation & SSI',
+      subtitle: 'Spread Footings & Soil Springs',
+      icon: Icons.foundation_rounded,
+      color: const Color(0xFF10B981),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenGeotechnicalFoundation,
+      badge: 'WINKLER',
+    ),
+    _SidebarToolDef(
+      label: 'Composite Floor',
+      subtitle: 'Shear Studs & Walking Vibration',
+      icon: Icons.layers_rounded,
+      color: const Color(0xFF14B8A6),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenCompositeFloor,
+      badge: 'DG 11',
+    ),
 
     // ANALYSIS & DESIGN
     _SidebarToolDef(
@@ -167,6 +217,24 @@ class _WorkstationSidebarState extends State<WorkstationSidebar> {
       badge: 'ASCE 7',
     ),
     _SidebarToolDef(
+      label: 'Non-Linear Pushover',
+      subtitle: 'ASCE 41 Capacity Spectrum ADRS',
+      icon: Icons.stacked_line_chart_rounded,
+      color: const Color(0xFF00F0FF),
+      category: 'ANALYSIS & DESIGN',
+      onTap: widget.onOpenPushoverAnalysis,
+      badge: 'PBEE',
+    ),
+    _SidebarToolDef(
+      label: 'Wind Tunnel CFD',
+      subtitle: 'AeroNet Corner Suctions & Strouhal',
+      icon: Icons.air_rounded,
+      color: const Color(0xFF06B6D4),
+      category: 'ANALYSIS & DESIGN',
+      onTap: widget.onOpenWindCfd,
+      badge: 'CFD',
+    ),
+    _SidebarToolDef(
       label: 'PE Calcs & BIM',
       subtitle: 'AISC / IBC Stamped Calc Packet',
       icon: Icons.picture_as_pdf_rounded,
@@ -183,6 +251,15 @@ class _WorkstationSidebarState extends State<WorkstationSidebar> {
       category: 'ANALYSIS & DESIGN',
       onTap: widget.onOpenEmbodiedCarbon,
       badge: 'LCA',
+    ),
+    _SidebarToolDef(
+      label: 'Dynamic Stimulator',
+      subtitle: 'Multi-Hazard Real-Time Shaking & Wind',
+      icon: Icons.thunderstorm_rounded,
+      color: const Color(0xFFFF5252),
+      category: 'ANALYSIS & DESIGN',
+      onTap: widget.onOpenEnvironmentalStimulator,
+      badge: 'LIVE 3D',
     ),
   ];
 

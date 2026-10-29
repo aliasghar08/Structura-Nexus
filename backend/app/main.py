@@ -36,6 +36,16 @@ from .ai.generative_bracing_optimizer import GenerativeBracingOptimizer
 from .surrogate.gnn_surrogate import GNNSurrogateEngine
 from .code_check.aisc_aci import AISC_W_SHAPES, MATERIALS, AISC360CodeChecker
 from .code_check.aci_concrete import ACI318ConcreteChecker
+from .code_check.steel_connection_engine import (
+    SteelConnectionEngine,
+    ShearTabRequest,
+    EndPlateMomentRequest,
+    BasePlateRequest,
+)
+from .solvers.geotechnical_ssi_engine import GeotechnicalSSIEngine, FootingDesignRequest
+from .solvers.nonlinear_pushover_engine import NonlinearPushoverEngine, PushoverAnalysisRequest
+from .ai.aero_cfd_engine import AeroCfdEngine, AeroCfdRequest
+from .solvers.composite_floor_engine import CompositeFloorEngine, CompositeFloorRequest
 from .benchmarks.verification_suite import TextbookBenchmarkSuite
 
 # AI Ecosystem imports
@@ -363,6 +373,97 @@ def analyze_concrete_column_pm(request: ConcreteColumnPMRequest):
         return ACI318ConcreteChecker.analyze_column_pm(request)
     except Exception as e:
         logger.error(f"ACI concrete column P-M analysis error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/code-check/steel/shear-tab")
+def check_shear_tab_connection(request: ShearTabRequest):
+    """
+    Evaluates bolted single-plate shear tab connections per AISC 360-16.
+    Checks bolt shear, plate bearing, shear yield, shear rupture, block shear, and fillet welds.
+    """
+    try:
+        return SteelConnectionEngine.evaluate_shear_tab(request)
+    except Exception as e:
+        logger.error(f"Shear tab check error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/code-check/steel/end-plate")
+def check_end_plate_moment_connection(request: EndPlateMomentRequest):
+    """
+    Evaluates extended end-plate moment connections per AISC 358-16 / AISC 360-16.
+    Computes yield line mechanism Yp, bolt tension rupture with prying action, and plate flexure.
+    """
+    try:
+        return SteelConnectionEngine.evaluate_end_plate_moment(request)
+    except Exception as e:
+        logger.error(f"End-plate moment check error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/code-check/steel/base-plate")
+def check_base_plate_connection(request: BasePlateRequest):
+    """
+    Evaluates column base plates and anchor rod anchorage per AISC Design Guide 1 and ACI 318-19.
+    Checks concrete bearing, required plate thickness, and anchor rod tension.
+    """
+    try:
+        return SteelConnectionEngine.evaluate_base_plate(request)
+    except Exception as e:
+        logger.error(f"Base plate check error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/geotechnical/foundation")
+def analyze_geotechnical_foundation(request: FootingDesignRequest):
+    """
+    Evaluates isolated spread footings, Meyerhof bearing capacity, ACI 318-19 punching/beam shear,
+    Winkler soil spring stiffness matrix, and immediate elastic settlement.
+    """
+    try:
+        return GeotechnicalSSIEngine.evaluate_footing(request)
+    except Exception as e:
+        logger.error(f"Geotechnical foundation error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/analysis/nonlinear-pushover")
+def run_nonlinear_pushover_analysis(request: PushoverAnalysisRequest):
+    """
+    Executes incremental non-linear static pushover analysis per ASCE 41-17 / FEMA 356.
+    Generates capacity curves, ATC-40 ADRS demand intersection, and plastic hinge states (IO, LS, CP).
+    """
+    try:
+        return NonlinearPushoverEngine.run_pushover(request)
+    except Exception as e:
+        logger.error(f"Non-linear pushover error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/ai/aero-cfd")
+def analyze_aerodynamics_cfd(request: AeroCfdRequest):
+    """
+    AeroNet-CFD high-rise aerodynamic surrogate per ASCE 7-16 Chapter 31.
+    Computes 3D facade Cp pressure fields, Strouhal vortex shedding frequency, and lock-in resonance.
+    """
+    try:
+        return AeroCfdEngine.evaluate_aerodynamics(request)
+    except Exception as e:
+        logger.error(f"Aero CFD error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/analysis/composite-floor")
+def analyze_composite_floor(request: CompositeFloorRequest):
+    """
+    Evaluates composite steel-concrete deck beams (AISC 360-16 Ch I) and walking floor vibration (DG 11).
+    Computes effective slab width, shear stud Qn, PNA, modal frequency fn, and peak acceleration ap/g.
+    """
+    try:
+        return CompositeFloorEngine.evaluate_composite_floor(request)
+    except Exception as e:
+        logger.error(f"Composite floor error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

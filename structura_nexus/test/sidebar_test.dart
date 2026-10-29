@@ -10,7 +10,7 @@ import 'package:structura_nexus/widgets/workstation_sidebar.dart';
 void main() {
   group('WorkstationSidebar Widget Tests', () {
     testWidgets('Renders all primary tool suite buttons in expanded mode', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      await tester.binding.setSurfaceSize(const Size(1200, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(

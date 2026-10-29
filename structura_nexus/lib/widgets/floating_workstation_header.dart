@@ -27,6 +27,12 @@ class FloatingWorkstationHeader extends StatelessWidget {
   final VoidCallback? onOpenPePacket;
   final VoidCallback? onOpenEmbodiedCarbon;
   final VoidCallback? onOpenConcreteStudio;
+  final VoidCallback? onOpenSteelConnections;
+  final VoidCallback? onOpenGeotechnicalFoundation;
+  final VoidCallback? onOpenPushoverAnalysis;
+  final VoidCallback? onOpenWindCfd;
+  final VoidCallback? onOpenCompositeFloor;
+  final VoidCallback? onOpenEnvironmentalStimulator;
   final VoidCallback? onOptimize;
   final VoidCallback? onOpenAuth;
   final VoidCallback? onOpenDrawer;
@@ -50,6 +56,12 @@ class FloatingWorkstationHeader extends StatelessWidget {
     this.onOpenPePacket,
     this.onOpenEmbodiedCarbon,
     this.onOpenConcreteStudio,
+    this.onOpenSteelConnections,
+    this.onOpenGeotechnicalFoundation,
+    this.onOpenPushoverAnalysis,
+    this.onOpenWindCfd,
+    this.onOpenCompositeFloor,
+    this.onOpenEnvironmentalStimulator,
     this.onOptimize,
     this.onOpenAuth,
     this.onOpenDrawer,
@@ -213,6 +225,30 @@ class FloatingWorkstationHeader extends StatelessWidget {
                         badge: 'ACI 318',
                         onTap: onOpenConcreteStudio,
                       ),
+                      _MenuItemDef(
+                        icon: Icons.bolt_rounded,
+                        color: const Color(0xFFF59E0B),
+                        title: 'Steel Connections',
+                        subtitle: 'Shear Tabs, End & Base Plates',
+                        badge: 'AISC 360',
+                        onTap: onOpenSteelConnections,
+                      ),
+                      _MenuItemDef(
+                        icon: Icons.foundation_rounded,
+                        color: const Color(0xFF10B981),
+                        title: 'Foundation & SSI',
+                        subtitle: 'Spread Footings & Soil Springs',
+                        badge: 'WINKLER',
+                        onTap: onOpenGeotechnicalFoundation,
+                      ),
+                      _MenuItemDef(
+                        icon: Icons.layers_rounded,
+                        color: const Color(0xFF14B8A6),
+                        title: 'Composite Floor',
+                        subtitle: 'Shear Studs & Walking Vibration',
+                        badge: 'DG 11',
+                        onTap: onOpenCompositeFloor,
+                      ),
                     ],
                   ),
                   const SizedBox(width: 6),
@@ -238,6 +274,22 @@ class FloatingWorkstationHeader extends StatelessWidget {
                         onTap: onOpenLateralStability,
                       ),
                       _MenuItemDef(
+                        icon: Icons.stacked_line_chart_rounded,
+                        color: const Color(0xFF00F0FF),
+                        title: 'Non-Linear Pushover',
+                        subtitle: 'ASCE 41 Capacity Spectrum ADRS',
+                        badge: 'PBEE',
+                        onTap: onOpenPushoverAnalysis,
+                      ),
+                      _MenuItemDef(
+                        icon: Icons.air_rounded,
+                        color: const Color(0xFF06B6D4),
+                        title: 'Wind Tunnel CFD',
+                        subtitle: 'AeroNet Corner Suctions & Strouhal',
+                        badge: 'CFD',
+                        onTap: onOpenWindCfd,
+                      ),
+                      _MenuItemDef(
                         icon: Icons.assignment_turned_in_rounded,
                         color: const Color(0xFF10B981),
                         title: 'PE Calcs & BIM',
@@ -253,12 +305,53 @@ class FloatingWorkstationHeader extends StatelessWidget {
                         badge: 'EC3',
                         onTap: onOpenEmbodiedCarbon,
                       ),
+                      _MenuItemDef(
+                        icon: Icons.thunderstorm_rounded,
+                        color: const Color(0xFFFF5252),
+                        title: 'Dynamic Stimulator',
+                        subtitle: 'Multi-Hazard Real-Time Shaking & Wind',
+                        badge: 'LIVE 3D',
+                        onTap: onOpenEnvironmentalStimulator,
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 10),
+
+            // 2.5 Quick Hazard Stimulator Capsule
+            if (onOpenEnvironmentalStimulator != null) ...[
+              GlassPod(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                borderRadius: 18,
+                onTap: onOpenEnvironmentalStimulator,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5252).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(Icons.thunderstorm_rounded, color: Color(0xFFFF5252), size: 16),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      "STIMULATE HAZARDS",
+                      style: TextStyle(
+                        color: Color(0xFFFF5252),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+            ],
 
             // 3. Benchmark Presets Dropdown
             _buildPresetDropdown(),
@@ -373,6 +466,30 @@ class FloatingWorkstationHeader extends StatelessWidget {
           badge: 'ACI 318',
           onTap: onOpenConcreteStudio,
         ),
+        _buildPopupItem(
+          icon: Icons.bolt_rounded,
+          color: const Color(0xFFF59E0B),
+          title: 'Steel Connections',
+          subtitle: 'Shear Tabs, End & Base Plates',
+          badge: 'AISC 360',
+          onTap: onOpenSteelConnections,
+        ),
+        _buildPopupItem(
+          icon: Icons.foundation_rounded,
+          color: const Color(0xFF10B981),
+          title: 'Foundation & SSI',
+          subtitle: 'Spread Footings & Soil Springs',
+          badge: 'WINKLER',
+          onTap: onOpenGeotechnicalFoundation,
+        ),
+        _buildPopupItem(
+          icon: Icons.layers_rounded,
+          color: const Color(0xFF14B8A6),
+          title: 'Composite Floor',
+          subtitle: 'Shear Studs & Walking Vibration',
+          badge: 'DG 11',
+          onTap: onOpenCompositeFloor,
+        ),
         const PopupMenuDivider(),
         _buildCategoryHeader('ANALYSIS & DESIGN'),
         _buildPopupItem(
@@ -392,6 +509,22 @@ class FloatingWorkstationHeader extends StatelessWidget {
           onTap: onOpenLateralStability,
         ),
         _buildPopupItem(
+          icon: Icons.stacked_line_chart_rounded,
+          color: const Color(0xFF00F0FF),
+          title: 'Non-Linear Pushover',
+          subtitle: 'ASCE 41 Capacity Spectrum ADRS',
+          badge: 'PBEE',
+          onTap: onOpenPushoverAnalysis,
+        ),
+        _buildPopupItem(
+          icon: Icons.air_rounded,
+          color: const Color(0xFF06B6D4),
+          title: 'Wind Tunnel CFD',
+          subtitle: 'AeroNet Corner Suctions & Strouhal',
+          badge: 'CFD',
+          onTap: onOpenWindCfd,
+        ),
+        _buildPopupItem(
           icon: Icons.assignment_turned_in_rounded,
           color: const Color(0xFF10B981),
           title: 'PE Calcs & BIM',
@@ -406,6 +539,14 @@ class FloatingWorkstationHeader extends StatelessWidget {
           subtitle: 'EC3 Life Cycle Assessment',
           badge: 'EC3',
           onTap: onOpenEmbodiedCarbon,
+        ),
+        _buildPopupItem(
+          icon: Icons.thunderstorm_rounded,
+          color: const Color(0xFFFF5252),
+          title: 'Dynamic Stimulator',
+          subtitle: 'Multi-Hazard Real-Time Shaking & Wind',
+          badge: 'LIVE 3D',
+          onTap: onOpenEnvironmentalStimulator,
         ),
       ],
       child: Container(

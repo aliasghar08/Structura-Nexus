@@ -597,4 +597,174 @@ def test_aci318_concrete_column_pm_endpoint():
     assert data["engine"] == "ACI_318_19_FIBER_ANALYTIC"
 
 
+def test_steel_shear_tab_endpoint():
+    """Verifies AISC 360-16 bolted shear tab limit states."""
+    req = {
+        "beam_section": "W18X50",
+        "support_section": "W14X90",
+        "shear_demand_kn": 220.0,
+        "bolt_grade": "A325",
+        "bolt_diameter_mm": 19.05,
+        "num_bolts": 4,
+        "bolt_spacing_mm": 76.2,
+        "edge_distance_mm": 38.1,
+        "plate_thickness_mm": 9.525,
+        "plate_fy_mpa": 250.0,
+        "weld_size_mm": 6.35
+    }
+    res = client.post("/api/v1/code-check/steel/shear-tab", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connection_type"] == "BOLTED_SHEAR_TAB"
+    assert data["demand_vu_kn"] == 220.0
+    assert "governing_dcr" in data
+    assert len(data["limit_states"]) == 6
+    assert any(ls["name"] == "Bolt Shear Rupture" for ls in data["limit_states"])
+    assert any(ls["name"] == "Double Fillet Weld" for ls in data["limit_states"])
+
+
+def test_steel_end_plate_moment_endpoint():
+    """Verifies AISC 358 extended end-plate moment connection."""
+    req = {
+        "beam_section": "W21X62",
+        "column_section": "W14X120",
+        "moment_demand_knm": 350.0,
+        "shear_demand_kn": 180.0,
+        "configuration": "4E",
+        "bolt_grade": "A325",
+        "bolt_diameter_mm": 25.4,
+        "plate_thickness_mm": 25.4,
+        "plate_width_mm": 230.0,
+        "plate_fy_mpa": 345.0
+    }
+    res = client.post("/api/v1/code-check/steel/end-plate", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connection_type"] == "EXTENDED_END_PLATE_MOMENT"
+    assert data["yield_line_yp_mm"] > 0.0
+    assert len(data["limit_states"]) >= 3
+
+
+def test_steel_base_plate_endpoint():
+    """Verifies AISC DG 1 column base plate and anchor rods."""
+    req = {
+        "column_section": "W14X90",
+        "axial_demand_kn": 1800.0,
+        "moment_demand_knm": 85.0,
+        "shear_demand_kn": 120.0,
+        "fc_foundation_mpa": 28.0,
+        "plate_length_n_mm": 550.0,
+        "plate_width_b_mm": 500.0,
+        "plate_fy_mpa": 250.0,
+        "anchor_diameter_mm": 25.4,
+        "num_anchor_rods": 4
+    }
+    res = client.post("/api/v1/code-check/steel/base-plate", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["connection_type"] == "COLUMN_BASE_PLATE"
+    assert data["required_thickness_mm"] > 0.0
+    assert data["recommended_thickness_mm"] >= data["required_thickness_mm"]
+
+
+def test_geotechnical_foundation_endpoint():
+    """Verifies Meyerhof bearing capacity, punching shear, and Winkler springs."""
+    req = {
+        "axial_load_kn": 1600.0,
+        "moment_x_knm": 120.0,
+        "moment_y_knm": 80.0,
+        "shear_h_kn": 95.0,
+        "soil_friction_angle_deg": 32.0,
+        "soil_cohesion_kpa": 10.0,
+        "soil_unit_weight_kn_m3": 19.0,
+        "foundation_depth_m": 1.5,
+        "footing_length_m": 2.8,
+        "footing_width_m": 2.8,
+        "footing_thickness_m": 0.65,
+        "column_width_m": 0.45,
+        "column_depth_m": 0.45,
+        "fc_concrete_mpa": 30.0,
+        "fy_rebar_mpa": 420.0,
+        "subgrade_modulus_kn_m3": 45000.0
+    }
+    res = client.post("/api/v1/geotechnical/foundation", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["foundation_type"] == "ISOLATED_SPREAD_FOOTING"
+    assert data["q_ult_kpa"] > data["q_allowable_kpa"]
+    assert "winkler_springs" in data
+    assert data["winkler_springs"]["vertical_kz_kn_m"] > 0.0
+    assert "settlement" in data
+    assert data["settlement"]["elastic_settlement_mm"] > 0.0
+
+
+def test_nonlinear_pushover_endpoint():
+    """Verifies ASCE 41-17 incremental non-linear pushover and ADRS capacity spectrum."""
+    req = {
+        "building_height_m": 24.0,
+        "num_stories": 6,
+        "seismic_weight_kn": 12000.0,
+        "spectral_sds": 1.05,
+        "spectral_sd1": 0.62,
+        "lateral_system": "STEEL_SMF",
+        "target_drift_ratio": 0.020
+    }
+    res = client.post("/api/v1/analysis/nonlinear-pushover", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["analysis_type"] == "NONLINEAR_STATIC_PUSHOVER_ASCE41"
+    assert data["fundamental_period_t1_s"] > 0.0
+    assert len(data["pushover_curve"]) >= 10
+    assert "performance_point" in data
+    assert "performance_level" in data
+    assert len(data["demand_spectrum_adrs"]) > 5
+
+
+def test_aero_cfd_surrogate_endpoint():
+    """Verifies AeroNet-CFD high-rise facade pressure and vortex shedding."""
+    req = {
+        "building_height_m": 90.0,
+        "building_width_m": 30.0,
+        "building_depth_m": 30.0,
+        "design_wind_speed_m_s": 45.0,
+        "first_natural_period_s": 2.4,
+        "terrain_category": "B"
+    }
+    res = client.post("/api/v1/ai/aero-cfd", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["analysis_type"] == "HIGH_RISE_WIND_TUNNEL_CFD_SURROGATE"
+    assert data["qz_velocity_pressure_pa"] > 0.0
+    assert data["vortex_shedding_frequency_hz"] > 0.0
+    assert len(data["facade_contours"]) >= 5
+    assert data["max_corner_suction_kpa"] != 0.0
+
+
+def test_composite_floor_and_vibration_endpoint():
+    """Verifies AISC 360 composite beam and DG 11 walking floor vibration."""
+    req = {
+        "beam_span_m": 9.0,
+        "beam_spacing_m": 3.0,
+        "steel_section": "W18X35",
+        "slab_total_thickness_mm": 130.0,
+        "deck_rib_height_mm": 75.0,
+        "concrete_fc_mpa": 28.0,
+        "concrete_unit_weight_kn_m3": 23.5,
+        "stud_diameter_mm": 19.05,
+        "num_shear_studs": 32,
+        "dead_load_superimposed_kpa": 1.2,
+        "live_load_kpa": 3.0,
+        "occupancy_type": "OFFICE"
+    }
+    res = client.post("/api/v1/analysis/composite-floor", json=req)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["analysis_type"] == "COMPOSITE_FLOOR_AND_VIBRATION_DG11"
+    assert data["design_moment_phi_mn_knm"] > 0.0
+    assert "vibration_serviceability" in data
+    assert data["vibration_serviceability"]["natural_frequency_fn_hz"] > 0.0
+    assert "human_perception_rating" in data["vibration_serviceability"]
+
+
+
 

@@ -502,6 +502,8 @@ class StructuralModel {
     return total;
   }
 
+  double get totalMassKg => totalWeightKg;
+
   double get governingDcr {
     if (members.isEmpty) return 0.0;
     return members.map((m) => m.governingDcr).reduce(math.max);

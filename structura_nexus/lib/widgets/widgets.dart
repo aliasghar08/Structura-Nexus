@@ -34,6 +34,12 @@ export 'floating_telemetry_dock.dart';
 export 'floating_inspector_panel.dart';
 export 'floating_workstation_header.dart';
 export 'concrete_pm_dialog.dart';
+export 'steel_connection_dialog.dart';
+export 'geotechnical_foundation_dialog.dart';
+export 'pushover_analysis_dialog.dart';
+export 'wind_cfd_dialog.dart';
+export 'composite_floor_dialog.dart';
+export 'environmental_stimulator_dialog.dart';
 
 // Common Overlays
 export 'floating_copyright_watermark.dart';
