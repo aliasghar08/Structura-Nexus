@@ -231,7 +231,7 @@ void main() {
     expect(res['structural_health_score'], inInclusiveRange(0.0, 100.0));
   });
 
-  testWidgets('Top scrolling option bar and viewport sub-bar do not overlap on desktop', (WidgetTester tester) async {
+  testWidgets('Single unified top scrolling option bar and inspector do not overlap on desktop', (WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -239,13 +239,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final headerDrawerRect = tester.getRect(find.text('TOOLS & SUITE'));
-    final viewportBadgeRect = tester.getRect(find.textContaining('DETERMINISTIC FEA GROUND TRUTH'));
     final inspectorHeaderRect = tester.getRect(find.text('SELECTION INSPECTOR'));
 
-    // Viewport sub-bar sits strictly below the top option bar (zero vertical overlap)
-    expect(viewportBadgeRect.top, greaterThan(headerDrawerRect.bottom));
-    // Selection Inspector sits strictly below the viewport sub-bar
-    expect(inspectorHeaderRect.top, greaterThan(viewportBadgeRect.bottom));
+    // Selection Inspector sits strictly below the single top option bar (zero vertical overlap)
+    expect(inspectorHeaderRect.top, greaterThan(headerDrawerRect.bottom));
+    // All viewport controls (ISO, TOP, FRONT) are inside the single top option bar
+    expect(find.text('ISO'), findsOneWidget);
+    expect(find.text('TOP'), findsOneWidget);
+    expect(find.text('FRONT'), findsOneWidget);
   });
 
   testWidgets('Workstation renders cleanly on iPhone 13 portrait (390x844) and scrolls top option bar', (WidgetTester tester) async {

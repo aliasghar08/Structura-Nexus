@@ -13,6 +13,11 @@ import 'glass_pod.dart';
 class FloatingWorkstationHeader extends StatefulWidget {
   final StructuralModel model;
   final bool isBackendConnected;
+  final bool useThreeJs;
+  final VoidCallback? onToggleRenderer;
+  final ValueChanged<String>? onCameraPreset;
+  final VoidCallback? onZoomIn;
+  final VoidCallback? onZoomOut;
   final Function(EngineType) onEngineChanged;
   final Function(DisplayMode) onModeChanged;
   final Function(double) onDeformationScaleChanged;
@@ -44,6 +49,11 @@ class FloatingWorkstationHeader extends StatefulWidget {
     super.key,
     required this.model,
     required this.isBackendConnected,
+    this.useThreeJs = true,
+    this.onToggleRenderer,
+    this.onCameraPreset,
+    this.onZoomIn,
+    this.onZoomOut,
     required this.onEngineChanged,
     required this.onModeChanged,
     required this.onDeformationScaleChanged,
@@ -272,11 +282,23 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                       _buildDeformationSlider(),
                       const SizedBox(width: 8),
 
-                      // 7. Backend Connection Indicator & Solve Trigger
+                      // 7. Renderer Mode Toggle (WebGL 3D GPU / Vector 2.5D)
+                      _buildRendererToggle(),
+                      const SizedBox(width: 8),
+
+                      // 8. Camera Presets (ISO / TOP / FRONT) & Zoom Controls
+                      _buildCameraControls(),
+                      const SizedBox(width: 8),
+
+                      // 9. 3D Axis Compass Badge (X • Y • Z)
+                      _buildCompassBadge(),
+                      const SizedBox(width: 8),
+
+                      // 10. Backend Connection Indicator & Solve Trigger
                       _buildConnectionIndicator(),
                       const SizedBox(width: 8),
 
-                      // 8. Firebase Auth Profile
+                      // 11. Firebase Auth Profile
                       _buildUserProfileButton(),
                     ],
                   ),
@@ -431,6 +453,129 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRendererToggle() {
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      borderRadius: 18,
+      onTap: widget.onToggleRenderer,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            widget.useThreeJs ? Icons.view_in_ar_rounded : Icons.brush_rounded,
+            size: 14,
+            color: widget.useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            widget.useThreeJs ? 'WebGL 3D (GPU)' : 'Vector 2.5D',
+            style: TextStyle(
+              color: widget.useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
+              fontSize: 10.5,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraControls() {
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      borderRadius: 18,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _cameraPresetBtn('ISO'),
+          const SizedBox(width: 4),
+          _cameraPresetBtn('TOP'),
+          const SizedBox(width: 4),
+          _cameraPresetBtn('FRONT'),
+          Container(
+            height: 14,
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 5),
+            color: Colors.white12,
+          ),
+          _cameraIconBtn(Icons.zoom_in_rounded, 'Zoom In', widget.onZoomIn),
+          const SizedBox(width: 3),
+          _cameraIconBtn(Icons.zoom_out_rounded, 'Zoom Out', widget.onZoomOut),
+          const SizedBox(width: 3),
+          _cameraIconBtn(
+            Icons.center_focus_strong_rounded,
+            'Recenter View',
+            () => widget.onCameraPreset?.call('RECENTER'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cameraPresetBtn(String label) {
+    return Tooltip(
+      message: '$label Camera View',
+      child: InkWell(
+        onTap: () => widget.onCameraPreset?.call(label),
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cameraIconBtn(IconData icon, String tooltip, VoidCallback? onTap) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 15, color: Colors.white70),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompassBadge() {
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      borderRadius: 18,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Text('X', style: TextStyle(color: Colors.redAccent, fontSize: 10.5, fontWeight: FontWeight.bold)),
+          SizedBox(width: 4),
+          Text('•', style: TextStyle(color: Colors.white24, fontSize: 10)),
+          SizedBox(width: 4),
+          Text('Y', style: TextStyle(color: Colors.greenAccent, fontSize: 10.5, fontWeight: FontWeight.bold)),
+          SizedBox(width: 4),
+          Text('•', style: TextStyle(color: Colors.white24, fontSize: 10)),
+          SizedBox(width: 4),
+          Text('Z', style: TextStyle(color: Colors.cyanAccent, fontSize: 10.5, fontWeight: FontWeight.bold)),
         ],
       ),
     );

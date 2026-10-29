@@ -46,6 +46,7 @@ class WorkstationScreen extends StatefulWidget {
 
 class _WorkstationScreenState extends State<WorkstationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<Structural3DViewportState> _viewportKey = GlobalKey<Structural3DViewportState>();
   late StructuralModel _model;
   final StructuralApiService _apiService = StructuralApiService();
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
@@ -406,7 +407,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final screenSize = MediaQuery.sizeOf(context);
     final isCompact = screenSize.width < 700 || screenSize.height < 500;
     final showInspector = _isInspectorOpen ?? !isCompact;
-    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 104.0 : 114.0);
+    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 62.0 : 70.0);
     final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
     return Scaffold(
@@ -442,6 +443,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           // 1. Layer 0: Fullscreen Hardware-Accelerated 3D WebGL Canvas
           Positioned.fill(
             child: Structural3DViewport(
+              key: _viewportKey,
               model: _model,
               selectedNodeId: _selectedNodeId,
               selectedMemberId: _selectedMemberId,
@@ -492,7 +494,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ),
           ),
 
-          // 2. Layer 1: Floating Header Island (Top Scrolling Option Bar)
+          // 2. Layer 1: Single Unified Floating Header Island (Top Scrolling Option Bar)
           Positioned(
             top: MediaQuery.paddingOf(context).top,
             left: 0,
@@ -500,6 +502,14 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             child: FloatingWorkstationHeader(
               model: _model,
               isBackendConnected: _apiService.isConnected,
+              useThreeJs: _viewportKey.currentState?.useThreeJs ?? true,
+              onToggleRenderer: () {
+                _viewportKey.currentState?.toggleRenderer();
+                setState(() {});
+              },
+              onCameraPreset: (preset) => _viewportKey.currentState?.setCameraPreset(preset),
+              onZoomIn: () => _viewportKey.currentState?.zoomIn(),
+              onZoomOut: () => _viewportKey.currentState?.zoomOut(),
               onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer(),
               onOpenCopilot: onOpenCopilot,
               onOpenGenerativeOptimizer: onOpenGenerativeOptimizer,

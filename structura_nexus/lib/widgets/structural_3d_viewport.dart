@@ -26,16 +26,54 @@ class Structural3DViewport extends StatefulWidget {
   });
 
   @override
-  State<Structural3DViewport> createState() => _Structural3DViewportState();
+  State<Structural3DViewport> createState() => Structural3DViewportState();
 }
 
-class _Structural3DViewportState extends State<Structural3DViewport>
+class Structural3DViewportState extends State<Structural3DViewport>
     with SingleTickerProviderStateMixin {
   // WebGL GPU acceleration mode (default on web)
   bool _useThreeJs = kIsWeb;
-  bool _showBmd = false;
-  bool _showDeformation = false;
-  bool _isSurrogateStreaming = false;
+
+  bool get useThreeJs => _useThreeJs;
+
+  void toggleRenderer() {
+    setState(() => _useThreeJs = !_useThreeJs);
+  }
+
+  void setCameraPreset(String preset) {
+    setState(() {
+      switch (preset) {
+        case 'TOP':
+          _yaw = 0.0;
+          _pitch = 1.54;
+          _zoom = 42.0;
+          _panOffset = const Offset(0, 0);
+          break;
+        case 'FRONT':
+          _yaw = 0.0;
+          _pitch = 0.0;
+          _zoom = 42.0;
+          _panOffset = const Offset(0, 0);
+          break;
+        case 'ISO':
+        case 'RECENTER':
+        default:
+          _yaw = 0.75;
+          _pitch = 0.35;
+          _zoom = 42.0;
+          _panOffset = const Offset(0, 40);
+          break;
+      }
+    });
+  }
+
+  void zoomIn() {
+    setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0));
+  }
+
+  void zoomOut() {
+    setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0));
+  }
 
   // Camera angles (spherical coordinates)
   double _yaw = 0.75; // Azimuth
@@ -106,15 +144,14 @@ class _Structural3DViewportState extends State<Structural3DViewport>
             if (_useThreeJs)
               ThreeJsStructuralViewport(
                 model: widget.model,
-                showBmd: _showBmd,
-                showDeformation: _showDeformation || widget.model.displayMode == DisplayMode.modalVibration,
+                showBmd: widget.model.displayMode == DisplayMode.bmdRibbon ||
+                    widget.model.displayMode == DisplayMode.sfdRibbon,
+                showDeformation: widget.model.displayMode != DisplayMode.geometry,
                 showStressGradient: true,
                 onNodeDragged: (id, x, y, z) {
-                  if (!_isSurrogateStreaming) setState(() => _isSurrogateStreaming = true);
                   widget.onNodeDragged?.call(id, x, y, z);
                 },
                 onNodeDragEnd: (id, x, y, z) {
-                  if (_isSurrogateStreaming) setState(() => _isSurrogateStreaming = false);
                   widget.onNodeDragEnd?.call(id, x, y, z);
                 },
               )
@@ -137,341 +174,8 @@ class _Structural3DViewportState extends State<Structural3DViewport>
                   );
                 },
               ),
-            // Unified Horizontal Scrolling Viewport Sub-Bar (Below Main Header — Zero Overlap)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + (MediaQuery.sizeOf(context).width < 700 ? 60 : 68),
-              left: MediaQuery.sizeOf(context).width < 700 ? 10 : 16,
-              right: MediaQuery.sizeOf(context).width < 700 ? 10 : 16,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 1. Axis Compass Indicator (X / Y / Z)
-                    _buildCompass(),
-                    const SizedBox(width: 8),
-
-                    // 2. Surrogate / Deterministic FEA Status Pill
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: _isSurrogateStreaming
-                            ? const Color(0xFF00F0FF).withValues(alpha: 0.18)
-                            : const Color(0xFF161B22).withValues(alpha: 0.90),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: _isSurrogateStreaming
-                              ? const Color(0xFF00F0FF)
-                              : Colors.white.withValues(alpha: 0.12),
-                        ),
-                        boxShadow: [
-                          if (_isSurrogateStreaming)
-                            BoxShadow(
-                              color: const Color(0xFF00F0FF).withValues(alpha: 0.35),
-                              blurRadius: 12,
-                              spreadRadius: 1,
-                            ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _isSurrogateStreaming ? Icons.bolt_rounded : Icons.verified_rounded,
-                            color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : const Color(0xFF10B981),
-                            size: 14,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _isSurrogateStreaming
-                                ? 'SURROGATE INFERENCE (MPNN 1.85ms • 60 FPS)'
-                                : 'DETERMINISTIC FEA GROUND TRUTH (12×12 DSM)',
-                            style: TextStyle(
-                              color: _isSurrogateStreaming ? const Color(0xFF00F0FF) : Colors.white70,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // 3. Renderer Switcher (WebGL 3D GPU / Vector 2.5D) & Ribbon Toggles
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161B22).withValues(alpha: 0.90),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          InkWell(
-                            onTap: () => setState(() => _useThreeJs = !_useThreeJs),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: _useThreeJs ? const Color(0xFF00F0FF).withValues(alpha: 0.2) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.transparent,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _useThreeJs ? Icons.view_in_ar : Icons.brush,
-                                    size: 13,
-                                    color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    _useThreeJs ? 'WebGL 3D (GPU)' : 'Vector 2.5D',
-                                    style: TextStyle(
-                                      color: _useThreeJs ? const Color(0xFF00F0FF) : Colors.white70,
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          InkWell(
-                            onTap: () => setState(() => _showBmd = !_showBmd),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: _showBmd ? Colors.pinkAccent.withValues(alpha: 0.25) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _showBmd ? Colors.pinkAccent : Colors.transparent,
-                                ),
-                              ),
-                              child: Text(
-                                'BMD',
-                                style: TextStyle(
-                                  color: _showBmd ? Colors.pinkAccent : Colors.white54,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          InkWell(
-                            onTap: () => setState(() => _showDeformation = !_showDeformation),
-                            borderRadius: BorderRadius.circular(6),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: _showDeformation ? Colors.purpleAccent.withValues(alpha: 0.25) : Colors.transparent,
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: _showDeformation ? Colors.purpleAccent : Colors.transparent,
-                                ),
-                              ),
-                              child: Text(
-                                'Deflection ×50',
-                                style: TextStyle(
-                                  color: _showDeformation ? Colors.purpleAccent : Colors.white54,
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // 4. Camera View Presets (ISO / TOP / FRONT) & Zoom Controls
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF161B22).withValues(alpha: 0.90),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildViewPresetBtn('ISO', () {
-                            setState(() {
-                              _yaw = 0.75;
-                              _pitch = 0.35;
-                              _zoom = 42.0;
-                              _panOffset = const Offset(0, 40);
-                            });
-                          }),
-                          const SizedBox(width: 4),
-                          _buildViewPresetBtn('TOP', () {
-                            setState(() {
-                              _yaw = 0.0;
-                              _pitch = 1.54;
-                              _zoom = 42.0;
-                              _panOffset = const Offset(0, 0);
-                            });
-                          }),
-                          const SizedBox(width: 4),
-                          _buildViewPresetBtn('FRONT', () {
-                            setState(() {
-                              _yaw = 0.0;
-                              _pitch = 0.0;
-                              _zoom = 42.0;
-                              _panOffset = const Offset(0, 0);
-                            });
-                          }),
-                          Container(
-                            height: 14,
-                            width: 1,
-                            margin: const EdgeInsets.symmetric(horizontal: 5),
-                            color: Colors.white12,
-                          ),
-                          _buildNavButton(Icons.zoom_in, 'Zoom In', () => setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0))),
-                          const SizedBox(width: 3),
-                          _buildNavButton(Icons.zoom_out, 'Zoom Out', () => setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0))),
-                          const SizedBox(width: 3),
-                          _buildNavButton(Icons.center_focus_strong, 'Recenter View', () {
-                            setState(() {
-                              _yaw = 0.75;
-                              _pitch = 0.35;
-                              _zoom = 42.0;
-                              _panOffset = const Offset(0, 40);
-                            });
-                          }),
-                        ],
-                      ),
-                    ),
-
-                    // 5. Live Vibration Mode Banner (when active)
-                    if (widget.model.displayMode == DisplayMode.modalVibration) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D1117).withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF00F0FF)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.waves_rounded, size: 14, color: Color(0xFF00F0FF)),
-                            const SizedBox(width: 6),
-                            Text(
-                              'MODE ${widget.model.activeVibrationMode} VIBRATION',
-                              style: const TextStyle(
-                                color: Color(0xFF00F0FF),
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  widget.model.displayMode = DisplayMode.geometry;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF21262D),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: const Text('Exit', style: TextStyle(color: Colors.white70, fontSize: 9.5)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildViewPresetBtn(String label, VoidCallback onTap) {
-    return Tooltip(
-      message: '$label Camera View',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavButton(IconData icon, String tooltip, VoidCallback onTap) {
-    return Tooltip(
-      message: tooltip,
-      waitDuration: const Duration(milliseconds: 300),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(icon, size: 16, color: Colors.white70),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompass() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF161B22).withValues(alpha: 0.85),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Text('X', style: TextStyle(color: Colors.redAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-          SizedBox(width: 4),
-          Text('•', style: TextStyle(color: Colors.white24, fontSize: 10)),
-          SizedBox(width: 4),
-          Text('Y', style: TextStyle(color: Colors.greenAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-          SizedBox(width: 4),
-          Text('•', style: TextStyle(color: Colors.white24, fontSize: 10)),
-          SizedBox(width: 4),
-          Text('Z', style: TextStyle(color: Colors.cyanAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-        ],
       ),
     );
   }
