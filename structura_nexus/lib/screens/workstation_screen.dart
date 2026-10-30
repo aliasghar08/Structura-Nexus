@@ -441,7 +441,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final screenSize = MediaQuery.sizeOf(context);
     final isCompact = screenSize.width < 700 || screenSize.height < 500;
     final showInspector = _isInspectorOpen ?? !isCompact;
-    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 62.0 : 70.0);
+    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 68.0 : 70.0);
     final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
     return Scaffold(

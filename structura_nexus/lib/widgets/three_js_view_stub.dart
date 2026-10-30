@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 
-class ThreeJsStructuralViewport extends StatelessWidget {
+class ThreeJsStructuralViewport extends StatefulWidget {
   final StructuralModel model;
   final bool showDeformation;
   final double deformationScale;
@@ -23,7 +23,15 @@ class ThreeJsStructuralViewport extends StatelessWidget {
     this.onNodeDragEnd,
   });
 
+  @override
+  State<ThreeJsStructuralViewport> createState() => ThreeJsStructuralViewportState();
+}
+
+class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   void updateDisplacements(Map<String, dynamic> displacements) {}
+  void setCameraPreset(String preset) {}
+  void zoomIn() {}
+  void zoomOut() {}
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +52,7 @@ class ThreeJsStructuralViewport extends StatelessWidget {
                 const Icon(Icons.view_in_ar, color: Colors.cyanAccent, size: 18),
                 const SizedBox(width: 8),
                 Text(
-                  'WebGL 3D GPU Engine (${model.members.length} members, ${model.nodes.length} joints)',
+                  'WebGL 3D GPU Engine (${widget.model.members.length} members, ${widget.model.nodes.length} joints)',
                   style: const TextStyle(
                     color: Colors.cyanAccent,
                     fontSize: 12,

@@ -33,6 +33,7 @@ class Structural3DViewportState extends State<Structural3DViewport>
     with SingleTickerProviderStateMixin {
   // WebGL GPU acceleration mode (default on web)
   bool _useThreeJs = kIsWeb;
+  final GlobalKey<ThreeJsStructuralViewportState> _threeJsKey = GlobalKey<ThreeJsStructuralViewportState>();
 
   bool get useThreeJs => _useThreeJs;
 
@@ -41,6 +42,9 @@ class Structural3DViewportState extends State<Structural3DViewport>
   }
 
   void setCameraPreset(String preset) {
+    if (_useThreeJs) {
+      _threeJsKey.currentState?.setCameraPreset(preset);
+    }
     setState(() {
       switch (preset) {
         case 'TOP':
@@ -68,10 +72,16 @@ class Structural3DViewportState extends State<Structural3DViewport>
   }
 
   void zoomIn() {
+    if (_useThreeJs) {
+      _threeJsKey.currentState?.zoomIn();
+    }
     setState(() => _zoom = (_zoom * 1.2).clamp(10.0, 150.0));
   }
 
   void zoomOut() {
+    if (_useThreeJs) {
+      _threeJsKey.currentState?.zoomOut();
+    }
     setState(() => _zoom = (_zoom / 1.2).clamp(10.0, 150.0));
   }
 
@@ -143,7 +153,9 @@ class Structural3DViewportState extends State<Structural3DViewport>
           children: [
             if (_useThreeJs)
               ThreeJsStructuralViewport(
+                key: _threeJsKey,
                 model: widget.model,
+                deformationScale: widget.model.deformationScale,
                 showBmd: widget.model.displayMode == DisplayMode.bmdRibbon ||
                     widget.model.displayMode == DisplayMode.sfdRibbon,
                 showDeformation: widget.model.displayMode != DisplayMode.geometry,

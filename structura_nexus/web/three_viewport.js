@@ -7,18 +7,20 @@
 (function () {
   class StructuraThreeViewer {
     constructor(containerId) {
-      this.containerId = containerId;
-      this.container = document.getElementById(containerId);
+      this.containerId = typeof containerId === "string" ? containerId : (containerId && containerId.id) || "structura-three-container";
+      this.container = typeof containerId === "string" ? document.getElementById(containerId) : (containerId instanceof HTMLElement ? containerId : document.getElementById(this.containerId));
       this.scene = null;
       this.camera = null;
       this.renderer = null;
       this.controls = null;
       this.animId = null;
+      this._waitTimer = null;
+      this._pendingModel = null;
 
-      // Group containers
-      this.structureGroup = null;
-      this.deformationGroup = null;
-      this.diagramGroup = null;
+      // Group containers - guaranteed non-null
+      this.structureGroup = new THREE.Group();
+      this.deformationGroup = new THREE.Group();
+      this.diagramGroup = new THREE.Group();
 
       // Viewport flags & state
       this.currentModel = null;
@@ -45,13 +47,45 @@
       this.planeIntersect = new THREE.Vector3();
       this.planeNormal = new THREE.Vector3();
 
-      this.init();
+      if (this.container) {
+        this.init();
+      } else {
+        this._waitForContainer();
+      }
+    }
+
+    _waitForContainer() {
+      if (this._waitTimer) return;
+      let attempts = 0;
+      const poll = () => {
+        this.container = document.getElementById(this.containerId);
+        if (this.container) {
+          this._waitTimer = null;
+          this.init();
+          if (this._pendingModel) {
+            this.loadModel(this._pendingModel);
+            this._pendingModel = null;
+          }
+        } else if (attempts++ < 120) {
+          this._waitTimer = setTimeout(poll, 30);
+        } else {
+          this._waitTimer = null;
+          console.warn(`[ThreeViewer] Container #${this.containerId} wait timed out.`);
+        }
+      };
+      this._waitTimer = setTimeout(poll, 30);
     }
 
     init() {
       if (!this.container) {
-        console.warn(`[ThreeViewer] Container #${this.containerId} not found yet.`);
+        this.container = document.getElementById(this.containerId);
+      }
+      if (!this.container) {
+        this._waitForContainer();
         return;
+      }
+      if (this.scene) {
+        return; // already initialized
       }
 
       const width = this.container.clientWidth || 800;
@@ -101,10 +135,6 @@
       }
 
       // 6. Object Groups
-      this.structureGroup = new THREE.Group();
-      this.deformationGroup = new THREE.Group();
-      this.diagramGroup = new THREE.Group();
-
       this.scene.add(this.structureGroup);
       this.scene.add(this.deformationGroup);
       this.scene.add(this.diagramGroup);
@@ -117,6 +147,11 @@
       this.animate = this.animate.bind(this);
       this.animate();
       console.log(`[ThreeViewer] Initialized hardware WebGL viewport for #${this.containerId}`);
+
+      if (this._pendingModel) {
+        this.loadModel(this._pendingModel);
+        this._pendingModel = null;
+      }
     }
 
     setupPointerInteractions() {
@@ -318,6 +353,21 @@
     loadModel(model) {
       if (!model) return;
       this.currentModel = model;
+
+      if (!this.scene) {
+        if (!this.container) {
+          this.container = document.getElementById(this.containerId);
+        }
+        if (this.container) {
+          this.init();
+        }
+      }
+
+      if (!this.scene || !this.structureGroup) {
+        this._pendingModel = model;
+        this._waitForContainer();
+        return;
+      }
 
       // Clear existing
       while (this.structureGroup.children.length > 0) {
@@ -566,6 +616,43 @@
       });
     }
 
+    setCameraPreset(preset) {
+      if (!this.camera) return;
+      const target = this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0);
+      switch (preset) {
+        case 'TOP':
+          this.camera.position.set(target.x, target.y + 24, target.z + 0.001);
+          break;
+        case 'FRONT':
+          this.camera.position.set(target.x, target.y, target.z + 24);
+          break;
+        case 'ISO':
+        case 'RECENTER':
+        default:
+          this.camera.position.set(target.x + 9, target.y + 7, target.z + 14);
+          break;
+      }
+      if (this.controls) this.controls.update();
+    }
+
+    zoomIn() {
+      if (!this.camera) return;
+      const target = this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0);
+      const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+      offset.multiplyScalar(0.85);
+      this.camera.position.copy(target).add(offset);
+      if (this.controls) this.controls.update();
+    }
+
+    zoomOut() {
+      if (!this.camera) return;
+      const target = this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0);
+      const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+      offset.multiplyScalar(1.18);
+      this.camera.position.copy(target).add(offset);
+      if (this.controls) this.controls.update();
+    }
+
     dispose() {
       if (this.animId) cancelAnimationFrame(this.animId);
       if (this.renderer && this.renderer.domElement) {
@@ -583,8 +670,12 @@
     if (!window.__structuraViewerInstances) {
       window.__structuraViewerInstances = {};
     }
+    const cId = typeof containerId === "string" ? containerId : "structura-three-container";
+    if (window.__structuraViewerInstances[cId] && window.__structuraViewerInstances[cId].scene) {
+      return window.__structuraViewerInstances[cId];
+    }
     const viewer = new StructuraThreeViewer(containerId);
-    window.__structuraViewerInstances[containerId] = viewer;
+    window.__structuraViewerInstances[cId] = viewer;
     return viewer;
   };
 })();

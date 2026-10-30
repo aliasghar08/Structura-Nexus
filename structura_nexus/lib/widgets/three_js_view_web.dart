@@ -17,6 +17,9 @@ extension type ThreeViewer(JSObject _) implements JSObject {
   external void setBmdVisible(bool visible);
   external void setStressOverlay(bool visible);
   external void updatePredictedDisplacements(JSAny displacements);
+  external void setCameraPreset(JSString preset);
+  external void zoomIn();
+  external void zoomOut();
 }
 
 extension type NodeDragDetail(JSObject _) implements JSObject {
@@ -68,7 +71,31 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     _setupDragEventListeners();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initViewer();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _syncModel();
+      });
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) _syncModel();
+      });
     });
+  }
+
+  void setCameraPreset(String preset) {
+    try {
+      _viewer?.setCameraPreset(preset.toJS);
+    } catch (_) {}
+  }
+
+  void zoomIn() {
+    try {
+      _viewer?.zoomIn();
+    } catch (_) {}
+  }
+
+  void zoomOut() {
+    try {
+      _viewer?.zoomOut();
+    } catch (_) {}
   }
 
   void _setupDragEventListeners() {
@@ -124,6 +151,9 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       div.style.height = '100%';
       div.style.overflow = 'hidden';
       div.style.backgroundColor = '#0a0e17';
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted) _initViewer();
+      });
       return div;
     });
     _viewRegistered = true;
@@ -142,7 +172,10 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   }
 
   void _syncModel() {
-    if (_viewer == null) return;
+    if (_viewer == null) {
+      _initViewer();
+      return;
+    }
     try {
       final jsonPayload = jsonEncode(widget.model.toGraphPayload('THREE_VIEW'));
       final parsedObj = _jsonParse(jsonPayload.toJS);

@@ -965,9 +965,13 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
   Widget _buildUserProfileButton() {
     final user = FirebaseAuthService().currentUser;
     final isLoggedIn = user != null && !user.isAnonymous;
+    final isCompact = MediaQuery.sizeOf(context).width < 700;
 
     return GlassPod(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? 8 : 10,
+        vertical: 7,
+      ),
       borderRadius: 18,
       onTap: widget.onOpenAuth,
       child: Row(
@@ -978,17 +982,19 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
             size: 15,
             color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
           ),
-          const SizedBox(width: 6),
-          Text(
-            isLoggedIn
-                ? (user.displayName ?? user.email?.split('@').first ?? 'Account')
-                : 'Cloud / Sign In',
-            style: TextStyle(
-              color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
-              fontSize: 10.5,
-              fontWeight: FontWeight.bold,
+          if (!isCompact) ...[
+            const SizedBox(width: 6),
+            Text(
+              isLoggedIn
+                  ? (user.displayName ?? user.email?.split('@').first ?? 'Account')
+                  : 'Cloud / Sign In',
+              style: TextStyle(
+                color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
