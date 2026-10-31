@@ -520,6 +520,14 @@ class StructuralModel {
     }
   }
 
+  StructuralMember? getMember(String id) {
+    try {
+      return members.firstWhere((m) => m.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
   StructuralModel copyWith({
     String? sessionId,
     String? name,

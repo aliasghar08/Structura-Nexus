@@ -35,11 +35,31 @@ class SlideableWorkspaceMenu extends StatefulWidget {
   final ValueChanged<String>? onPresetSelected;
   final VoidCallback? onSolveTriggered;
 
+  /// Custom title for the menu (defaults to 'WORKSPACE TOOLS')
+  final String title;
+
+  /// Optional contextual subtitle for the menu header
+  final String? subtitle;
+
+  /// Badge text displayed in the header pill (e.g. 'MENU', 'DRAWING', 'CAD')
+  final String badgeText;
+
+  /// Optional list of contextual tools specific to the currently opened screen
+  final List<WorkspaceToolItem>? customTools;
+
+  /// Optional list of categories for the contextual tools
+  final List<String>? customCategories;
+
   const SlideableWorkspaceMenu({
     super.key,
     this.workspaceKey = 'main_workstation',
     this.initialTop = 76.0,
     this.initialExpanded = false,
+    this.title = 'WORKSPACE TOOLS',
+    this.subtitle,
+    this.badgeText = 'MENU',
+    this.customTools,
+    this.customCategories,
     this.onOpenCopilot,
     this.onOpenGenerativeOptimizer,
     this.onOpenGenerativeBracing,
@@ -67,7 +87,7 @@ class SlideableWorkspaceMenu extends StatefulWidget {
   State<SlideableWorkspaceMenu> createState() => SlideableWorkspaceMenuState();
 }
 
-class _ToolDef {
+class WorkspaceToolItem {
   final String label;
   final String subtitle;
   final IconData icon;
@@ -76,7 +96,7 @@ class _ToolDef {
   final VoidCallback? onTap;
   final String? badge;
 
-  const _ToolDef({
+  const WorkspaceToolItem({
     required this.label,
     required this.subtitle,
     required this.icon,
@@ -86,6 +106,8 @@ class _ToolDef {
     this.badge,
   });
 }
+
+typedef _ToolDef = WorkspaceToolItem;
 
 class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   late double _topOffset;
@@ -201,8 +223,23 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
     WorkspacePreferences.setBool('${widget.workspaceKey}_solid_contrast', true);
   }
 
-  List<_ToolDef> get _allTools => [
-    // 1. AI & GENERATIVE
+  List<String> get _categories {
+    if (widget.customCategories != null && widget.customCategories!.isNotEmpty) {
+      return widget.customCategories!;
+    }
+    final cats = <String>{'ALL'};
+    for (final t in _allTools) {
+      cats.add(t.category);
+    }
+    return cats.toList();
+  }
+
+  List<WorkspaceToolItem> get _allTools {
+    if (widget.customTools != null && widget.customTools!.isNotEmpty) {
+      return widget.customTools!;
+    }
+    return [
+      // 1. AI & GENERATIVE
     _ToolDef(
       label: 'AI Structural Copilot',
       subtitle: 'Gemini 1.5 Pro Autonomous Agent',
@@ -379,6 +416,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
       badge: 'LIVE 3D',
     ),
   ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -475,9 +513,9 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                   const SizedBox(width: 8),
                   const Icon(Icons.menu_rounded, size: 15, color: Colors.white),
                   const SizedBox(width: 6),
-                  const Text(
-                    'WORKSPACE TOOLS',
-                    style: TextStyle(
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w900,
@@ -492,9 +530,9 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.4), width: 0.5),
                     ),
-                    child: const Text(
-                      'MENU',
-                      style: TextStyle(
+                    child: Text(
+                      widget.badgeText,
+                      style: const TextStyle(
                         color: Color(0xFF00F0FF),
                         fontSize: 8.5,
                         fontWeight: FontWeight.w900,
@@ -679,12 +717,12 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Flexible(
+                      Flexible(
                         child: Text(
-                          'WORKSPACE TOOLS',
+                          widget.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w900,
@@ -700,9 +738,9 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.4), width: 0.5),
                         ),
-                        child: const Text(
-                          'MENU',
-                          style: TextStyle(
+                        child: Text(
+                          widget.badgeText,
+                          style: const TextStyle(
                             color: Color(0xFF00F0FF),
                             fontSize: 7.5,
                             fontWeight: FontWeight.w900,
@@ -712,7 +750,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                     ],
                   ),
                   Text(
-                    'Slideable • Drag to move',
+                    widget.subtitle ?? 'Slideable • Drag to move',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -954,20 +992,23 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   // Category Selection Tabs
   // --------------------------------------------------------------------------
   Widget _buildCategorySelector() {
-    final categories = ['ALL', 'AI & GEN', 'CAD & BIM', 'ANALYSIS'];
+    final categories = _categories;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      child: Row(
-        children: categories.map((cat) {
-          final isSel = _activeCategory == cat;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: categories.map((cat) {
+            final isSel = _activeCategory == cat;
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.5),
               child: InkWell(
                 onTap: () => setState(() => _activeCategory = cat),
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSel ? const Color(0xFF00F0FF) : const Color(0xFF141B2B),
                     borderRadius: BorderRadius.circular(6),
@@ -988,9 +1029,9 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                   ),
                 ),
               ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
