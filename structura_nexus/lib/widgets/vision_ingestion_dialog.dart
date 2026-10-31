@@ -11,18 +11,22 @@ import 'glass_pod.dart';
 
 class VisionIngestionDialog extends StatefulWidget {
   final StructuralApiService apiService;
-  final Function(StructuralModel) onModelSynthesized;
+  final Function(StructuralModel)? onModelSynthesized;
+  final Function(StructuralModel)? onModelGenerated;
 
   const VisionIngestionDialog({
     super.key,
     required this.apiService,
-    required this.onModelSynthesized,
-  });
+    this.onModelSynthesized,
+    this.onModelGenerated,
+  }) : assert(onModelSynthesized != null || onModelGenerated != null,
+            'Must provide onModelSynthesized or onModelGenerated');
 
   static Future<void> show(
     BuildContext context, {
     required StructuralApiService apiService,
-    required Function(StructuralModel) onModelSynthesized,
+    Function(StructuralModel)? onModelSynthesized,
+    Function(StructuralModel)? onModelGenerated,
   }) {
     return showDialog(
       context: context,
@@ -30,6 +34,7 @@ class VisionIngestionDialog extends StatefulWidget {
       builder: (ctx) => VisionIngestionDialog(
         apiService: apiService,
         onModelSynthesized: onModelSynthesized,
+        onModelGenerated: onModelGenerated,
       ),
     );
   }
@@ -126,7 +131,8 @@ class _VisionIngestionDialogState extends State<VisionIngestionDialog> {
       members: members,
     );
 
-    widget.onModelSynthesized(newModel);
+    widget.onModelSynthesized?.call(newModel);
+    widget.onModelGenerated?.call(newModel);
     Navigator.of(context).pop();
   }
 

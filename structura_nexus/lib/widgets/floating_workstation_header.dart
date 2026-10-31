@@ -260,6 +260,11 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                             onTap: () => widget.onOpenCopilot?.call(),
                           ),
                           _MenuAction(
+                            label: "Vision-to-BIM Floorplan Ingestion",
+                            icon: Icons.document_scanner_rounded,
+                            onTap: () => widget.onOpenVisionToBim?.call(),
+                          ),
+                          _MenuAction(
                             label: "Generative Bracing (Pareto Optimizer)",
                             icon: Icons.hub_rounded,
                             onTap: () => widget.onOpenGenerativeBracing?.call(),

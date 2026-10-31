@@ -94,13 +94,35 @@ class VisionToBimProcessor:
                 import urllib.request
                 import json
 
+                mime_type = "image/png"
+                raw_data = req.image_base64
+                if "," in raw_data:
+                    header, raw_data = raw_data.split(",", 1)
+                    if "data:" in header and ";base64" in header:
+                        mime_type = header.replace("data:", "").replace(";base64", "").strip()
+                elif req.filename:
+                    ext = req.filename.lower()
+                    if ext.endswith(".pdf"):
+                        mime_type = "application/pdf"
+                    elif ext.endswith(".jpg") or ext.endswith(".jpeg"):
+                        mime_type = "image/jpeg"
+                    elif ext.endswith(".webp"):
+                        mime_type = "image/webp"
+
                 prompt = (
-                    "You are an expert structural engineer. Analyze this architectural floorplan. "
-                    "Extract the structural gridlines, column coordinates in meters, and perimeter boundary. "
-                    "Return strictly JSON with keys: gridlines_x_m (list of floats in meters, e.g. [0.0, 6.0, 12.0]), "
-                    "gridlines_y_m (list of floats in meters, e.g. [0.0, 6.0, 12.0]), "
-                    "columns_xy_m (list of [x, y] coordinates in meters), "
-                    "perimeter_boundary_m (list of [x, y] coordinates enclosing the floor slab)."
+                    "You are an expert structural engineer and BIM architect. Analyze this architectural floorplan (PDF/PNG/JPEG). "
+                    "Autonomously extract structural orthogonal gridlines, column coordinates in meters, central core shear walls, and perimeter boundaries. "
+                    "Assume standard commercial or residential grid spans (e.g. 5.0m to 9.0m). "
+                    "Return strictly a JSON object adhering to this schema: "
+                    "{\n"
+                    '  "gridlines_x_m": [0.0, 6.0, 12.0, 18.0],\n'
+                    '  "gridlines_y_m": [0.0, 6.0, 12.0],\n'
+                    '  "columns_xy_m": [[0.0, 0.0], [6.0, 0.0], [12.0, 0.0], [18.0, 0.0], [0.0, 6.0], [6.0, 6.0], [12.0, 6.0], [18.0, 6.0], [0.0, 12.0], [6.0, 12.0], [12.0, 12.0], [18.0, 12.0]],\n'
+                    '  "shear_wall_segments": [[[6.0, 6.0], [12.0, 6.0]], [[6.0, 6.0], [6.0, 12.0]]],\n'
+                    '  "perimeter_boundary_m": [[0.0, 0.0], [18.0, 0.0], [18.0, 12.0], [0.0, 12.0]],\n'
+                    '  "detected_scale_px_per_m": 30.0,\n'
+                    '  "confidence_score": 0.98\n'
+                    "}"
                 )
 
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
@@ -111,8 +133,8 @@ class VisionToBimProcessor:
                                 {"text": prompt},
                                 {
                                     "inline_data": {
-                                        "mime_type": "image/png",
-                                        "data": req.image_base64.split(",")[-1] if "," in req.image_base64 else req.image_base64,
+                                        "mime_type": mime_type,
+                                        "data": raw_data.strip(),
                                     }
                                 }
                             ]
@@ -133,14 +155,17 @@ class VisionToBimProcessor:
 
                     cols = [tuple(c) for c in parsed.get("columns_xy_m", [])]
                     perim = [tuple(p) for p in parsed.get("perimeter_boundary_m", [])]
+                    raw_walls = parsed.get("shear_wall_segments", [])
+                    walls = [[tuple(pt) for pt in seg] for seg in raw_walls if len(seg) >= 2]
 
                     return VisionExtractedFeature(
                         gridlines_x_m=parsed.get("gridlines_x_m", [0.0, 6.0, 12.0, 18.0]),
                         gridlines_y_m=parsed.get("gridlines_y_m", [0.0, 6.0, 12.0]),
                         columns_xy_m=cols or [(0.0, 0.0), (6.0, 0.0), (12.0, 0.0), (0.0, 6.0), (6.0, 6.0), (12.0, 6.0)],
-                        shear_wall_segments=[[(6.0, 0.0), (6.0, 6.0)]],
+                        shear_wall_segments=walls or [[(6.0, 0.0), (6.0, 6.0)]],
                         perimeter_boundary_m=perim or [(0.0, 0.0), (18.0, 0.0), (18.0, 12.0), (0.0, 12.0)],
-                        confidence_score=0.96,
+                        detected_scale_px_per_m=float(parsed.get("detected_scale_px_per_m", 30.0)),
+                        confidence_score=float(parsed.get("confidence_score", 0.96)),
                     )
             except Exception as e:
                 logger.warning(f"Gemini Vision call fallback: {e}")

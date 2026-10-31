@@ -1,7 +1,8 @@
 import json
+import base64
 import logging
 import torch
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
@@ -824,15 +825,69 @@ class NlthaRunRequest(BaseModel):
 
 
 @app.post("/api/v1/ai/vision-to-bim", response_model=VisionToBimResponse)
-def vision_to_bim(request: VisionToBimRequest):
+async def vision_to_bim(
+    raw_request: Request,
+):
     """
     Multimodal Vision-to-BIM Floorplan Ingestion:
     Extracts structural gridlines, column locations, shear walls, and synthesizes 3D space frame.
+    Supports both JSON body (VisionToBimRequest) and multipart/form-data upload.
     """
     try:
-        return VisionToBimProcessor.process_floorplan(request)
+        content_type = raw_request.headers.get("content-type", "") if raw_request else ""
+        if "multipart/form-data" in content_type:
+            form = await raw_request.form()
+            uploaded_file = form.get("file")
+            b64_img = None
+            filename = "floorplan.png"
+            if isinstance(uploaded_file, UploadFile):
+                content = await uploaded_file.read()
+                b64_img = base64.b64encode(content).decode("utf-8")
+                filename = uploaded_file.filename or filename
+
+            req = VisionToBimRequest(
+                image_base64=b64_img,
+                filename=filename,
+                num_stories=int(form.get("num_stories", 3)),
+                story_height_m=float(form.get("story_height_m", 3.6)),
+                default_column_section=str(form.get("default_column_section", "W14X90")),
+                default_beam_section=str(form.get("default_beam_section", "W18X50")),
+            )
+            return VisionToBimProcessor.process_floorplan(req)
+        else:
+            body = await raw_request.json()
+            req = VisionToBimRequest(**body)
+            return VisionToBimProcessor.process_floorplan(req)
     except Exception as e:
         logger.error(f"Vision-to-BIM processing error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/ai/vision-to-bim/upload", response_model=VisionToBimResponse)
+async def vision_to_bim_upload(
+    file: UploadFile = File(...),
+    num_stories: int = Form(3),
+    story_height_m: float = Form(3.6),
+    default_column_section: str = Form("W14X90"),
+    default_beam_section: str = Form("W18X50"),
+):
+    """
+    Explicit multipart/form-data upload route for 2D architectural plans (PDF, PNG, JPEG).
+    """
+    try:
+        content = await file.read()
+        b64_img = base64.b64encode(content).decode("utf-8")
+        req = VisionToBimRequest(
+            image_base64=b64_img,
+            filename=file.filename or "floorplan.png",
+            num_stories=num_stories,
+            story_height_m=story_height_m,
+            default_column_section=default_column_section,
+            default_beam_section=default_beam_section,
+        )
+        return VisionToBimProcessor.process_floorplan(req)
+    except Exception as e:
+        logger.error(f"Vision-to-BIM upload processing error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
