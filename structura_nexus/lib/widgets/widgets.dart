@@ -7,6 +7,7 @@
 export 'floating_workstation_header.dart';
 export 'workstation_sidebar.dart';
 export 'workstation_drawer.dart';
+export 'slideable_workspace_menu.dart';
 
 // 3D Viewport & WebGL
 export 'structural_3d_viewport.dart';
@@ -44,5 +45,6 @@ export 'foundation_studio_dialog.dart';
 export 'time_history_player.dart';
 
 // Common Overlays
+export 'info_tooltip.dart';
 export 'floating_copyright_watermark.dart';
 export 'workstation_status_bar.dart';

@@ -121,5 +121,19 @@ void main() {
 
       expect(find.text('Password must be at least 6 characters.'), findsOneWidget);
     });
+
+    testWidgets('Back to Workstation button is visible and navigates to Workstation', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Back to Workstation'), findsOneWidget);
+      await tester.tap(find.text('Back to Workstation'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+    });
   });
 }

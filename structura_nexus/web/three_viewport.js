@@ -132,6 +132,23 @@
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         this.controls.target.set(3, 4, 0);
+
+        // Freeze controls when pointer is hovering/scrolling over UI menus, toolbars or side panels
+        window.addEventListener("structura-freeze-orbit", () => {
+          window.__structuraMenuHovered = true;
+          if (this.controls) this.controls.enabled = false;
+        });
+        window.addEventListener("structura-unfreeze-orbit", () => {
+          window.__structuraMenuHovered = false;
+          if (this.controls) this.controls.enabled = true;
+        });
+
+        // Intercept native browser wheel events at window capture level when hovering over UI menus
+        window.addEventListener("wheel", (e) => {
+          if (window.__structuraMenuHovered) {
+            e.stopImmediatePropagation();
+          }
+        }, { capture: true, passive: false });
       }
 
       // 6. Object Groups

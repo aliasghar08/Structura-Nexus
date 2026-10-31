@@ -76,15 +76,21 @@ class _AuthDialogState extends State<AuthDialog> {
     try {
       if (_isSignUp) {
         await _authService.registerWithEmail(email, password, displayName: name.isNotEmpty ? name : null);
+        await _authService.signOut();
         if (mounted) {
-          widget.onAuthSuccess?.call();
-          Navigator.of(context).pop();
+          setState(() {
+            _isSignUp = false;
+            _passwordController.clear();
+            _successMessage = 'Account created successfully! Please sign in with your credentials.';
+          });
         }
       } else {
         await _authService.signInWithEmail(email, password);
         if (mounted) {
           widget.onAuthSuccess?.call();
-          Navigator.of(context).pop();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
         }
       }
     } catch (e) {

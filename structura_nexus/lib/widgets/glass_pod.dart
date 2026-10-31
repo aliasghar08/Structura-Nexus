@@ -29,11 +29,30 @@ class GlassPod extends StatelessWidget {
     this.margin = EdgeInsets.zero,
     this.borderRadius = 22.0,
     this.blurSigma = 24.0,
-    this.baseColor = const Color(0xFF0C1322),
-    this.opacity = 0.65,
+    this.baseColor = const Color(0xFF0B101B),
+    this.opacity = 0.92,
     this.glowColor,
     this.onTap,
   });
+
+  /// Reusable semi-transparent specular divider for functional row separation
+  static Widget divider({double height = 20, Color? color}) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: height / 2),
+      height: 1.0,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            color ?? Colors.white.withValues(alpha: 0.18),
+            color ?? Colors.white.withValues(alpha: 0.18),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.12, 0.88, 1.0],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,8 +97,8 @@ class GlassPod extends StatelessWidget {
                 ),
                 // Apple-style bevel border (light top, dark bottom)
                 border: Border.all(
-                  width: 1.2,
-                  color: Colors.white.withValues(alpha: 0.16),
+                  width: 1.5,
+                  color: Colors.white.withValues(alpha: 0.30),
                 ),
               ),
               child: child,

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math_64.dart' as vm;
 import '../models/structural_models.dart';
+import '../services/workspace_storage.dart';
 
 enum CadTool {
   select,
@@ -41,6 +42,10 @@ class _StructuralCadEditorDialogState extends State<StructuralCadEditorDialog> {
   final List<Map<String, dynamic>> _undoStack = [];
   final List<Map<String, dynamic>> _redoStack = [];
 
+  // Workspace Customization & Position Memory
+  bool _isCadToolbarExpanded = true;
+  double _cadToolbarTopOffset = 12.0;
+
   // Active Tool & Plane
   CadTool _activeTool = CadTool.select;
   CadPlane _activePlane = CadPlane.isometric3D;
@@ -74,6 +79,8 @@ class _StructuralCadEditorDialogState extends State<StructuralCadEditorDialog> {
   @override
   void initState() {
     super.initState();
+    _isCadToolbarExpanded = WorkspacePreferences.getBool('cad_studio_tools_expanded', true);
+    _cadToolbarTopOffset = WorkspacePreferences.getDouble('cad_studio_tools_top', 12.0);
     _modelName = widget.initialModel.name;
     _nodes = widget.initialModel.nodes.map((n) => n.copyWith()).toList();
     _members = widget.initialModel.members.map((m) => m.copyWith()).toList();
@@ -683,21 +690,106 @@ class _StructuralCadEditorDialogState extends State<StructuralCadEditorDialog> {
   }
 
   Widget _buildLeftToolbar() {
+    if (!_isCadToolbarExpanded) {
+      return Container(
+        width: 36,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D121D),
+          border: Border(
+            right: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.3), width: 1.5),
+          ),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            // Slideable drag handle
+            Tooltip(
+              message: 'Drag to slide CAD menu vertically. Position remembered.',
+              child: GestureDetector(
+                onVerticalDragUpdate: (details) {
+                  setState(() {
+                    _cadToolbarTopOffset = (_cadToolbarTopOffset + details.delta.dy).clamp(0.0, 300.0);
+                  });
+                  WorkspacePreferences.setDouble('cad_studio_tools_top', _cadToolbarTopOffset);
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Icon(Icons.drag_indicator_rounded, size: 16, color: Color(0xFF00F0FF)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            IconButton(
+              icon: const Icon(Icons.keyboard_double_arrow_right_rounded, size: 18, color: Color(0xFF00F0FF)),
+              tooltip: 'Expand CAD Tools Menu',
+              onPressed: () {
+                setState(() => _isCadToolbarExpanded = true);
+                WorkspacePreferences.setBool('cad_studio_tools_expanded', true);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
-      width: 64,
-      decoration: const BoxDecoration(
-        color: Color(0xFF161B22),
-        border: Border(right: BorderSide(color: Color(0xFF30363D))),
+      width: 68,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0C1322),
+        border: Border(
+          right: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.3), width: 1.5),
+        ),
       ),
       child: Column(
         children: [
-          const SizedBox(height: 12),
+          SizedBox(height: _cadToolbarTopOffset),
+          // Drag handle & collapse row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              GestureDetector(
+                onVerticalDragUpdate: (details) {
+                  setState(() {
+                    _cadToolbarTopOffset = (_cadToolbarTopOffset + details.delta.dy).clamp(0.0, 300.0);
+                  });
+                  WorkspacePreferences.setDouble('cad_studio_tools_top', _cadToolbarTopOffset);
+                },
+                child: Tooltip(
+                  message: 'Slideable CAD menu. Drag to position.',
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(Icons.drag_indicator_rounded, size: 14, color: Color(0xFF00F0FF)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.keyboard_double_arrow_left_rounded, size: 16, color: Colors.white70),
+                tooltip: 'Collapse CAD Tools Menu',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                onPressed: () {
+                  setState(() => _isCadToolbarExpanded = false);
+                  WorkspacePreferences.setBool('cad_studio_tools_expanded', false);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           _buildToolIconButton(CadTool.select, Icons.near_me_rounded, 'Select / Inspect'),
           _buildToolIconButton(CadTool.drawBeam, Icons.polyline_rounded, 'Draw Beam (Line)'),
           _buildToolIconButton(CadTool.addJoint, Icons.control_point_rounded, 'Add Joint (Point)'),
           _buildToolIconButton(CadTool.assignSupport, Icons.anchor_rounded, 'Assign Restraints'),
           _buildToolIconButton(CadTool.applyLoad, Icons.vertical_align_bottom_rounded, 'Apply Joint Loads'),
-          const Divider(color: Colors.white12, height: 24),
+          const Divider(color: Colors.white12, height: 20),
           IconButton(
             icon: const Icon(Icons.delete_sweep_rounded, color: Color(0xFFF85149), size: 20),
             onPressed: () {

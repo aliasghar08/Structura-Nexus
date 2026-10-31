@@ -6,6 +6,8 @@
 
 import 'package:flutter/material.dart';
 import 'glass_pod.dart';
+import 'info_tooltip.dart';
+import '../services/workspace_storage.dart';
 
 class FloatingTelemetryDock extends StatefulWidget {
   final double maxDcr;
@@ -95,23 +97,31 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
     final isCompact = MediaQuery.sizeOf(context).width < 700;
     final podPadding = isCompact ? const EdgeInsets.all(11) : const EdgeInsets.all(16);
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: isCompact ? 10 : 20,
-        right: isCompact ? 10 : 20,
-        bottom: isCompact ? 34 : 28,
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        clipBehavior: Clip.none,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+    return MouseRegion(
+      onEnter: (_) => WorkspacePreferences.freezeOrbit(true),
+      onExit: (_) => WorkspacePreferences.freezeOrbit(false),
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerSignal: (_) {},
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: isCompact ? 10 : 20,
+            right: isCompact ? 10 : 20,
+            bottom: isCompact ? 34 : 28,
+          ),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) => true,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              clipBehavior: Clip.none,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             // 1. AISC 360-16 Governing DCR Capsule
             _buildStaggeredPod(
               index: 0,
-              width: 245,
+              width: isCompact ? 255 : 270,
               child: GlassPod(
                 padding: podPadding,
                 borderRadius: 22,
@@ -123,17 +133,33 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "AISC 360-16",
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.8,
+                        Flexible(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Flexible(
+                                child: Text(
+                                  "AISC 360-16",
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              const InfoTooltip(
+                                message: "Demand-to-Capacity Ratio. Values > 1.0 indicate structural overstress.",
+                                size: 13,
+                              ),
+                            ],
                           ),
                         ),
+                        const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: statusColor.withValues(alpha: 0.18),
                             borderRadius: BorderRadius.circular(12),
@@ -141,7 +167,7 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           ),
                           child: Text(
                             widget.isPass ? "PASSED" : "OVERSTRESSED",
-                            style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: statusColor, fontSize: 9.5, fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -296,7 +322,11 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: _metricSnippet("α_cr BUCKLING", widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—"),
+                          child: _metricSnippet(
+                            "α_cr BUCKLING",
+                            widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—",
+                            tooltip: "Critical Elastic Buckling Multiplier. Values < 10.0 trigger P-Delta sway amplification.",
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -325,14 +355,32 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
           ],
         ),
       ),
+    ),
+    ),
+    ),
     );
   }
 
-  Widget _metricSnippet(String label, String val) {
+  Widget _metricSnippet(String label, String val, {String? tooltip}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 9, fontWeight: FontWeight.bold)),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 9, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (tooltip != null) ...[
+              const SizedBox(width: 3),
+              InfoTooltip(message: tooltip, size: 12),
+            ],
+          ],
+        ),
         const SizedBox(height: 3),
         Text(val, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
       ],
@@ -343,22 +391,42 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
     return InkWell(
       onTap: () => widget.onCombinationChanged(title),
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1F6FEB).withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.04),
+          color: isSelected ? Colors.white.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.04),
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.35),
+                    const Color(0xFF1F6FEB).withValues(alpha: 0.70),
+                  ],
+                )
+              : null,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF58A6FF) : Colors.white.withValues(alpha: 0.1),
-            width: 1.0,
+            color: isSelected ? Colors.white.withValues(alpha: 0.75) : Colors.white.withValues(alpha: 0.1),
+            width: isSelected ? 1.2 : 1.0,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           title,
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
             fontSize: 10.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
           ),
         ),
       ),

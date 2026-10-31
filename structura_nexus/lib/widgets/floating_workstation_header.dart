@@ -8,6 +8,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/workspace_storage.dart';
 import 'glass_pod.dart';
 
 class FloatingWorkstationHeader extends StatefulWidget {
@@ -114,85 +115,76 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
   Widget build(BuildContext context) {
     final isCompact = MediaQuery.sizeOf(context).width < 700;
 
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 10 : 16,
-        vertical: isCompact ? 6 : 10,
-      ),
-      child: Row(
-        children: [
-          // Left Scroll Chevron Button
-          _buildScrollButton(
-            icon: Icons.chevron_left_rounded,
-            tooltip: 'Scroll options left',
-            onTap: () => _scrollBy(-260),
+    return MouseRegion(
+      onEnter: (_) => WorkspacePreferences.freezeOrbit(true),
+      onExit: (_) => WorkspacePreferences.freezeOrbit(false),
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerSignal: (_) {},
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: isCompact ? 10 : 16,
+            vertical: isCompact ? 6 : 10,
           ),
-          const SizedBox(width: 6),
-
-          // Horizontally Scrollable Option Bar
-          Expanded(
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(
-                dragDevices: const {
-                  PointerDeviceKind.touch,
-                  PointerDeviceKind.mouse,
-                  PointerDeviceKind.trackpad,
-                  PointerDeviceKind.stylus,
-                },
+          child: Row(
+            children: [
+              // Left Scroll Chevron Button
+              _buildScrollButton(
+                icon: Icons.chevron_left_rounded,
+                tooltip: 'Scroll options left',
+                onTap: () => _scrollBy(-260),
               ),
-              child: RawScrollbar(
-                controller: _scrollController,
-                thumbColor: const Color(0xFF00F0FF).withValues(alpha: 0.35),
-                radius: const Radius.circular(4),
-                thickness: 3,
-                padding: const EdgeInsets.only(top: 2),
-                child: SingleChildScrollView(
-                  controller: _scrollController,
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    children: [
-                      // 1. App Drawer Launcher Pill
-                      GlassPod(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        borderRadius: 18,
-                        onTap: widget.onOpenDrawer,
+              const SizedBox(width: 6),
+
+              // Horizontally Scrollable Option Bar
+              Expanded(
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: const {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.mouse,
+                      PointerDeviceKind.trackpad,
+                      PointerDeviceKind.stylus,
+                    },
+                  ),
+                  child: RawScrollbar(
+                    controller: _scrollController,
+                    thumbColor: const Color(0xFF00F0FF).withValues(alpha: 0.35),
+                    radius: const Radius.circular(4),
+                    thickness: 3,
+                    padding: const EdgeInsets.only(top: 2),
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) => true,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 6),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.menu_rounded, color: Color(0xFF00F0FF), size: 18),
-                            const SizedBox(width: 8),
-                            const Text(
-                              "TOOLS & SUITE",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.6,
-                              ),
+                            // 1. App Drawer Launcher Pill
+                            _HoverableSpecularPill(
+                              label: "TOOLS & SUITE",
+                              icon: Icons.menu_rounded,
+                              onTap: widget.onOpenDrawer,
+                        trailingBadge: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFF00F0FF).withValues(alpha: 0.4),
+                              width: 0.5,
                             ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: const Color(0xFF00F0FF).withValues(alpha: 0.4),
-                                  width: 0.5,
-                                ),
-                              ),
-                              child: const Text(
-                                "DRAWER",
-                                style: TextStyle(
-                                  color: Color(0xFF00F0FF),
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
+                          ),
+                          child: const Text(
+                            "DRAWER",
+                            style: TextStyle(
+                              color: Color(0xFF00F0FF),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
                             ),
-                          ],
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -421,6 +413,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
               ),
             ),
           ),
+        ),
 
           const SizedBox(width: 6),
           // Right Scroll Chevron Button
@@ -435,6 +428,8 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
           _buildUserProfileButton(),
         ],
       ),
+    ),
+    ),
     );
   }
 
@@ -443,28 +438,10 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return GlassPod(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      borderRadius: 18,
+    return _HoverableSpecularPill(
+      label: label,
+      icon: icon,
       onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: const Color(0xFF00F0FF)),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(width: 3),
-          const Icon(Icons.arrow_drop_down_rounded, size: 14, color: Colors.white38),
-        ],
-      ),
     );
   }
 
@@ -569,10 +546,29 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1F6FEB) : Colors.transparent,
+          color: isSelected ? Colors.white.withValues(alpha: 0.22) : Colors.transparent,
+          gradient: isSelected
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.35),
+                    const Color(0xFF1F6FEB).withValues(alpha: 0.70),
+                  ],
+                )
+              : null,
           borderRadius: BorderRadius.circular(12),
+          border: isSelected
+              ? Border.all(color: Colors.white.withValues(alpha: 0.7), width: 1.0)
+              : null,
           boxShadow: isSelected
-              ? [BoxShadow(color: const Color(0xFF1F6FEB).withValues(alpha: 0.4), blurRadius: 10)]
+              ? [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
               : null,
         ),
         child: Text(
@@ -580,7 +576,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
           style: TextStyle(
             color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.5),
             fontSize: 10,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
           ),
         ),
       ),
@@ -1011,4 +1007,82 @@ class _MenuAction {
     required this.icon,
     required this.onTap,
   });
+}
+
+class _HoverableSpecularPill extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Widget? trailingBadge;
+
+  const _HoverableSpecularPill({
+    required this.label,
+    required this.icon,
+    this.onTap,
+    this.trailingBadge,
+  });
+
+  @override
+  State<_HoverableSpecularPill> createState() => _HoverableSpecularPillState();
+}
+
+class _HoverableSpecularPillState extends State<_HoverableSpecularPill> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GlassPod(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        borderRadius: 18,
+        onTap: widget.onTap,
+        glowColor: _isHovered ? Colors.white.withValues(alpha: 0.35) : null,
+        baseColor: _isHovered ? const Color(0xFF1E2838) : const Color(0xFF0C1322),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: _isHovered
+                ? LinearGradient(
+                    colors: [
+                      Colors.white.withValues(alpha: 0.28),
+                      Colors.white.withValues(alpha: 0.10),
+                    ],
+                  )
+                : null,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 13, color: const Color(0xFF00F0FF)),
+              const SizedBox(width: 5),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              if (widget.trailingBadge != null) ...[
+                const SizedBox(width: 6),
+                widget.trailingBadge!,
+              ] else ...[
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.arrow_drop_down_rounded,
+                  size: 14,
+                  color: _isHovered ? Colors.white : Colors.white38,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

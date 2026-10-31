@@ -87,6 +87,11 @@ class _AuthGateState extends State<AuthGate> {
 
     // Otherwise render full AuthScreen
     return AuthScreen(
+      onBackToWorkstation: () {
+        setState(() {
+          _guestSessionActive = true;
+        });
+      },
       onLoginSuccess: () {
         setState(() {
           _currentUser = FirebaseAuthService().currentUser;

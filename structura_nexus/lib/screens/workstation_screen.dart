@@ -38,6 +38,8 @@ import '../widgets/environmental_stimulator_dialog.dart';
 import '../widgets/vision_ingestion_dialog.dart';
 import '../widgets/foundation_studio_dialog.dart';
 import '../widgets/time_history_player.dart';
+import '../widgets/slideable_workspace_menu.dart';
+import '../services/workspace_storage.dart';
 import '../services/dart_neural_engine.dart';
 
 class WorkstationScreen extends StatefulWidget {
@@ -50,14 +52,28 @@ class WorkstationScreen extends StatefulWidget {
 class _WorkstationScreenState extends State<WorkstationScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<Structural3DViewportState> _viewportKey = GlobalKey<Structural3DViewportState>();
+  final GlobalKey<SlideableWorkspaceMenuState> _workspaceMenuKey = GlobalKey<SlideableWorkspaceMenuState>();
   late StructuralModel _model;
   final StructuralApiService _apiService = StructuralApiService();
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
   bool? _isInspectorOpen;
+  double? _inspectorTopOffset;
   bool _isNlthaActive = false;
   StreamSubscription<dynamic>? _authSubscription;
+
+  void _setInspectorOpen(bool open) {
+    setState(() => _isInspectorOpen = open);
+    WorkspacePreferences.setBool('inspector_is_open', open);
+  }
+
+  void _updateInspectorTop(double delta, double maxTop) {
+    setState(() {
+      _inspectorTopOffset = ((_inspectorTopOffset ?? 70.0) + delta).clamp(60.0, maxTop);
+    });
+    WorkspacePreferences.setDouble('inspector_top_offset', _inspectorTopOffset!);
+  }
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
@@ -95,6 +111,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   @override
   void initState() {
     super.initState();
+    _isInspectorOpen = WorkspacePreferences.getOptionalBool('inspector_is_open');
+    _inspectorTopOffset = WorkspacePreferences.getDouble('inspector_top_offset', 70.0);
     _model = BenchmarkPresets.multiStorySwayFrame();
     EmbeddedFeaSolver.solve(_model);
     DartNeuralEngine.instance.initialize();
@@ -128,6 +146,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _triggerSolve() {
     setState(() {
+      try {
+        EmbeddedFeaSolver.solve(_model);
+      } catch (e) {
+        debugPrint('Embedded FEA solve note: $e');
+      }
       _apiService.sendGraphPayload(
         _model,
         action: _model.activeEngine == EngineType.surrogateGnn
@@ -441,7 +464,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final screenSize = MediaQuery.sizeOf(context);
     final isCompact = screenSize.width < 700 || screenSize.height < 500;
     final showInspector = _isInspectorOpen ?? !isCompact;
-    final inspectorTopOffset = MediaQuery.paddingOf(context).top + (isCompact ? 68.0 : 70.0);
+    final defaultInspectorTop = MediaQuery.paddingOf(context).top + (isCompact ? 68.0 : 70.0);
+    final maxInspectorTop = (screenSize.height - 240.0).clamp(70.0, 1000.0);
+    final effectiveInspectorTop = (_inspectorTopOffset ?? defaultInspectorTop).clamp(60.0, maxInspectorTop);
     final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
     return Scaffold(
@@ -488,7 +513,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   _selectedNodeId = id;
                   if (id != null) {
                     _selectedMemberId = null;
-                    _isInspectorOpen = true;
+                    _setInspectorOpen(true);
                   }
                 });
               },
@@ -497,7 +522,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   _selectedMemberId = id;
                   if (id != null) {
                     _selectedNodeId = null;
-                    _isInspectorOpen = true;
+                    _setInspectorOpen(true);
                   }
                 });
               },
@@ -663,45 +688,97 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ),
           ),
 
-          // 4. Layer 3: Floating Right Inspector Card (Responsive Desktop Card / Mobile Overlay)
+          // 4. Layer 3: Slideable, Customizable Workspace Menu (Side Under Menu)
+          SlideableWorkspaceMenu(
+            key: _workspaceMenuKey,
+            workspaceKey: 'main_workstation',
+            initialTop: 76.0,
+            initialExpanded: false,
+            onOpenCopilot: onOpenCopilot,
+            onOpenGenerativeOptimizer: onOpenGenerativeOptimizer,
+            onOpenGenerativeBracing: onOpenGenerativeBracing,
+            onOptimize: onOptimize,
+            onOpenCadStudio: onOpenCadStudio,
+            onOpenLibrary: onOpenLibrary,
+            onOpenConcreteStudio: onOpenConcreteStudio,
+            onOpenSteelConnections: onOpenSteelConnections,
+            onOpenGeotechnicalFoundation: onOpenGeotechnicalFoundation,
+            onOpenCompositeFloor: onOpenCompositeFloor,
+            onOpenSeismicModal: onOpenSeismicModal,
+            onOpenLateralStability: onOpenLateralStability,
+            onOpenPushoverAnalysis: onOpenPushoverAnalysis,
+            onOpenWindCfd: onOpenWindCfd,
+            onOpenPePacket: onOpenPePacket,
+            onOpenEmbodiedCarbon: onOpenEmbodiedCarbon,
+            onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
+            onOpenVisionToBim: onOpenVisionToBim,
+            onOpenNltha: onOpenNltha,
+            onPresetSelected: (presetKey) {
+              _requireAuth(
+                featureName: 'Benchmark Presets',
+                onAuthenticated: () => _loadPreset(presetKey),
+              );
+            },
+            onSolveTriggered: () {
+              _requireAuth(
+                featureName: 'Finite Element Solver',
+                onAuthenticated: _triggerSolve,
+              );
+            },
+          ),
+
+          // 5. Layer 4: Floating Right Inspector Card (Slideable, Remembers Position, Open-in-place)
           if (showInspector)
             Positioned(
-              top: inspectorTopOffset,
+              top: effectiveInspectorTop,
               right: isCompact ? 10 : 20,
               left: isCompact ? 10 : null,
               bottom: inspectorBottomOffset,
-              child: FloatingInspectorPanel(
-                width: isCompact ? double.infinity : 330,
-                model: _model,
-                selectedNodeId: _selectedNodeId,
-                selectedMemberId: _selectedMemberId,
-                onModelChanged: () {
-                  _requireAuth(
-                    featureName: 'Structural Model Editor',
-                    onAuthenticated: _triggerSolve,
-                  );
-                },
-                onClose: () => setState(() => _isInspectorOpen = false),
+              child: GestureDetector(
+                onVerticalDragUpdate: (details) => _updateInspectorTop(details.delta.dy, maxInspectorTop),
+                child: FloatingInspectorPanel(
+                  width: isCompact ? double.infinity : 330,
+                  model: _model,
+                  selectedNodeId: _selectedNodeId,
+                  selectedMemberId: _selectedMemberId,
+                  onModelChanged: () {
+                    setState(() {
+                      try {
+                        EmbeddedFeaSolver.solve(_model);
+                      } catch (e) {
+                        debugPrint('Embedded FEA solve note: $e');
+                      }
+                    });
+                    _triggerSolve();
+                  },
+                  onClose: () => _setInspectorOpen(false),
+                ),
               ),
             )
           else
             Positioned(
-              top: inspectorTopOffset,
+              top: effectiveInspectorTop,
               right: isCompact ? 10 : 20,
-              child: GlassPod(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                borderRadius: 16,
-                onTap: () => setState(() => _isInspectorOpen = true),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.tune_rounded, size: 14, color: Color(0xFF00F0FF)),
-                    SizedBox(width: 6),
-                    Text(
-                      "INSPECTOR",
-                      style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
-                    ),
-                  ],
+              child: GestureDetector(
+                onVerticalDragUpdate: (details) => _updateInspectorTop(details.delta.dy, maxInspectorTop),
+                child: GlassPod(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  borderRadius: 16,
+                  glowColor: const Color(0xFF00F0FF),
+                  onTap: () => _setInspectorOpen(true),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.drag_indicator_rounded, size: 14, color: Color(0xFF00F0FF)),
+                      SizedBox(width: 4),
+                      Icon(Icons.tune_rounded, size: 14, color: Colors.white),
+                      SizedBox(width: 6),
+                      Text(
+                        "INSPECTOR",
+                        style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

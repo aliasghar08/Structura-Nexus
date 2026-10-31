@@ -5,6 +5,7 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import '../services/workspace_storage.dart';
 
 class WorkstationDrawer extends StatefulWidget {
   final VoidCallback? onOpenCopilot;
@@ -417,13 +418,19 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
                 (t.badge != null && t.badge!.toLowerCase().contains(_searchQuery));
           }).toList();
 
-    return Drawer(
-      backgroundColor: const Color(0xFF0D1117),
-      elevation: 16,
-      width: 320,
-      child: SafeArea(
-        child: Column(
-          children: [
+    return MouseRegion(
+      onEnter: (_) => WorkspacePreferences.freezeOrbit(true),
+      onExit: (_) => WorkspacePreferences.freezeOrbit(false),
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerSignal: (_) {},
+        child: Drawer(
+          backgroundColor: const Color(0xFF0D1117),
+          elevation: 16,
+          width: 320,
+          child: SafeArea(
+            child: Column(
+              children: [
             // 1. Drawer Header
             Container(
               padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
@@ -569,9 +576,13 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
                         ),
                       ),
                     )
-                  : ListView(
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                      children: _buildToolTree(filteredTools),
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (notification) => true,
+                      child: ListView(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                        children: _buildToolTree(filteredTools),
+                      ),
                     ),
             ),
 
@@ -580,6 +591,8 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
           ],
         ),
       ),
+    ),
+    ),
     );
   }
 

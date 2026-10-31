@@ -7,14 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_auth_service.dart';
 import '../widgets/floating_copyright_watermark.dart';
+import 'workstation_screen.dart';
 
 class AuthScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
+  final VoidCallback? onBackToWorkstation;
   final String? redirectMessage;
 
   const AuthScreen({
     super.key,
     this.onLoginSuccess,
+    this.onBackToWorkstation,
     this.redirectMessage,
   });
 
@@ -113,23 +116,29 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     try {
       if (_isLogin) {
         await _authService.signInWithEmail(email, password);
+        if (mounted) {
+          widget.onLoginSuccess?.call();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+            );
+          }
+        }
       } else {
         await _authService.registerWithEmail(
           email,
           password,
           displayName: name.isNotEmpty ? name : null,
         );
-      }
-
-      if (mounted) {
-        widget.onLoginSuccess?.call();
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop(true);
-        } else {
+        // Requirement: After sign up, prompt user to log in rather than staying still or bypassing login
+        await _authService.signOut();
+        if (mounted) {
           setState(() {
-            _successMessage = _isLogin
-                ? 'Signed in successfully! Redirecting...'
-                : 'Account created successfully! Welcome to Structura Nexus.';
+            _isLogin = true;
+            _passwordController.clear();
+            _successMessage = 'Account created successfully! Please sign in with your email and password to enter the workstation.';
           });
         }
       }
@@ -159,6 +168,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         widget.onLoginSuccess?.call();
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+          );
         }
       }
     } catch (e) {
@@ -185,6 +198,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         widget.onLoginSuccess?.call();
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+          );
         }
       }
     } catch (e) {
@@ -193,6 +210,10 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         widget.onLoginSuccess?.call();
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop(true);
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+          );
         }
       }
     } finally {
@@ -788,28 +809,36 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
           ),
 
-          // Optional Back Button (rendered above scroll view so it is never covered on mobile)
-          if (Navigator.of(context).canPop())
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + 14,
-              left: 16,
-              child: TextButton.icon(
-                onPressed: () => Navigator.of(context).pop(false),
-                icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
-                label: const Text(
-                  'Back to Workstation',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFF161B22),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
-                  ),
+          // Back Button (rendered above scroll view so it is never covered on mobile)
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 14,
+            left: 16,
+            child: TextButton.icon(
+              onPressed: () {
+                widget.onBackToWorkstation?.call();
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop(false);
+                } else {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+                  );
+                }
+              },
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 16),
+              label: const Text(
+                'Back to Workstation',
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: TextButton.styleFrom(
+                backgroundColor: const Color(0xFF161B22),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                 ),
               ),
             ),
+          ),
 
           // Floating Copyright Watermark
           const FloatingCopyrightWatermark(),

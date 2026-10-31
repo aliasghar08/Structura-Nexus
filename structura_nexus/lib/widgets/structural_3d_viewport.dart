@@ -126,9 +126,11 @@ class Structural3DViewportState extends State<Structural3DViewport>
   Widget build(BuildContext context) {
     return GestureDetector(
       onScaleStart: (details) {
+        if (_useThreeJs) return;
         _lastPanPos = details.localFocalPoint;
       },
       onScaleUpdate: (details) {
+        if (_useThreeJs) return;
         setState(() {
           if (details.pointerCount == 1 && _lastPanPos != null) {
             // Orbit camera
