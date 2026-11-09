@@ -55,3 +55,4 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     disp_out[out_offset + 4u] = 0.0;
     disp_out[out_offset + 5u] = 0.0;
 }
+

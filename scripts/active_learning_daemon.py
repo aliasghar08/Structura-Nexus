@@ -55,3 +55,4 @@ def run_active_learning_cycle(batch_size: int = 16, epochs: int = 5) -> Dict[str
 if __name__ == "__main__":
     res = run_active_learning_cycle()
     print("Active Learning MPS Run:", json.dumps(res, indent=2))
+

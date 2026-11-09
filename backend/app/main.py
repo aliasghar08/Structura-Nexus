@@ -64,9 +64,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("structura_nexus")
 
 app = FastAPI(
-    title="Structura Forge AI / Structura Nexus Engine",
+    title="Structura Nexus Engine",
     description="World-Class AI Workstation Backend for Civil & Structural Engineering (AISC 360-16 / ACI 318-19 / ASCE 7-16)",
-    version="3.4.0-REV-A",
+    version="4.0.0",
 )
 
 app.add_middleware(
@@ -104,7 +104,7 @@ class ASCE7SeismicRequest(BaseModel):
 @app.get("/")
 def root():
     return {
-        "service": "Structura Forge AI / Structura Nexus Workstation",
+        "service": "Structura Nexus Workstation",
         "version": "3.4.0-REV-A",
         "standards": ["AISC 360-16", "ACI 318-19", "ASCE 7-16", "IBC 2024"],
         "status": "ONLINE",

@@ -29,7 +29,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: WorkstationScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+    expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
     expect(find.text('TOOLS & SUITE'), findsOneWidget);
     expect(find.text('DRAWER'), findsOneWidget);
     expect(find.text('HYBRID DUAL'), findsOneWidget);
@@ -73,7 +73,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Back in workstation
-    expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+    expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
   });
 
   test('StructuralLibraryService exports valid AutoCAD DXF format', () {

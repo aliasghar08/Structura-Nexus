@@ -133,7 +133,7 @@ void main() {
       await tester.tap(find.text('Back to Workstation'));
       await tester.pumpAndSettle();
 
-      expect(find.text('STRUCTURA FORGE AI'), findsOneWidget);
+      expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
     });
   });
 }

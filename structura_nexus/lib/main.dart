@@ -44,7 +44,7 @@ class StructuraNexusApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Structura Forge AI / Structura Nexus',
+      title: 'Structura Nexus',
       debugShowCheckedModeBanner: false,
       scrollBehavior: const _WorkstationScrollBehavior(),
       theme: ThemeData(

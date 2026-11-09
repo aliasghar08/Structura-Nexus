@@ -220,7 +220,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 Row(
                                   children: [
                                     const Text(
-                                      "STRUCTURA FORGE AI",
+                                      "STRUCTURA NEXUS",
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 12,

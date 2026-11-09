@@ -13,7 +13,7 @@ from backend.app.benchmarks.verification_suite import TextbookBenchmarkSuite
 
 def main():
     print("=" * 70)
-    print(" STRUCTURA FORGE AI / STRUCTURA NEXUS: BENCHMARK SUITE")
+    print(" STRUCTURA NEXUS: BENCHMARK SUITE")
     print(" Reference Standards: Timoshenko, Hibbeler, Leet")
     print("=" * 70)
 
