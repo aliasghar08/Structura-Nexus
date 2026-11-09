@@ -930,6 +930,50 @@ def run_nltha(request: NlthaRunRequest):
 
 
 # -------------------------------------------------------------
+# v4.0 Multi-Agent Swarm & Epistemic Uncertainty Router Endpoints
+# -------------------------------------------------------------
+from .ai.swarm.engineering_swarm import EngineeringSwarmOrchestrator, SwarmConvergenceCriteria, SwarmState
+from .surrogate.uncertainty_router import UncertaintyRouter, UncertaintyGatingResult
+
+class SwarmSolveRequest(BaseModel):
+    graph: StructuralGraphPayload
+    criteria: Optional[SwarmConvergenceCriteria] = None
+
+@app.post("/api/v1/ai/swarm/solve", response_model=SwarmState)
+def run_multi_agent_swarm(request: SwarmSolveRequest):
+    """
+    Closed-Loop Multi-Agent Engineering Swarm (Architect <-> Auditor <-> Healer <-> Carbon Optimizer).
+    Converges iteratively until 0.70 <= DCR <= 0.95 and all stability/drift criteria are satisfied.
+    """
+    try:
+        swarm_state = EngineeringSwarmOrchestrator.run_swarm(request.graph, request.criteria)
+        return swarm_state
+    except Exception as e:
+        logger.error(f"Swarm orchestration error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+class UncertaintyGatingRequest(BaseModel):
+    graph: StructuralGraphPayload
+    mc_passes: int = 5
+    variance_threshold: float = 0.08
+
+@app.post("/api/v1/surrogate/uncertainty-gated-predict", response_model=UncertaintyGatingResult)
+def uncertainty_gated_predict(request: UncertaintyGatingRequest):
+    """
+    Epistemic variance gating via MC-Dropout. If variance > 0.08, falls back to exact 12-DOF DSM.
+    """
+    try:
+        return UncertaintyRouter.evaluate_and_route(
+            request.graph,
+            mc_passes=request.mc_passes,
+            variance_threshold=request.variance_threshold
+        )
+    except Exception as e:
+        logger.error(f"Uncertainty gating error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -------------------------------------------------------------
 # WebSocket Live Streaming
 # -------------------------------------------------------------
 @app.websocket("/ws/structural-graph")

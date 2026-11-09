@@ -23,6 +23,7 @@ class FloatingTelemetryDock extends StatefulWidget {
   final ValueChanged<String> onCombinationChanged;
   final VoidCallback onAutoSizerPressed;
   final VoidCallback onStabilityPressed;
+  final VoidCallback? onParetoPressed;
 
   const FloatingTelemetryDock({
     super.key,
@@ -39,6 +40,7 @@ class FloatingTelemetryDock extends StatefulWidget {
     required this.onCombinationChanged,
     required this.onAutoSizerPressed,
     required this.onStabilityPressed,
+    this.onParetoPressed,
   });
 
   @override
@@ -286,20 +288,53 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: widget.onAutoSizerPressed,
-                      icon: const Icon(Icons.auto_awesome, size: 14, color: Colors.black),
-                      label: const Text(
-                        "AI SECTION AUTO-SIZER",
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.6),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF00F0FF),
-                        foregroundColor: Colors.black,
-                        minimumSize: const Size(double.infinity, 38),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: widget.onAutoSizerPressed,
+                            icon: const Icon(Icons.auto_awesome, size: 13, color: Colors.black),
+                            label: const Text(
+                              "AI SECTION AUTO-SIZER",
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00F0FF),
+                              foregroundColor: Colors.black,
+                              minimumSize: const Size(0, 36),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ),
+                        if (widget.onParetoPressed != null) ...[
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: widget.onParetoPressed,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1F6FEB).withValues(alpha: 0.25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.6)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.hub_rounded, size: 14, color: Color(0xFF00F0FF)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "PARETO",
+                                    style: TextStyle(color: Color(0xFF00F0FF), fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),

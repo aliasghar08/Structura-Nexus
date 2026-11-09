@@ -43,6 +43,7 @@ import '../widgets/environmental_stimulator_dialog.dart';
 import '../widgets/vision_ingestion_dialog.dart';
 import '../widgets/foundation_studio_dialog.dart';
 import '../widgets/time_history_player.dart';
+import '../widgets/pareto_frontier_dock.dart';
 import '../widgets/slideable_workspace_menu.dart';
 import '../services/workspace_storage.dart';
 import '../services/dart_neural_engine.dart';
@@ -1441,6 +1442,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               },
               onAutoSizerPressed: onOptimize,
               onStabilityPressed: onOpenLateralStability,
+              onParetoPressed: () => ParetoFrontierDock.show(context, model: _model),
             ),
           ),
 
