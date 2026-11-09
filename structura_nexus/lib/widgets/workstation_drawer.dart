@@ -665,11 +665,13 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
     final isHovered = _hoveredTool == tool.label;
 
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hoveredTool = tool.label),
       onExit: (_) => setState(() => _hoveredTool = null),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 2.5),
         child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () => _handleToolSelected(tool.onTap),
           borderRadius: BorderRadius.circular(8),
           hoverColor: tool.color.withValues(alpha: 0.08),
@@ -816,6 +818,7 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
           // Controls & Shortcuts Button
           InkWell(
             onTap: _showShortcutsDialog,
+            mouseCursor: SystemMouseCursors.click,
             borderRadius: BorderRadius.circular(6),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

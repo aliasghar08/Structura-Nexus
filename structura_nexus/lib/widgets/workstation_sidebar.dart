@@ -600,9 +600,11 @@ class _WorkstationSidebarState extends State<WorkstationSidebar> {
     final isHovered = _hoveredTool == tool.label;
 
     final itemContent = MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hoveredTool = tool.label),
       onExit: (_) => setState(() => _hoveredTool = null),
       child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
         onTap: tool.onTap,
         borderRadius: BorderRadius.circular(8),
         hoverColor: tool.color.withValues(alpha: 0.08),
@@ -784,6 +786,7 @@ class _WorkstationSidebarState extends State<WorkstationSidebar> {
                 // Quick Navigation & Shortcuts Help button
                 InkWell(
                   onTap: _showShortcutsDialog,
+                  mouseCursor: SystemMouseCursors.click,
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),

@@ -192,6 +192,7 @@ class _MacNeuralInspectorDialogState extends State<MacNeuralInspectorDialog> {
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
             icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 22),
+            tooltip: 'Close',
           ),
         ],
       ),

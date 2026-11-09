@@ -138,3 +138,4 @@ class ShopDrawingAuditor:
                 governing_limit_state="Bolt Shear & Plate Bearing",
                 capacity_demand_ratio=0.74,
             )
+

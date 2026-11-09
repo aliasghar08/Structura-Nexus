@@ -123,6 +123,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   bool _showCustomizer = false;
   String _activeCategory = 'ALL';
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _toolsScrollController = ScrollController();
   String _searchQuery = '';
   String? _hoveredTool;
 
@@ -160,6 +161,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   @override
   void dispose() {
     _searchController.dispose();
+    _toolsScrollController.dispose();
     super.dispose();
   }
 
@@ -678,6 +680,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                         : NotificationListener<ScrollNotification>(
                             onNotification: (notification) => true,
                             child: ListView.builder(
+                              controller: _toolsScrollController,
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               physics: const ClampingScrollPhysics(),
                               itemCount: filtered.length,
@@ -1033,7 +1036,12 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
               child: InkWell(
-                onTap: () => setState(() => _activeCategory = cat),
+                onTap: () {
+                  setState(() => _activeCategory = cat);
+                  if (_toolsScrollController.hasClients) {
+                    _toolsScrollController.jumpTo(0.0);
+                  }
+                },
                 mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
