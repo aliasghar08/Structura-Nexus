@@ -32,6 +32,8 @@ class SlideableWorkspaceMenu extends StatefulWidget {
   final VoidCallback? onOpenEnvironmentalStimulator;
   final VoidCallback? onOpenVisionToBim;
   final VoidCallback? onOpenNltha;
+  final VoidCallback? onOpenBuildingTemplates;
+  final VoidCallback? onOpenMacAiInspector;
   final ValueChanged<String>? onPresetSelected;
   final VoidCallback? onSolveTriggered;
 
@@ -79,6 +81,8 @@ class SlideableWorkspaceMenu extends StatefulWidget {
     this.onOpenEnvironmentalStimulator,
     this.onOpenVisionToBim,
     this.onOpenNltha,
+    this.onOpenBuildingTemplates,
+    this.onOpenMacAiInspector,
     this.onPresetSelected,
     this.onSolveTriggered,
   });
@@ -241,6 +245,15 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
     return [
       // 1. AI & GENERATIVE
     _ToolDef(
+      label: 'Mac-Trained AI Suite',
+      subtitle: '10 Apple Silicon MPS Neural Surrogates',
+      icon: Icons.memory_rounded,
+      color: const Color(0xFF00F0FF),
+      category: 'AI & GEN',
+      onTap: widget.onOpenMacAiInspector,
+      badge: 'MPS GPU',
+    ),
+    _ToolDef(
       label: 'AI Structural Copilot',
       subtitle: 'Gemini 1.5 Pro Autonomous Agent',
       icon: Icons.psychology_rounded,
@@ -295,6 +308,15 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
       category: 'CAD & BIM',
       onTap: widget.onOpenVisionToBim,
       badge: 'VISION',
+    ),
+    _ToolDef(
+      label: 'Building Templates',
+      subtitle: 'Towers, Warehouses & Bridges',
+      icon: Icons.apartment_rounded,
+      color: const Color(0xFF38BDF8),
+      category: 'CAD & BIM',
+      onTap: widget.onOpenBuildingTemplates ?? widget.onOpenLibrary,
+      badge: '12 MODELS',
     ),
     _ToolDef(
       label: 'Structural Library & BIM',

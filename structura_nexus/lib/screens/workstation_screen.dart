@@ -27,6 +27,8 @@ import '../widgets/cad_editor_dialog.dart';
 import '../widgets/lateral_stability_dialog.dart';
 import '../widgets/pe_packet_dialog.dart';
 import '../widgets/generative_bracing_dialog.dart';
+import '../widgets/building_templates_dialog.dart';
+import '../widgets/mac_neural_inspector_dialog.dart';
 import '../widgets/glass_pod.dart';
 import '../widgets/floating_telemetry_dock.dart';
 import '../widgets/floating_inspector_panel.dart';
@@ -188,18 +190,71 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _loadPreset(String presetKey) {
+    StructuralModel? newModel;
+    if (presetKey == 'high_rise_10s') {
+      newModel = BuildingGeneratorService.generateCommercialHighRiseTower();
+    } else if (presetKey == 'hospital_8s') {
+      newModel = BuildingGeneratorService.generateHospitalComplex();
+    } else if (presetKey == 'residential_6s') {
+      newModel = BuildingGeneratorService.generateResidentialBuilding();
+    } else if (presetKey == 'supertall_20s') {
+      newModel = BuildingGeneratorService.generateSuperTallOutrigger();
+    } else if (presetKey == 'warehouse_portal') {
+      newModel = BuildingGeneratorService.generateIndustrialWarehouse();
+    } else if (presetKey == 'space_grid_canopy') {
+      newModel = BuildingGeneratorService.generateSpaceGridCanopy();
+    } else if (presetKey == 'campus_4s') {
+      newModel = BuildingGeneratorService.generateEducationalCampus();
+    } else if (presetKey == 'pratt_truss_bridge') {
+      newModel = BuildingGeneratorService.generatePrattHighwayBridge();
+    } else if (presetKey == 'transmission_tower') {
+      newModel = BuildingGeneratorService.generateTransmissionTower();
+    } else if (presetKey == 'sway') {
+      newModel = BenchmarkPresets.multiStorySwayFrame();
+    } else if (presetKey == 'truss') {
+      newModel = BenchmarkPresets.warrenTruss();
+    } else if (presetKey == 'cantilever') {
+      newModel = BenchmarkPresets.timoshenkoCantilever();
+    }
+
+    if (newModel != null) {
+      _importBuildingModel(newModel);
+    }
+  }
+
+  void _importBuildingModel(StructuralModel newModel) {
     setState(() {
-      if (presetKey == 'sway') {
-        _model = BenchmarkPresets.multiStorySwayFrame();
-      } else if (presetKey == 'truss') {
-        _model = BenchmarkPresets.warrenTruss();
-      } else if (presetKey == 'cantilever') {
-        _model = BenchmarkPresets.timoshenkoCantilever();
-      }
+      _model = newModel;
       _selectedNodeId = null;
       _selectedMemberId = null;
-      _triggerSolve();
     });
+    _triggerSolve();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF0F172A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF00F0FF), width: 1.2),
+          ),
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF00F0FF), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Imported "${newModel.name}" (${newModel.nodes.length} Joints, ${newModel.members.length} Members) into Workspace!',
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   // ==========================================================================
@@ -980,6 +1035,31 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       },
     );
 
+    void onOpenBuildingTemplates() => _requireAuth(
+      featureName: 'Building Templates & Workspaces',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => BuildingTemplatesDialog(
+            currentModel: _model,
+            onModelSelected: _importBuildingModel,
+          ),
+        );
+      },
+    );
+
+    void onOpenMacAiInspector() => _requireAuth(
+      featureName: 'Mac-Trained Neural AI Suite',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => MacNeuralInspectorDialog(
+            currentModel: _model,
+          ),
+        );
+      },
+    );
+
     void onOpenSeismicModal() => _requireAuth(
       featureName: 'Dynamic Modal Vibration Analysis',
       onAuthenticated: () => SeismicModalDialog.show(
@@ -1183,6 +1263,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOptimize: onOptimize,
         onOpenCadStudio: onOpenCadStudio,
         onOpenLibrary: onOpenLibrary,
+        onOpenBuildingTemplates: onOpenBuildingTemplates,
+        onOpenMacAiInspector: onOpenMacAiInspector,
         onOpenConcreteStudio: onOpenConcreteStudio,
         onOpenSteelConnections: onOpenSteelConnections,
         onOpenGeotechnicalFoundation: onOpenGeotechnicalFoundation,
@@ -1295,6 +1377,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenVisionToBim: onOpenVisionToBim,
               onOpenNltha: onOpenNltha,
               onOptimize: onOptimize,
+              onOpenBuildingTemplates: onOpenBuildingTemplates,
+              onOpenMacAiInspector: onOpenMacAiInspector,
               onEngineChanged: (engine) {
                 _requireAuth(
                   featureName: 'Solver Engine Switcher',
@@ -1404,6 +1488,24 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             customCategories: const ['ALL', 'DRAW & MODEL', 'ASSIGN & RESTRAIN', 'LOADS', 'CANVAS'],
             customTools: [
               // 1. DRAW & MODEL
+              WorkspaceToolItem(
+                label: 'Building Templates',
+                subtitle: 'Browse & Import Towers, Warehouses & Bridges',
+                icon: Icons.apartment_rounded,
+                color: const Color(0xFF00F0FF),
+                category: 'DRAW & MODEL',
+                badge: '12 MODELS',
+                onTap: onOpenBuildingTemplates,
+              ),
+              WorkspaceToolItem(
+                label: 'Mac-Trained AI Suite',
+                subtitle: 'Inspect & Benchmark 10 MPS Neural Engines',
+                icon: Icons.memory_rounded,
+                color: const Color(0xFF7EE787),
+                category: 'DRAW & MODEL',
+                badge: 'MPS GPU',
+                onTap: onOpenMacAiInspector,
+              ),
               WorkspaceToolItem(
                 label: 'Add 3D Joint / Node',
                 subtitle: 'Place new joint at (X, Y, Z)',

@@ -27,6 +27,8 @@ class WorkstationDrawer extends StatefulWidget {
   final VoidCallback? onOpenVisionToBim;
   final VoidCallback? onOpenNltha;
   final VoidCallback? onOptimize;
+  final VoidCallback? onOpenBuildingTemplates;
+  final VoidCallback? onOpenMacAiInspector;
   final Function(String)? onPresetSelected;
 
   const WorkstationDrawer({
@@ -50,6 +52,8 @@ class WorkstationDrawer extends StatefulWidget {
     this.onOpenVisionToBim,
     this.onOpenNltha,
     this.onOptimize,
+    this.onOpenBuildingTemplates,
+    this.onOpenMacAiInspector,
     this.onPresetSelected,
   });
 
@@ -100,6 +104,15 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
 
   List<_DrawerToolDef> get _allTools => [
     // AI & GENERATIVE
+    _DrawerToolDef(
+      label: 'Mac-Trained AI',
+      subtitle: '10 Apple Silicon MPS Neural Surrogates',
+      icon: Icons.memory_rounded,
+      color: const Color(0xFF00F0FF),
+      category: 'AI & GENERATIVE',
+      onTap: widget.onOpenMacAiInspector,
+      badge: 'MPS GPU',
+    ),
     _DrawerToolDef(
       label: 'AI Copilot',
       subtitle: 'Gemini 1.5 Pro Structural Agent',
@@ -154,6 +167,15 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
       category: 'MODELING & CAD',
       onTap: widget.onOpenCadStudio,
       badge: '3D/2D',
+    ),
+    _DrawerToolDef(
+      label: 'Building Templates',
+      subtitle: 'Towers, Warehouses & Bridges',
+      icon: Icons.apartment_rounded,
+      color: const Color(0xFF38BDF8),
+      category: 'MODELING & CAD',
+      onTap: widget.onOpenBuildingTemplates ?? widget.onOpenLibrary,
+      badge: '12 MODELS',
     ),
     _DrawerToolDef(
       label: 'Cloud Library',

@@ -28,6 +28,8 @@ export 'lateral_stability_dialog.dart';
 export 'pe_packet_dialog.dart';
 export 'seismic_modal_dialog.dart';
 export 'structural_library_dialog.dart';
+export 'building_templates_dialog.dart';
+export 'mac_neural_inspector_dialog.dart';
 
 // Glassmorphic Apple / visionOS Widgets
 export 'glass_pod.dart';

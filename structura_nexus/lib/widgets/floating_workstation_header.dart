@@ -47,6 +47,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenVisionToBim;
   final VoidCallback? onOpenNltha;
   final VoidCallback? onOptimize;
+  final VoidCallback? onOpenBuildingTemplates;
+  final VoidCallback? onOpenMacAiInspector;
 
   const FloatingWorkstationHeader({
     super.key,
@@ -83,6 +85,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenVisionToBim,
     this.onOpenNltha,
     this.onOptimize,
+    this.onOpenBuildingTemplates,
+    this.onOpenMacAiInspector,
   });
 
   @override
@@ -250,6 +254,45 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                       const SizedBox(width: 8),
 
                       // 3. Central VisionOS Capsule Navigation Pills
+                      _buildCapsulePill(
+                        label: "BUILDINGS",
+                        icon: Icons.apartment_rounded,
+                        onTap: () {
+                          if (widget.onOpenBuildingTemplates != null) {
+                            widget.onOpenBuildingTemplates!();
+                          } else {
+                            widget.onOpenLibrary?.call();
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+
+                      _HoverableSpecularPill(
+                        label: "MAC-TRAINED AI",
+                        icon: Icons.memory_rounded,
+                        onTap: widget.onOpenMacAiInspector,
+                        trailingBadge: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF7EE787).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFF7EE787).withValues(alpha: 0.5),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Text(
+                            "MPS • 10 NETS",
+                            style: TextStyle(
+                              color: Color(0xFF7EE787),
+                              fontSize: 8,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
                       _buildCapsulePill(
                         label: "AI & GEN",
                         icon: Icons.auto_awesome_rounded,
@@ -602,24 +645,68 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
             DropdownMenuItem(
               value: 'presets',
               enabled: false,
-              child: Text('LOAD BENCHMARK PRESET', style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.bold)),
+              child: Text('LOAD BUILDING TEMPLATE', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            DropdownMenuItem(
+              value: 'open_templates_browser',
+              child: Text('🏢 Browse All Building Templates...', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            DropdownMenuItem(
+              value: 'high_rise_10s',
+              child: Text('10-Story Commercial Office Tower (X-Braced)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'hospital_8s',
+              child: Text('8-Story Dual Core Hospital Complex (Chevron)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'residential_6s',
+              child: Text('6-Story Residential Steel Frame (AISC 360)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'supertall_20s',
+              child: Text('20-Story Super-Tall Outrigger Tower (72m)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'warehouse_portal',
+              child: Text('Industrial Logistics Clear-Span Warehouse (36m)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'space_grid_canopy',
+              child: Text('Airport Terminal 3D Space Grid Canopy (48m)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'campus_4s',
+              child: Text('4-Story Educational Academic Facility', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'pratt_truss_bridge',
+              child: Text('36m Pratt Highway Truss Bridge (AASHTO)', style: TextStyle(color: Colors.white, fontSize: 11)),
+            ),
+            DropdownMenuItem(
+              value: 'transmission_tower',
+              child: Text('28m 3D Lattice Transmission Tower (ASCE 10)', style: TextStyle(color: Colors.white, fontSize: 11)),
             ),
             DropdownMenuItem(
               value: 'sway',
-              child: Text('3D Multi-Story Sway Frame (ASCE 7)', style: TextStyle(color: Colors.white, fontSize: 11)),
+              child: Text('3D Multi-Story Sway Frame (ASCE 7 Benchmark)', style: TextStyle(color: Colors.white70, fontSize: 11)),
             ),
             DropdownMenuItem(
               value: 'truss',
-              child: Text('Warren Bridge Truss (AISC 360)', style: TextStyle(color: Colors.white, fontSize: 11)),
+              child: Text('Warren Bridge Truss (AISC 360 Benchmark)', style: TextStyle(color: Colors.white70, fontSize: 11)),
             ),
             DropdownMenuItem(
               value: 'cantilever',
-              child: Text('Timoshenko Cantilever Girder', style: TextStyle(color: Colors.white, fontSize: 11)),
+              child: Text('Timoshenko Cantilever Girder Benchmark', style: TextStyle(color: Colors.white70, fontSize: 11)),
             ),
           ],
           onChanged: (val) {
             if (val != null && val != 'presets') {
-              widget.onPresetSelected(val);
+              if (val == 'open_templates_browser') {
+                widget.onOpenBuildingTemplates?.call();
+              } else {
+                widget.onPresetSelected(val);
+              }
             }
           },
         ),
