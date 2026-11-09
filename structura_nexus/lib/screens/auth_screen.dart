@@ -4,8 +4,10 @@
 // ============================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/passkey_auth_service.dart';
 import '../widgets/floating_copyright_watermark.dart';
 import 'workstation_screen.dart';
 
@@ -34,6 +36,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   bool _isLogin = true;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _passkeySupported = false;
   String? _errorMessage;
   String? _successMessage;
 
@@ -49,6 +52,12 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     );
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeInOut);
     _animController.forward();
+
+    PasskeyAuthService().isSupported().then((supported) {
+      if (mounted) {
+        setState(() => _passkeySupported = supported);
+      }
+    });
   }
 
   @override
@@ -116,6 +125,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     try {
       if (_isLogin) {
         await _authService.signInWithEmail(email, password);
+        TextInput.finishAutofillContext(shouldSave: true);
         if (mounted) {
           widget.onLoginSuccess?.call();
           if (Navigator.of(context).canPop()) {
@@ -132,6 +142,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
           password,
           displayName: name.isNotEmpty ? name : null,
         );
+        TextInput.finishAutofillContext(shouldSave: true);
         // Requirement: After sign up, prompt user to log in rather than staying still or bypassing login
         await _authService.signOut();
         if (mounted) {
@@ -153,6 +164,84 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _handlePasskeySignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      final res = await PasskeyAuthService().authenticate();
+      if (res['success'] == true) {
+        TextInput.finishAutofillContext(shouldSave: true);
+        if (mounted) {
+          widget.onLoginSuccess?.call();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop(true);
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const WorkstationScreen()),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = res['error'] as String? ?? 'Passkey authentication was not completed.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Passkey authentication error: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handlePasskeyRegister() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Please provide a valid email address to link a Passkey.');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      final res = await PasskeyAuthService().registerPasskey(
+        email: email,
+        displayName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : null,
+      );
+      if (res['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _successMessage = 'Passkey linked to $email! You can now authenticate with Touch ID / Face ID.';
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = res['error'] as String? ?? 'Passkey registration was not completed.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Passkey registration error: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -512,25 +601,28 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         child: Row(
                           children: [
                             Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() {
-                                  _isLogin = true;
-                                  _errorMessage = null;
-                                }),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: _isLogin ? const Color(0xFF1F6FEB) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'SIGN IN',
-                                      style: TextStyle(
-                                        color: _isLogin ? Colors.white : const Color(0xFF8B949E),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () => setState(() {
+                                    _isLogin = true;
+                                    _errorMessage = null;
+                                  }),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _isLogin ? const Color(0xFF1F6FEB) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'SIGN IN',
+                                        style: TextStyle(
+                                          color: _isLogin ? Colors.white : const Color(0xFF8B949E),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -538,25 +630,28 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                               ),
                             ),
                             Expanded(
-                              child: GestureDetector(
-                                onTap: () => setState(() {
-                                  _isLogin = false;
-                                  _errorMessage = null;
-                                }),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: !_isLogin ? const Color(0xFF1F6FEB) : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      'REGISTER',
-                                      style: TextStyle(
-                                        color: !_isLogin ? Colors.white : const Color(0xFF8B949E),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
+                              child: MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () => setState(() {
+                                    _isLogin = false;
+                                    _errorMessage = null;
+                                  }),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: !_isLogin ? const Color(0xFF1F6FEB) : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        'REGISTER',
+                                        style: TextStyle(
+                                          color: !_isLogin ? Colors.white : const Color(0xFF8B949E),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -569,80 +664,98 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
 
                       const SizedBox(height: 20),
 
-                      // Input Fields
-                      if (!_isLogin) ...[
-                        TextField(
-                          controller: _nameController,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          decoration: InputDecoration(
-                            labelText: 'Full Name',
-                            labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
-                            prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF00F0FF), size: 18),
-                            filled: true,
-                            fillColor: const Color(0xFF161B22),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Color(0xFF00F0FF)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
+                      // Input Fields wrapped in AutofillGroup for Password Managers (1Password, Bitwarden, Keychain, Chrome)
+                      AutofillGroup(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (!_isLogin) ...[
+                              TextField(
+                                controller: _nameController,
+                                keyboardType: TextInputType.name,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.name],
+                                style: const TextStyle(color: Colors.white, fontSize: 14),
+                                decoration: InputDecoration(
+                                  labelText: 'Full Name',
+                                  labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
+                                  prefixIcon: const Icon(Icons.person_outline_rounded, color: Color(0xFF00F0FF), size: 18),
+                                  filled: true,
+                                  fillColor: const Color(0xFF161B22),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: const BorderSide(color: Color(0xFF00F0FF)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                            ],
 
-                      TextField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
-                          prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF00F0FF), size: 18),
-                          filled: true,
-                          fillColor: const Color(0xFF161B22),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFF00F0FF)),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      TextField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: const TextStyle(color: Colors.white, fontSize: 14),
-                        onSubmitted: (_) => _submit(),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
-                          prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF00F0FF), size: 18),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                              color: const Color(0xFF8B949E),
-                              size: 18,
+                            TextField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              textInputAction: TextInputAction.next,
+                              autofillHints: const [AutofillHints.email, AutofillHints.username],
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              decoration: InputDecoration(
+                                labelText: 'Email',
+                                labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
+                                prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF00F0FF), size: 18),
+                                filled: true,
+                                fillColor: const Color(0xFF161B22),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Color(0xFF00F0FF)),
+                                ),
+                              ),
                             ),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFF161B22),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Color(0xFF00F0FF)),
-                          ),
+
+                            const SizedBox(height: 14),
+
+                            TextField(
+                              controller: _passwordController,
+                              obscureText: _obscurePassword,
+                              keyboardType: TextInputType.visiblePassword,
+                              textInputAction: TextInputAction.done,
+                              autofillHints: _isLogin
+                                  ? const [AutofillHints.password]
+                                  : const [AutofillHints.newPassword],
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
+                              onSubmitted: (_) => _submit(),
+                              decoration: InputDecoration(
+                                labelText: 'Password',
+                                labelStyle: const TextStyle(color: Color(0xFF8B949E), fontSize: 13),
+                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF00F0FF), size: 18),
+                                suffixIcon: IconButton(
+                                  mouseCursor: SystemMouseCursors.click,
+                                  icon: Icon(
+                                    _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                    color: const Color(0xFF8B949E),
+                                    size: 18,
+                                  ),
+                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF161B22),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Color(0xFF00F0FF)),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
@@ -737,6 +850,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _submit,
                           style: ElevatedButton.styleFrom(
+                            enabledMouseCursor: SystemMouseCursors.click,
                             backgroundColor: Colors.transparent,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -759,7 +873,38 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         ),
                       ),
 
-                      const SizedBox(height: 18),
+                      // Passkey / WebAuthn Biometric Button (Touch ID / Face ID / Windows Hello)
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading
+                            ? null
+                            : (_isLogin ? _handlePasskeySignIn : _handlePasskeyRegister),
+                        icon: Icon(
+                          _passkeySupported ? Icons.fingerprint_rounded : Icons.key_rounded,
+                          size: 20,
+                          color: const Color(0xFF00F0FF),
+                        ),
+                        label: Text(
+                          _isLogin
+                              ? (_passkeySupported ? 'Sign In with Passkey / Touch ID' : 'Sign In with Security Key')
+                              : (_passkeySupported ? 'Enroll Passkey / Touch ID on Device' : 'Register Security Key'),
+                          style: const TextStyle(
+                            color: Color(0xFF00F0FF),
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          enabledMouseCursor: SystemMouseCursors.click,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5)),
+                          backgroundColor: const Color(0xFF00F0FF).withValues(alpha: 0.08),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
 
                       // Divider
                       Row(
@@ -773,7 +918,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                         ],
                       ),
 
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
 
                       // Google Sign In
                       OutlinedButton.icon(
@@ -784,6 +929,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
+                          enabledMouseCursor: SystemMouseCursors.click,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -800,6 +946,9 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                           'Explore Workstation as Guest Engineer',
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: Color(0xFF8B949E), fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          enabledMouseCursor: SystemMouseCursors.click,
                         ),
                       ),
                     ],
@@ -830,6 +979,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                 style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
               ),
               style: TextButton.styleFrom(
+                enabledMouseCursor: SystemMouseCursors.click,
                 backgroundColor: const Color(0xFF161B22),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 shape: RoundedRectangleBorder(

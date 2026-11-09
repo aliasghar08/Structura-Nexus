@@ -1730,25 +1730,28 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             Positioned(
               top: effectiveInspectorTop,
               right: isCompact ? 10 : 20,
-              child: GestureDetector(
-                onVerticalDragUpdate: (details) => _updateInspectorTop(details.delta.dy, maxInspectorTop),
-                child: GlassPod(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  borderRadius: 16,
-                  glowColor: const Color(0xFF00F0FF),
-                  onTap: () => _setInspectorOpen(true),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.drag_indicator_rounded, size: 14, color: Color(0xFF00F0FF)),
-                      SizedBox(width: 4),
-                      Icon(Icons.tune_rounded, size: 14, color: Colors.white),
-                      SizedBox(width: 6),
-                      Text(
-                        "INSPECTOR",
-                        style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onVerticalDragUpdate: (details) => _updateInspectorTop(details.delta.dy, maxInspectorTop),
+                  child: GlassPod(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    borderRadius: 16,
+                    glowColor: const Color(0xFF00F0FF),
+                    onTap: () => _setInspectorOpen(true),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.drag_indicator_rounded, size: 14, color: Color(0xFF00F0FF)),
+                        SizedBox(width: 4),
+                        Icon(Icons.tune_rounded, size: 14, color: Colors.white),
+                        SizedBox(width: 6),
+                        Text(
+                          "INSPECTOR",
+                          style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

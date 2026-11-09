@@ -34,6 +34,24 @@
 
   <title>Structura Nexus | Structural Engineering Workstation</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* Global pointer cursor enforcement for interactive buttons, tabs, links, semantics */
+    button,
+    [role="button"],
+    [role="tab"],
+    [role="link"],
+    [role="menuitem"],
+    [role="checkbox"],
+    flt-semantics[role="button"],
+    flt-semantics[role="tab"],
+    flt-semantics[role="link"],
+    flt-semantics[role="checkbox"],
+    flt-semantics[role="menuitem"],
+    .cursor-pointer {
+      cursor: pointer !important;
+    }
+  </style>
 </head>
 <body>
   <script>
@@ -72,6 +90,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="three_viewport.js"></script>
   <script src="webgpu_surrogate.js"></script>
+  <script src="passkey_auth.js"></script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>

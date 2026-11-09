@@ -921,6 +921,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
               const SizedBox(width: 2),
               InkWell(
                 onTap: _resetLayout,
+                mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(4),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -949,6 +950,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   }) {
     return InkWell(
       onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -1032,6 +1034,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
               padding: const EdgeInsets.symmetric(horizontal: 2.5),
               child: InkWell(
                 onTap: () => setState(() => _activeCategory = cat),
+                mouseCursor: SystemMouseCursors.click,
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1071,9 +1074,11 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.5),
       child: MouseRegion(
+        cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hoveredTool = tool.label),
         onExit: (_) => setState(() => _hoveredTool = null),
         child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
           onTap: () {
             tool.onTap?.call();
           },
@@ -1188,6 +1193,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
               Expanded(
                 child: InkWell(
                   onTap: widget.onSolveTriggered,
+                  mouseCursor: SystemMouseCursors.click,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 6),

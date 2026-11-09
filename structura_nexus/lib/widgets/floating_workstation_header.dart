@@ -588,8 +588,10 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
 
   Widget _engineBadge(EngineType type, String label) {
     final isSelected = widget.model.activeEngine == type;
-    return GestureDetector(
-      onTap: () => widget.onEngineChanged(type),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => widget.onEngineChanged(type),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -628,8 +630,9 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPresetDropdown() {
     return GlassPod(
@@ -849,6 +852,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
     final isSelected = (widget.model.deformationScale - val).abs() < 1.0;
     return InkWell(
       onTap: () => widget.onDeformationScaleChanged(val),
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(4),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
@@ -961,6 +965,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
       message: '$label Camera View',
       child: InkWell(
         onTap: () => widget.onCameraPreset?.call(label),
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -986,6 +991,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
+        mouseCursor: onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.all(5),
@@ -1124,6 +1130,7 @@ class _HoverableSpecularPillState extends State<_HoverableSpecularPill> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
+      cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GlassPod(

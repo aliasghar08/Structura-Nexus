@@ -56,33 +56,38 @@ class GlassPod extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pod = Container(
-      width: width,
-      height: height,
-      margin: margin,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: glowColor?.withValues(alpha: 0.25) ?? Colors.black.withValues(alpha: 0.40),
-            blurRadius: glowColor != null ? 24 : 35,
-            spreadRadius: glowColor != null ? 1 : -4,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(borderRadius),
-            splashColor: Colors.white.withValues(alpha: 0.06),
-            highlightColor: Colors.white.withValues(alpha: 0.03),
-            child: Container(
-              padding: padding,
-              decoration: BoxDecoration(
+    final pod = MouseRegion(
+      cursor: onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
+      child: Container(
+        width: width,
+        height: height,
+        margin: margin,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(borderRadius),
+          boxShadow: [
+            BoxShadow(
+              color: glowColor?.withValues(alpha: 0.25) ?? Colors.black.withValues(alpha: 0.40),
+              blurRadius: glowColor != null ? 24 : 35,
+              spreadRadius: glowColor != null ? 1 : -4,
+              offset: const Offset(0, 14),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: blurSigma, sigmaY: blurSigma),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
+                mouseCursor: onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
+                borderRadius: BorderRadius.circular(borderRadius),
+                splashColor: Colors.white.withValues(alpha: 0.06),
+                highlightColor: Colors.white.withValues(alpha: 0.03),
+                child: Container(
+                  padding: padding,
+                  decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(borderRadius),
                 // Layered background with top specular highlight
                 gradient: LinearGradient(
@@ -106,7 +111,9 @@ class GlassPod extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
 
     if (width != null && width! >= 480 && width!.isFinite) {
       return LayoutBuilder(

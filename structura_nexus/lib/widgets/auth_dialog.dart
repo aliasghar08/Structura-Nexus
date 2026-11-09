@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/passkey_auth_service.dart';
 
 class AuthDialog extends StatefulWidget {
   final VoidCallback? onAuthSuccess;
@@ -19,8 +21,17 @@ class _AuthDialogState extends State<AuthDialog> {
   bool _isSignUp = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _passkeySupported = false;
   String? _errorMessage;
   String? _successMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    PasskeyAuthService().isSupported().then((supported) {
+      if (mounted) setState(() => _passkeySupported = supported);
+    });
+  }
 
   @override
   void dispose() {
@@ -76,6 +87,7 @@ class _AuthDialogState extends State<AuthDialog> {
     try {
       if (_isSignUp) {
         await _authService.registerWithEmail(email, password, displayName: name.isNotEmpty ? name : null);
+        TextInput.finishAutofillContext(shouldSave: true);
         await _authService.signOut();
         if (mounted) {
           setState(() {
@@ -86,6 +98,7 @@ class _AuthDialogState extends State<AuthDialog> {
         }
       } else {
         await _authService.signInWithEmail(email, password);
+        TextInput.finishAutofillContext(shouldSave: true);
         if (mounted) {
           widget.onAuthSuccess?.call();
           if (Navigator.of(context).canPop()) {
@@ -104,6 +117,80 @@ class _AuthDialogState extends State<AuthDialog> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _handlePasskeySignIn() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      final res = await PasskeyAuthService().authenticate();
+      if (res['success'] == true) {
+        TextInput.finishAutofillContext(shouldSave: true);
+        if (mounted) {
+          widget.onAuthSuccess?.call();
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = res['error'] as String? ?? 'Passkey authentication was not completed.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Passkey authentication error: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handlePasskeyRegister() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'Please provide a valid email address to link a Passkey.');
+      return;
+    }
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+      _successMessage = null;
+    });
+    try {
+      final res = await PasskeyAuthService().registerPasskey(
+        email: email,
+        displayName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : null,
+      );
+      if (res['success'] == true) {
+        if (mounted) {
+          setState(() {
+            _successMessage = 'Passkey linked to $email! You can now authenticate with Touch ID / Face ID.';
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _errorMessage = res['error'] as String? ?? 'Passkey registration was not completed.';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorMessage = 'Passkey registration error: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -335,6 +422,7 @@ class _AuthDialogState extends State<AuthDialog> {
               ),
             ),
             IconButton(
+              mouseCursor: SystemMouseCursors.click,
               icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -353,42 +441,48 @@ class _AuthDialogState extends State<AuthDialog> {
           child: Row(
             children: [
               Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isSignUp = false),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: !_isSignUp ? const Color(0xFF1F6FEB) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Sign In',
-                      style: TextStyle(
-                        color: !_isSignUp ? Colors.white : Colors.white60,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSignUp = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: !_isSignUp ? const Color(0xFF1F6FEB) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Sign In',
+                        style: TextStyle(
+                          color: !_isSignUp ? Colors.white : Colors.white60,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
               Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _isSignUp = true),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _isSignUp ? const Color(0xFF1F6FEB) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Register',
-                      style: TextStyle(
-                        color: _isSignUp ? Colors.white : Colors.white60,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => setState(() => _isSignUp = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _isSignUp ? const Color(0xFF1F6FEB) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Register',
+                        style: TextStyle(
+                          color: _isSignUp ? Colors.white : Colors.white60,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -446,77 +540,97 @@ class _AuthDialogState extends State<AuthDialog> {
             ),
           ),
 
-        if (_isSignUp) ...[
-          TextField(
-            controller: _nameController,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
-            decoration: InputDecoration(
-              labelText: 'Full Name',
-              labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-              prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: Colors.white54),
-              filled: true,
-              fillColor: const Color(0xFF161B22),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.white12),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
+        // Inputs wrapped in AutofillGroup for standard password managers
+        AutofillGroup(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_isSignUp) ...[
+                TextField(
+                  controller: _nameController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  keyboardType: TextInputType.name,
+                  textInputAction: TextInputAction.next,
+                  autofillHints: const [AutofillHints.name],
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                    prefixIcon: const Icon(Icons.badge_outlined, size: 18, color: Colors.white54),
+                    filled: true,
+                    fillColor: const Color(0xFF161B22),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
-        TextField(
-          controller: _emailController,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            labelText: 'Email',
-            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-            prefixIcon: const Icon(Icons.email_outlined, size: 18, color: Colors.white54),
-            filled: true,
-            fillColor: const Color(0xFF161B22),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        TextField(
-          controller: _passwordController,
-          obscureText: _obscurePassword,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
-          decoration: InputDecoration(
-            labelText: 'Password',
-            labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
-            prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.white54),
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                size: 18,
-                color: Colors.white54,
+              TextField(
+                controller: _emailController,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.email, AutofillHints.username],
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                  prefixIcon: const Icon(Icons.email_outlined, size: 18, color: Colors.white54),
+                  filled: true,
+                  fillColor: const Color(0xFF161B22),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
+                  ),
+                ),
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-            filled: true,
-            fillColor: const Color(0xFF161B22),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.white12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
-            ),
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                keyboardType: TextInputType.visiblePassword,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _handleEmailAuth(),
+                autofillHints: !_isSignUp
+                    ? const [AutofillHints.password]
+                    : const [AutofillHints.newPassword],
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  labelStyle: const TextStyle(color: Colors.white54, fontSize: 13),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 18, color: Colors.white54),
+                  suffixIcon: IconButton(
+                    mouseCursor: SystemMouseCursors.click,
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 18,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF161B22),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.white12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF1F6FEB)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
@@ -525,6 +639,7 @@ class _AuthDialogState extends State<AuthDialog> {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: _handleForgotPassword,
+              style: TextButton.styleFrom(enabledMouseCursor: SystemMouseCursors.click),
               child: const Text(
                 'Forgot password?',
                 style: TextStyle(color: Color(0xFF58A6FF), fontSize: 11),
@@ -537,6 +652,7 @@ class _AuthDialogState extends State<AuthDialog> {
         ElevatedButton(
           onPressed: _isLoading ? null : _handleEmailAuth,
           style: ElevatedButton.styleFrom(
+            enabledMouseCursor: SystemMouseCursors.click,
             backgroundColor: const Color(0xFF1F6FEB),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -548,6 +664,37 @@ class _AuthDialogState extends State<AuthDialog> {
                   style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                 ),
         ),
+
+        // Biometric Passkey / WebAuthn Button
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: _isLoading
+              ? null
+              : (!_isSignUp ? _handlePasskeySignIn : _handlePasskeyRegister),
+          icon: Icon(
+            _passkeySupported ? Icons.fingerprint_rounded : Icons.key_rounded,
+            size: 20,
+            color: const Color(0xFF00F0FF),
+          ),
+          label: Text(
+            !_isSignUp
+                ? (_passkeySupported ? 'Sign In with Passkey / Touch ID' : 'Sign In with Security Key')
+                : (_passkeySupported ? 'Enroll Passkey / Touch ID on Device' : 'Register Security Key'),
+            style: const TextStyle(
+              color: Color(0xFF00F0FF),
+              fontSize: 12.5,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            enabledMouseCursor: SystemMouseCursors.click,
+            side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5)),
+            backgroundColor: const Color(0xFF00F0FF).withValues(alpha: 0.08),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+
         const SizedBox(height: 14),
 
         Row(
@@ -571,6 +718,7 @@ class _AuthDialogState extends State<AuthDialog> {
                 icon: const Icon(Icons.g_mobiledata_rounded, size: 22, color: Colors.white),
                 label: const Text('Google', style: TextStyle(color: Colors.white, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
+                  enabledMouseCursor: SystemMouseCursors.click,
                   side: const BorderSide(color: Colors.white24),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -584,6 +732,7 @@ class _AuthDialogState extends State<AuthDialog> {
                 icon: const Icon(Icons.perm_identity_rounded, size: 18, color: Colors.white70),
                 label: const Text('Guest Mode', style: TextStyle(color: Colors.white70, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
+                  enabledMouseCursor: SystemMouseCursors.click,
                   side: const BorderSide(color: Colors.white24),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

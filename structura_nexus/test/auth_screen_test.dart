@@ -135,5 +135,51 @@ void main() {
 
       expect(find.text('STRUCTURA NEXUS'), findsOneWidget);
     });
+
+    testWidgets('Supports password managers with AutofillGroup and hints', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.pumpAndSettle();
+
+      // Ensure AutofillGroup wraps the credentials
+      expect(find.byType(AutofillGroup), findsOneWidget);
+
+      // Verify email TextField has email autofill hints
+      final emailFinder = find.widgetWithText(TextField, 'Email');
+      expect(emailFinder, findsOneWidget);
+      final emailWidget = tester.widget<TextField>(emailFinder);
+      expect(emailWidget.autofillHints, contains(AutofillHints.email));
+
+      // Verify password TextField has password autofill hints
+      final passwordFinder = find.widgetWithText(TextField, 'Password');
+      expect(passwordFinder, findsOneWidget);
+      final passwordWidget = tester.widget<TextField>(passwordFinder);
+      expect(passwordWidget.autofillHints, contains(AutofillHints.password));
+    });
+
+    testWidgets('Renders Passkey biometric button and clickable cursor', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(const MaterialApp(home: AuthScreen()));
+      await tester.pumpAndSettle();
+
+      // Passkey button is rendered
+      expect(
+        find.byWidgetPredicate((w) =>
+            w is Text &&
+            (w.data?.contains('Passkey') == true || w.data?.contains('Security Key') == true)),
+        findsOneWidget,
+      );
+
+      // Ensure clickable cursor is specified on OutlinedButton
+      final outlinedButtons = tester.widgetList<OutlinedButton>(find.byType(OutlinedButton));
+      expect(outlinedButtons.isNotEmpty, isTrue);
+      for (final btn in outlinedButtons) {
+        expect(btn.style?.mouseCursor?.resolve({}), SystemMouseCursors.click);
+      }
+    });
   });
 }

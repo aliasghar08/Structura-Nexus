@@ -549,6 +549,7 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
   }) {
     return InkWell(
       onTap: onToggle,
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
@@ -598,6 +599,7 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
   Widget _buildSupportPresetChip(String name, VoidCallback onTap, bool isSelected) {
     return InkWell(
       onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(6),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),

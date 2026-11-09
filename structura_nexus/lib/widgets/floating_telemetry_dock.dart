@@ -311,6 +311,7 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           const SizedBox(width: 6),
                           InkWell(
                             onTap: widget.onParetoPressed,
+                            mouseCursor: SystemMouseCursors.click,
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
                               height: 36,
@@ -425,6 +426,7 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
   Widget _buildLoadPill(String title, String subtitle, bool isSelected) {
     return InkWell(
       onTap: () => widget.onCombinationChanged(title),
+      mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
