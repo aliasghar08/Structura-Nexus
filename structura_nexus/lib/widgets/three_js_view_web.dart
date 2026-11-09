@@ -31,6 +31,7 @@ extension type NodeDragDetail(JSObject _) implements JSObject {
 
 class ThreeJsStructuralViewport extends StatefulWidget {
   final StructuralModel model;
+  final int modelRevision;
   final bool showDeformation;
   final double deformationScale;
   final bool showBmd;
@@ -42,6 +43,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   const ThreeJsStructuralViewport({
     super.key,
     required this.model,
+    this.modelRevision = 0,
     this.showDeformation = false,
     this.deformationScale = 50.0,
     this.showBmd = false,
@@ -204,10 +206,26 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     }
   }
 
+  void reloadModel() {
+    _syncModel();
+  }
+
   @override
   void didUpdateWidget(covariant ThreeJsStructuralViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _syncModel();
+    final bool needsSync = widget.modelRevision != oldWidget.modelRevision ||
+        widget.model != oldWidget.model ||
+        widget.model.nodes.length != oldWidget.model.nodes.length ||
+        widget.model.members.length != oldWidget.model.members.length ||
+        widget.showDeformation != oldWidget.showDeformation ||
+        widget.deformationScale != oldWidget.deformationScale ||
+        widget.showBmd != oldWidget.showBmd ||
+        widget.showSfd != oldWidget.showSfd ||
+        widget.showStressGradient != oldWidget.showStressGradient;
+
+    if (needsSync) {
+      _syncModel();
+    }
   }
 
   @override

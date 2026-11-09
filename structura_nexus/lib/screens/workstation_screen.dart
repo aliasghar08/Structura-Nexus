@@ -66,7 +66,27 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool? _isInspectorOpen;
   double? _inspectorTopOffset;
   bool _isNlthaActive = false;
+  int _modelRevision = 0;
   StreamSubscription<dynamic>? _authSubscription;
+
+  void _commitModelMutation(String snackbarMessage, {bool refitCamera = false}) {
+    setState(() {
+      _modelRevision++;
+      _triggerSolve();
+    });
+
+    if (refitCamera) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _viewportKey.currentState?.reloadModel(refitCamera: true);
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _viewportKey.currentState?.reloadModel();
+      });
+    }
+
+    _showToolSnackBar(snackbarMessage);
+  }
 
   void _setInspectorOpen(bool open) {
     setState(() => _isInspectorOpen = open);
@@ -225,13 +245,14 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   void _importBuildingModel(StructuralModel newModel) {
     setState(() {
       _model = newModel;
+      _modelRevision++;
       _selectedNodeId = null;
       _selectedMemberId = null;
     });
     _triggerSolve();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _viewportKey.currentState?.setCameraPreset('ISO');
+      _viewportKey.currentState?.reloadModel(refitCamera: true);
     });
 
     if (mounted) {
@@ -323,13 +344,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 restraint: isBase ? [1, 1, 1, 1, 1, 1] : [0, 0, 0, 0, 0, 0],
                 loads: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
               );
-              setState(() {
-                _model.nodes.add(node);
-                _selectedNodeId = newId;
-                _selectedMemberId = null;
-                _triggerSolve();
-              });
-              _showToolSnackBar('Added Joint $newId at ($x, $y, $z)m');
+              _model.nodes.add(node);
+              _selectedNodeId = newId;
+              _selectedMemberId = null;
+              _commitModelMutation('Added Joint $newId at ($x, $y, $z)m', refitCamera: true);
             },
             child: const Text('Add Joint', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
@@ -444,13 +462,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   section: chosenSection,
                   material: 'A992_STEEL',
                 );
-                setState(() {
-                  _model.members.add(member);
-                  _selectedMemberId = newId;
-                  _selectedNodeId = null;
-                  _triggerSolve();
-                });
-                _showToolSnackBar('Drawn Member $newId ($chosenSection) connecting $startNode ➔ $endNode');
+                _model.members.add(member);
+                _selectedMemberId = newId;
+                _selectedNodeId = null;
+                _commitModelMutation('Drawn Member $newId ($chosenSection) connecting $startNode ➔ $endNode');
               },
               child: const Text('Draw Member', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -509,10 +524,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Generated Story Level ${(newY / storyH).round()} at Y=${newY.toStringAsFixed(1)}m (+${topNodes.length} columns & beams)');
+    _commitModelMutation('Generated Story Level ${(newY / storyH).round()} at Y=${newY.toStringAsFixed(1)}m (+${topNodes.length} columns & beams)', refitCamera: true);
   }
 
   void _extendBayX() {
@@ -564,10 +576,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Extended Frame: Added +6m Bay along X-axis (X=${newX.toStringAsFixed(1)}m)');
+    _commitModelMutation('Extended Frame: Added +6m Bay along X-axis (X=${newX.toStringAsFixed(1)}m)', refitCamera: true);
   }
 
   void _extendBayZ() {
@@ -619,10 +628,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Extended Frame: Added +6m Bay along Z-axis (Z=${newZ.toStringAsFixed(1)}m)');
+    _commitModelMutation('Extended Frame: Added +6m Bay along Z-axis (Z=${newZ.toStringAsFixed(1)}m)', refitCamera: true);
   }
 
   void _addXBracing() {
@@ -655,10 +661,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Added $addedCount Lateral Bracing Struts to bays');
+    _commitModelMutation('Added $addedCount Lateral Bracing Struts to bays');
   }
 
   void _subdivideMember() {
@@ -704,12 +707,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       ),
     );
 
-    setState(() {
-      _selectedNodeId = midId;
-      _selectedMemberId = null;
-      _triggerSolve();
-    });
-    _showToolSnackBar('Subdivided ${target.id} at midpoint. Added Joint $midId.');
+    _selectedNodeId = midId;
+    _selectedMemberId = null;
+    _commitModelMutation('Subdivided ${target.id} at midpoint. Added Joint $midId.');
   }
 
   void _showParametricBuildingDialog() {
@@ -785,13 +785,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   bayDepthZ: 6.0,
                   storyHeight: 3.6,
                 );
-                setState(() {
-                  _model = synthesized;
-                  _selectedNodeId = null;
-                  _selectedMemberId = null;
-                  _triggerSolve();
-                });
-                _showToolSnackBar('Synthesized $stories-Story, ${baysX}x$baysZ Bay Frame (${_model.nodes.length} joints, ${_model.members.length} members)');
+                _model = synthesized;
+                _selectedNodeId = null;
+                _selectedMemberId = null;
+                _commitModelMutation('Synthesized $stories-Story, ${baysX}x$baysZ Bay Frame (${_model.nodes.length} joints, ${_model.members.length} members)', refitCamera: true);
               },
               child: const Text('Synthesize', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -817,10 +814,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         }
       }
     }
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Assigned $name Restraints ($count joints updated)');
+    _commitModelMutation('Assigned $name Restraints ($count joints updated)');
   }
 
   void _assignSection(String sectionName) {
@@ -837,10 +831,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         count++;
       }
     }
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Assigned $sectionName ($count members updated)');
+    _commitModelMutation('Assigned $sectionName ($count members updated)');
   }
 
   void _applyGravityLoads(double fyN) {
@@ -860,10 +851,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         }
       }
     }
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Applied ${(fyN / 1000).toStringAsFixed(1)} kN Gravity Load ($count roof joints)');
+    _commitModelMutation('Applied ${(fyN / 1000).toStringAsFixed(1)} kN Gravity Load ($count roof joints)');
   }
 
   void _applyWindLoads(double fxN) {
@@ -876,31 +864,22 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         count++;
       }
     }
-    setState(() {
-      _triggerSolve();
-    });
-    _showToolSnackBar('Applied +${(fxN / 1000).toStringAsFixed(1)} kN Lateral Wind Shear ($count windward joints)');
+    _commitModelMutation('Applied +${(fxN / 1000).toStringAsFixed(1)} kN Lateral Wind Shear ($count windward joints)');
   }
 
   void _deleteSelectedEntity() {
     if (_selectedNodeId != null) {
       final nid = _selectedNodeId!;
       final removedMembers = _model.members.where((m) => m.iNodeId == nid || m.jNodeId == nid).length;
-      setState(() {
-        _model.members.removeWhere((m) => m.iNodeId == nid || m.jNodeId == nid);
-        _model.nodes.removeWhere((n) => n.id == nid);
-        _selectedNodeId = null;
-        _triggerSolve();
-      });
-      _showToolSnackBar('Deleted Joint $nid and $removedMembers attached members');
+      _model.members.removeWhere((m) => m.iNodeId == nid || m.jNodeId == nid);
+      _model.nodes.removeWhere((n) => n.id == nid);
+      _selectedNodeId = null;
+      _commitModelMutation('Deleted Joint $nid and $removedMembers attached members', refitCamera: true);
     } else if (_selectedMemberId != null) {
       final mid = _selectedMemberId!;
-      setState(() {
-        _model.members.removeWhere((m) => m.id == mid);
-        _selectedMemberId = null;
-        _triggerSolve();
-      });
-      _showToolSnackBar('Deleted Member $mid');
+      _model.members.removeWhere((m) => m.id == mid);
+      _selectedMemberId = null;
+      _commitModelMutation('Deleted Member $mid');
     } else {
       _showToolSnackBar('Click a joint or member on canvas to select before deleting.');
     }
@@ -923,14 +902,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
             onPressed: () {
               Navigator.of(ctx).pop();
-              setState(() {
-                _model.nodes.clear();
-                _model.members.clear();
-                _selectedNodeId = null;
-                _selectedMemberId = null;
-                _triggerSolve();
-              });
-              _showToolSnackBar('Canvas cleared. Ready to draw new structures.');
+              _model.nodes.clear();
+              _model.members.clear();
+              _selectedNodeId = null;
+              _selectedMemberId = null;
+              _commitModelMutation('Canvas cleared. Ready to draw new structures.', refitCamera: true);
             },
             child: const Text('Clear All'),
           ),
@@ -1285,6 +1261,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             child: Structural3DViewport(
               key: _viewportKey,
               model: _model,
+              modelRevision: _modelRevision,
               selectedNodeId: _selectedNodeId,
               selectedMemberId: _selectedMemberId,
               onNodeSelected: (id) {
@@ -1467,7 +1444,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             subtitle: '3D Drawing, Building & Modeling Tools',
             badgeText: 'DRAWING',
             initialTop: 76.0,
-            initialExpanded: false,
+            initialExpanded: !isCompact,
             customCategories: const ['ALL', 'DRAW & MODEL', 'ASSIGN & RESTRAIN', 'LOADS', 'CANVAS'],
             customTools: [
               // 1. DRAW & MODEL
@@ -1657,8 +1634,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   for (final n in _model.nodes) {
                     n.loads = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
                   }
-                  setState(() => _triggerSolve());
-                  _showToolSnackBar('Cleared all applied loads.');
+                  _commitModelMutation('Cleared all applied loads.');
                 },
               ),
 
@@ -1729,14 +1705,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   selectedNodeId: _selectedNodeId,
                   selectedMemberId: _selectedMemberId,
                   onModelChanged: () {
-                    setState(() {
-                      try {
-                        EmbeddedFeaSolver.solve(_model);
-                      } catch (e) {
-                        debugPrint('Embedded FEA solve note: $e');
-                      }
-                    });
-                    _triggerSolve();
+                    _commitModelMutation('Updated structural properties');
                   },
                   onClose: () => _setInspectorOpen(false),
                 ),

@@ -14,9 +14,12 @@ class Structural3DViewport extends StatefulWidget {
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
+  final int modelRevision;
+
   const Structural3DViewport({
     super.key,
     required this.model,
+    this.modelRevision = 0,
     this.selectedNodeId,
     this.selectedMemberId,
     this.onNodeSelected,
@@ -39,6 +42,20 @@ class Structural3DViewportState extends State<Structural3DViewport>
 
   void toggleRenderer() {
     setState(() => _useThreeJs = !_useThreeJs);
+  }
+
+  void reloadModel({bool refitCamera = false}) {
+    if (_useThreeJs) {
+      _threeJsKey.currentState?.reloadModel();
+      if (refitCamera) {
+        _threeJsKey.currentState?.setCameraPreset('ISO');
+      }
+    }
+    setState(() {
+      final adaptiveZoom = _calculateAdaptiveZoom();
+      _zoom = adaptiveZoom;
+      _panOffset = Offset(0, adaptiveZoom * 0.8);
+    });
   }
 
   double _calculateAdaptiveZoom() {
@@ -118,7 +135,11 @@ class Structural3DViewportState extends State<Structural3DViewport>
   @override
   void didUpdateWidget(covariant Structural3DViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.model != oldWidget.model) {
+    final bool modelChanged = widget.modelRevision != oldWidget.modelRevision ||
+        widget.model != oldWidget.model ||
+        widget.model.nodes.length != oldWidget.model.nodes.length ||
+        widget.model.members.length != oldWidget.model.members.length;
+    if (modelChanged) {
       final adaptiveZoom = _calculateAdaptiveZoom();
       _zoom = adaptiveZoom;
       _panOffset = Offset(0, adaptiveZoom * 0.8);
@@ -171,6 +192,7 @@ class Structural3DViewportState extends State<Structural3DViewport>
               ThreeJsStructuralViewport(
                 key: _threeJsKey,
                 model: widget.model,
+                modelRevision: widget.modelRevision,
                 deformationScale: widget.model.deformationScale,
                 showBmd: widget.model.displayMode == DisplayMode.bmdRibbon ||
                     widget.model.displayMode == DisplayMode.sfdRibbon,

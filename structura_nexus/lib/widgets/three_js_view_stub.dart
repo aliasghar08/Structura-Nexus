@@ -3,6 +3,7 @@ import '../models/structural_models.dart';
 
 class ThreeJsStructuralViewport extends StatefulWidget {
   final StructuralModel model;
+  final int modelRevision;
   final bool showDeformation;
   final double deformationScale;
   final bool showBmd;
@@ -14,6 +15,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   const ThreeJsStructuralViewport({
     super.key,
     required this.model,
+    this.modelRevision = 0,
     this.showDeformation = false,
     this.deformationScale = 50.0,
     this.showBmd = false,
@@ -28,6 +30,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
 }
 
 class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
+  void reloadModel() {}
   void updateDisplacements(Map<String, dynamic> displacements) {}
   void setCameraPreset(String preset) {}
   void zoomIn() {}
