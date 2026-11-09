@@ -291,13 +291,28 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   // ==========================================================================
 
   void _showAddJointDialog() {
-    double nextY = 0.0;
+    double defaultX = 3.0;
+    double defaultY = 10.0;
+    double defaultZ = 3.0;
     if (_model.nodes.isNotEmpty) {
-      nextY = _model.nodes.map((n) => n.coords.y).reduce(math.max);
+      final minX = _model.nodes.map((n) => n.coords.x).reduce(math.min);
+      final maxX = _model.nodes.map((n) => n.coords.x).reduce(math.max);
+      final maxY = _model.nodes.map((n) => n.coords.y).reduce(math.max);
+      final minZ = _model.nodes.map((n) => n.coords.z).reduce(math.min);
+      final maxZ = _model.nodes.map((n) => n.coords.z).reduce(math.max);
+      defaultX = (minX + maxX) / 2.0;
+      defaultY = maxY + 3.0;
+      defaultZ = (minZ + maxZ) / 2.0;
+      while (_model.nodes.any((n) =>
+          (n.coords.x - defaultX).abs() < 0.1 &&
+          (n.coords.y - defaultY).abs() < 0.1 &&
+          (n.coords.z - defaultZ).abs() < 0.1)) {
+        defaultX += 3.0;
+      }
     }
-    final xCtrl = TextEditingController(text: '0.0');
-    final yCtrl = TextEditingController(text: nextY.toStringAsFixed(1));
-    final zCtrl = TextEditingController(text: '0.0');
+    final xCtrl = TextEditingController(text: defaultX.toStringAsFixed(1));
+    final yCtrl = TextEditingController(text: defaultY.toStringAsFixed(1));
+    final zCtrl = TextEditingController(text: defaultZ.toStringAsFixed(1));
 
     showDialog(
       context: context,
@@ -381,8 +396,25 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       _showToolSnackBar('Need at least 2 joints on canvas to draw a structural member.');
       return;
     }
-    String startNode = _selectedNodeId ?? _model.nodes.first.id;
-    String endNode = _model.nodes.firstWhere((n) => n.id != startNode, orElse: () => _model.nodes.last).id;
+    String startNode = _selectedNodeId ?? _model.nodes.last.id;
+    final startObj = _model.nodes.firstWhere(
+      (n) => n.id == startNode,
+      orElse: () => _model.nodes.last,
+    );
+    final candidates = _model.nodes.where((n) {
+      if (n.id == startNode) return false;
+      final alreadyLinked = _model.members.any(
+        (m) =>
+            (m.iNodeId == startNode && m.jNodeId == n.id) ||
+            (m.iNodeId == n.id && m.jNodeId == startNode),
+      );
+      return !alreadyLinked;
+    }).toList();
+    candidates.sort((a, b) =>
+        a.coords.distanceTo(startObj.coords).compareTo(b.coords.distanceTo(startObj.coords)));
+    String endNode = candidates.isNotEmpty
+        ? candidates.first.id
+        : _model.nodes.firstWhere((n) => n.id != startNode, orElse: () => _model.nodes.first).id;
     String chosenSection = 'W14X48';
 
     showDialog(

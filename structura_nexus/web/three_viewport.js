@@ -557,6 +557,21 @@
       const pinnedConeGeo = new THREE.ConeGeometry(0.24 * geomScale, 0.36 * geomScale, 14);
       const pinnedConeMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7 });
 
+      const connectedNodeIds = new Set();
+      members.forEach((m) => {
+        connectedNodeIds.add(m.i || m.i_node || m.iNodeId);
+        connectedNodeIds.add(m.j || m.j_node || m.jNodeId);
+      });
+
+      const standaloneGeo = new THREE.SphereGeometry(0.24 * geomScale, 16, 16);
+      const standaloneMat = new THREE.MeshStandardMaterial({
+        color: 0x00ffff,
+        metalness: 0.4,
+        roughness: 0.15,
+        emissive: 0x00f0ff,
+        emissiveIntensity: 0.9,
+      });
+
       nodes.forEach((n) => {
         const x = n.x ?? (n.coords ? n.coords[0] : 0.0);
         const y = n.y ?? (n.coords ? n.coords[1] : 0.0);
@@ -571,7 +586,11 @@
           dispArr[2] || 0.0
         );
 
-        const nodeMesh = new THREE.Mesh(nodeGeo.clone(), nodeMat.clone());
+        const isStandalone = !connectedNodeIds.has(n.id);
+        const nodeMesh = new THREE.Mesh(
+          (isStandalone ? standaloneGeo : nodeGeo).clone(),
+          (isStandalone ? standaloneMat : nodeMat).clone()
+        );
         nodeMesh.position.set(x, y, z);
         nodeMesh.userData = { nodeId: n.id, isRestrained: false };
 
