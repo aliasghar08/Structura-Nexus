@@ -41,22 +41,31 @@ class Structural3DViewportState extends State<Structural3DViewport>
     setState(() => _useThreeJs = !_useThreeJs);
   }
 
+  double _calculateAdaptiveZoom() {
+    if (widget.model.nodes.isEmpty) return 42.0;
+    final double maxHeight = widget.model.nodes.map((n) => n.coords.y).reduce(math.max);
+    final double maxSpan = widget.model.nodes.map((n) => math.max(n.coords.x.abs(), n.coords.z.abs())).reduce(math.max) * 2;
+    final double maxDim = math.max(maxHeight, maxSpan);
+    return (320.0 / math.max(maxDim, 6.0)).clamp(5.0, 50.0);
+  }
+
   void setCameraPreset(String preset) {
     if (_useThreeJs) {
       _threeJsKey.currentState?.setCameraPreset(preset);
     }
+    final adaptiveZoom = _calculateAdaptiveZoom();
     setState(() {
       switch (preset) {
         case 'TOP':
           _yaw = 0.0;
           _pitch = 1.54;
-          _zoom = 42.0;
+          _zoom = adaptiveZoom;
           _panOffset = const Offset(0, 0);
           break;
         case 'FRONT':
           _yaw = 0.0;
           _pitch = 0.0;
-          _zoom = 42.0;
+          _zoom = adaptiveZoom;
           _panOffset = const Offset(0, 0);
           break;
         case 'ISO':
@@ -64,8 +73,8 @@ class Structural3DViewportState extends State<Structural3DViewport>
         default:
           _yaw = 0.75;
           _pitch = 0.35;
-          _zoom = 42.0;
-          _panOffset = const Offset(0, 40);
+          _zoom = adaptiveZoom;
+          _panOffset = Offset(0, adaptiveZoom * 0.8);
           break;
       }
     });
@@ -109,6 +118,11 @@ class Structural3DViewportState extends State<Structural3DViewport>
   @override
   void didUpdateWidget(covariant Structural3DViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.model != oldWidget.model) {
+      final adaptiveZoom = _calculateAdaptiveZoom();
+      _zoom = adaptiveZoom;
+      _panOffset = Offset(0, adaptiveZoom * 0.8);
+    }
     if (widget.model.displayMode == DisplayMode.modalVibration && !_vibrationController.isAnimating) {
       _vibrationController.repeat();
     } else if (widget.model.displayMode != DisplayMode.modalVibration && _vibrationController.isAnimating) {

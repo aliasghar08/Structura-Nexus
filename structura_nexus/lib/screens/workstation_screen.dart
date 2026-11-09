@@ -230,6 +230,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     });
     _triggerSolve();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewportKey.currentState?.setCameraPreset('ISO');
+    });
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1035,30 +1039,24 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       },
     );
 
-    void onOpenBuildingTemplates() => _requireAuth(
-      featureName: 'Building Templates & Workspaces',
-      onAuthenticated: () {
-        showDialog(
-          context: context,
-          builder: (ctx) => BuildingTemplatesDialog(
-            currentModel: _model,
-            onModelSelected: _importBuildingModel,
-          ),
-        );
-      },
-    );
+    void onOpenBuildingTemplates() {
+      showDialog(
+        context: context,
+        builder: (ctx) => BuildingTemplatesDialog(
+          currentModel: _model,
+          onModelSelected: _importBuildingModel,
+        ),
+      );
+    }
 
-    void onOpenMacAiInspector() => _requireAuth(
-      featureName: 'Mac-Trained Neural AI Suite',
-      onAuthenticated: () {
-        showDialog(
-          context: context,
-          builder: (ctx) => MacNeuralInspectorDialog(
-            currentModel: _model,
-          ),
-        );
-      },
-    );
+    void onOpenMacAiInspector() {
+      showDialog(
+        context: context,
+        builder: (ctx) => MacNeuralInspectorDialog(
+          currentModel: _model,
+        ),
+      );
+    }
 
     void onOpenSeismicModal() => _requireAuth(
       featureName: 'Dynamic Modal Vibration Analysis',
@@ -1278,12 +1276,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         onOpenEnvironmentalStimulator: onOpenEnvironmentalStimulator,
         onOpenVisionToBim: onOpenVisionToBim,
         onOpenNltha: onOpenNltha,
-        onPresetSelected: (presetKey) {
-          _requireAuth(
-            featureName: 'Benchmark Presets',
-            onAuthenticated: () => _loadPreset(presetKey),
-          );
-        },
+        onPresetSelected: (presetKey) => _loadPreset(presetKey),
       ),
       body: Stack(
         children: [
@@ -1392,18 +1385,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               },
               onModeChanged: (mode) => setState(() => _model.displayMode = mode),
               onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
-              onPresetSelected: (presetKey) {
-                _requireAuth(
-                  featureName: 'Benchmark Presets',
-                  onAuthenticated: () => _loadPreset(presetKey),
-                );
-              },
-              onSolveTriggered: () {
-                _requireAuth(
-                  featureName: 'Finite Element Solver',
-                  onAuthenticated: _triggerSolve,
-                );
-              },
+              onPresetSelected: (presetKey) => _loadPreset(presetKey),
+              onSolveTriggered: _triggerSolve,
               onOpenAuth: () {
                 if (_isUserLoggedIn) {
                   showDialog(
@@ -1727,18 +1710,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 onTap: _clearCanvas,
               ),
             ],
-            onPresetSelected: (presetKey) {
-              _requireAuth(
-                featureName: 'Benchmark Presets',
-                onAuthenticated: () => _loadPreset(presetKey),
-              );
-            },
-            onSolveTriggered: () {
-              _requireAuth(
-                featureName: 'Finite Element Solver',
-                onAuthenticated: _triggerSolve,
-              );
-            },
+            onPresetSelected: (presetKey) => _loadPreset(presetKey),
+            onSolveTriggered: _triggerSolve,
           ),
 
           // 5. Layer 4: Floating Right Inspector Card (Slideable, Remembers Position, Open-in-place)

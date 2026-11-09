@@ -518,7 +518,7 @@
         this.createBmdRibbon(p1, p2, dir, dcr);
       });
 
-      // Center camera focus on bounding center
+      // Center camera focus on bounding center & auto-frame the imported building
       if (nodes.length > 0) {
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity;
         nodes.forEach((n) => {
@@ -533,8 +533,33 @@
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
         const cz = (minZ + maxZ) / 2;
+        const spanX = Math.max(maxX - minX, 1.0);
+        const spanY = Math.max(maxY - minY, 1.0);
+        const spanZ = Math.max(maxZ - minZ, 1.0);
+        const maxDim = Math.max(spanX, spanY, spanZ, 4.0);
+
+        this.currentCenter = new THREE.Vector3(cx, cy, cz);
+        this.currentMaxDim = maxDim;
+
+        const fovRad = ((this.camera && this.camera.fov ? this.camera.fov : 45) * Math.PI) / 180;
+        const fitDistance = Math.max((maxDim / 2) / Math.tan(fovRad / 2) * 1.55, 12.0);
+        this.fitDistance = fitDistance;
+
         if (this.controls) {
           this.controls.target.set(cx, cy, cz);
+        }
+
+        if (this.camera) {
+          this.camera.position.set(
+            cx + fitDistance * 0.72,
+            cy + fitDistance * 0.52,
+            cz + fitDistance * 0.82
+          );
+          this.camera.lookAt(cx, cy, cz);
+        }
+
+        if (this.controls) {
+          this.controls.update();
         }
       }
     }
@@ -635,21 +660,30 @@
 
     setCameraPreset(preset) {
       if (!this.camera) return;
-      const target = this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0);
+      const target = this.currentCenter || (this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0));
+      const dist = this.fitDistance || 18.0;
       switch (preset) {
         case 'TOP':
-          this.camera.position.set(target.x, target.y + 24, target.z + 0.001);
+          this.camera.position.set(target.x, target.y + dist * 1.4, target.z + 0.001);
           break;
         case 'FRONT':
-          this.camera.position.set(target.x, target.y, target.z + 24);
+          this.camera.position.set(target.x, target.y, target.z + dist * 1.4);
           break;
         case 'ISO':
         case 'RECENTER':
         default:
-          this.camera.position.set(target.x + 9, target.y + 7, target.z + 14);
+          this.camera.position.set(
+            target.x + dist * 0.72,
+            target.y + dist * 0.52,
+            target.z + dist * 0.82
+          );
           break;
       }
-      if (this.controls) this.controls.update();
+      this.camera.lookAt(target);
+      if (this.controls) {
+        this.controls.target.copy(target);
+        this.controls.update();
+      }
     }
 
     zoomIn() {
