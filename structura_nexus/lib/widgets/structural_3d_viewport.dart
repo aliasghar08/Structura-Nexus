@@ -182,6 +182,7 @@ class Structural3DViewportState extends State<Structural3DViewport>
         });
       },
       onTapUp: (details) {
+        if (_useThreeJs) return;
         _handleTap(details.localPosition);
       },
       child: Container(
@@ -198,6 +199,8 @@ class Structural3DViewportState extends State<Structural3DViewport>
                     widget.model.displayMode == DisplayMode.sfdRibbon,
                 showDeformation: widget.model.displayMode != DisplayMode.geometry,
                 showStressGradient: true,
+                onNodeSelected: widget.onNodeSelected,
+                onMemberSelected: widget.onMemberSelected,
                 onNodeDragged: (id, x, y, z) {
                   widget.onNodeDragged?.call(id, x, y, z);
                 },

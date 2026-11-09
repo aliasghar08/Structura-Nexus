@@ -470,7 +470,11 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
             );
           },
           child: _isExpanded
-              ? _buildExpandedMenu(context, effectiveWidth, screenSize.height - clampedTop - 110.0)
+              ? _buildExpandedMenu(
+                  context,
+                  effectiveWidth,
+                  screenSize.height - clampedTop - (screenSize.height >= 720 ? 185.0 : 110.0),
+                )
               : _buildCollapsedPill(context, isLeft, maxTop),
         ),
       ),

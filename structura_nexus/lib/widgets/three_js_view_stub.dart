@@ -9,6 +9,8 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final bool showBmd;
   final bool showSfd;
   final bool showStressGradient;
+  final void Function(String? nodeId)? onNodeSelected;
+  final void Function(String? memberId)? onMemberSelected;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
@@ -21,6 +23,8 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.showBmd = false,
     this.showSfd = false,
     this.showStressGradient = true,
+    this.onNodeSelected,
+    this.onMemberSelected,
     this.onNodeDragged,
     this.onNodeDragEnd,
   });

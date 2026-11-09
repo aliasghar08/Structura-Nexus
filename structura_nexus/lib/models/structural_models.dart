@@ -293,6 +293,7 @@ class StructuralNode {
         'coords': [coords.x, coords.y, coords.z],
         'restraint': restraint,
         'loads': loads,
+        'displacements': displacements,
       };
 
   factory StructuralNode.fromJson(Map<String, dynamic> json) {
@@ -434,6 +435,11 @@ class StructuralMember {
         'j_node': jNodeId,
         'section': section,
         'material': material,
+        'governing_dcr': governingDcr,
+        'status': status,
+        'axial_force_n': axialForceN,
+        'shear_y': shearY,
+        'moment_z': momentZ,
       };
 
   factory StructuralMember.fromJson(Map<String, dynamic> json) => StructuralMember(

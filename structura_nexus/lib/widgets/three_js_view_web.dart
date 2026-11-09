@@ -24,6 +24,7 @@ extension type ThreeViewer(JSObject _) implements JSObject {
 
 extension type NodeDragDetail(JSObject _) implements JSObject {
   external JSString? get nodeId;
+  external JSString? get memberId;
   external JSNumber? get x;
   external JSNumber? get y;
   external JSNumber? get z;
@@ -37,6 +38,8 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final bool showBmd;
   final bool showSfd;
   final bool showStressGradient;
+  final void Function(String? nodeId)? onNodeSelected;
+  final void Function(String? memberId)? onMemberSelected;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
@@ -49,6 +52,8 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.showBmd = false,
     this.showSfd = false,
     this.showStressGradient = true,
+    this.onNodeSelected,
+    this.onMemberSelected,
     this.onNodeDragged,
     this.onNodeDragEnd,
   });
@@ -65,6 +70,8 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   ThreeViewer? _viewer;
   JSFunction? _dragListener;
   JSFunction? _dragEndListener;
+  JSFunction? _nodeSelectListener;
+  JSFunction? _memberSelectListener;
 
   @override
   void initState() {
@@ -73,12 +80,6 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     _setupDragEventListeners();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initViewer();
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _syncModel();
-      });
-      Future.delayed(const Duration(milliseconds: 350), () {
-        if (mounted) _syncModel();
-      });
     });
   }
 
@@ -129,8 +130,32 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       }
     }).toJS;
 
+    _nodeSelectListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        final detail = NodeDragDetail(customEv.detail as JSObject);
+        final id = detail.nodeId?.toDart;
+        if (id != null) {
+          widget.onNodeSelected?.call(id);
+        }
+      }
+    }).toJS;
+
+    _memberSelectListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        final detail = NodeDragDetail(customEv.detail as JSObject);
+        final id = detail.memberId?.toDart;
+        if (id != null) {
+          widget.onMemberSelected?.call(id);
+        }
+      }
+    }).toJS;
+
     web.window.addEventListener('structura-node-dragged', _dragListener);
     web.window.addEventListener('structura-node-drag-end', _dragEndListener);
+    web.window.addEventListener('structura-node-selected', _nodeSelectListener);
+    web.window.addEventListener('structura-member-selected', _memberSelectListener);
   }
 
   @override
@@ -140,6 +165,12 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     }
     if (_dragEndListener != null) {
       web.window.removeEventListener('structura-node-drag-end', _dragEndListener);
+    }
+    if (_nodeSelectListener != null) {
+      web.window.removeEventListener('structura-node-selected', _nodeSelectListener);
+    }
+    if (_memberSelectListener != null) {
+      web.window.removeEventListener('structura-member-selected', _memberSelectListener);
     }
     super.dispose();
   }
@@ -153,8 +184,8 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       div.style.height = '100%';
       div.style.overflow = 'hidden';
       div.style.backgroundColor = '#0a0e17';
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted) _initViewer();
+      Future.delayed(const Duration(milliseconds: 60), () {
+        if (mounted) _syncModel();
       });
       return div;
     });
@@ -174,11 +205,13 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   }
 
   void _syncModel() {
-    if (_viewer == null) {
-      _initViewer();
-      return;
-    }
     try {
+      final jsViewer = _initStructuraThreeViewer(_containerId.toJS);
+      if (jsViewer != null) {
+        _viewer = ThreeViewer(jsViewer);
+      }
+      if (_viewer == null) return;
+
       final jsonPayload = jsonEncode(widget.model.toGraphPayload('THREE_VIEW'));
       final parsedObj = _jsonParse(jsonPayload.toJS);
       if (parsedObj != null) {

@@ -388,132 +388,140 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
         (_paramStories * (_paramBaysX + 1) * _paramBaysZ) +
         (_paramSystem == BuildingSystemType.xBracedFrame ? _paramStories * 8 : 0);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFF161F2E),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Row(
-              children: [
-                _buildStatPill('STORIES', '$_paramStories', Icons.layers_rounded, const Color(0xFF00F0FF)),
-                const SizedBox(width: 14),
-                _buildStatPill('HEIGHT', '${totalHeight.toStringAsFixed(1)} m', Icons.height_rounded, const Color(0xFF7EE787)),
-                const SizedBox(width: 14),
-                _buildStatPill('FOOTPRINT', '${totalArea.toStringAsFixed(0)} m²', Icons.crop_square_rounded, const Color(0xFFFFA657)),
-                const SizedBox(width: 14),
-                _buildStatPill('EST. JOINTS', '$estNodes', Icons.hub_rounded, const Color(0xFFD2A8FF)),
-                const SizedBox(width: 14),
-                _buildStatPill('EST. MEMBERS', '$estMembers', Icons.architecture_rounded, const Color(0xFFFF7B72)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          // Sliders
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF101622),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white10),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'PARAMETRIC GEOMETRY CONTROLS',
-                  style: TextStyle(color: Color(0xFF00F0FF), fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF161F2E),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildStatPill('STORIES', '$_paramStories', Icons.layers_rounded, const Color(0xFF00F0FF)),
+                      const SizedBox(width: 14),
+                      _buildStatPill('HEIGHT', '${totalHeight.toStringAsFixed(1)} m', Icons.height_rounded, const Color(0xFF7EE787)),
+                      const SizedBox(width: 14),
+                      _buildStatPill('FOOTPRINT', '${totalArea.toStringAsFixed(0)} m²', Icons.crop_square_rounded, const Color(0xFFFFA657)),
+                      const SizedBox(width: 14),
+                      _buildStatPill('EST. JOINTS', '$estNodes', Icons.hub_rounded, const Color(0xFFD2A8FF)),
+                      const SizedBox(width: 14),
+                      _buildStatPill('EST. MEMBERS', '$estMembers', Icons.architecture_rounded, const Color(0xFFFF7B72)),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 14),
 
-                _buildSliderRow(
-                  label: 'Number of Stories',
-                  valueStr: '$_paramStories Stories',
-                  val: _paramStories.toDouble(),
-                  min: 1,
-                  max: 25,
-                  divisions: 24,
-                  onChanged: (v) => setState(() => _paramStories = v.round()),
-                ),
-                _buildSliderRow(
-                  label: 'Bays along X-Axis',
-                  valueStr: '$_paramBaysX Bays (${(_paramBaysX * _paramBayWidthX).toStringAsFixed(1)}m)',
-                  val: _paramBaysX.toDouble(),
-                  min: 1,
-                  max: 8,
-                  divisions: 7,
-                  onChanged: (v) => setState(() => _paramBaysX = v.round()),
-                ),
-                _buildSliderRow(
-                  label: 'Bays along Z-Axis',
-                  valueStr: '$_paramBaysZ Bays (${(_paramBaysZ * _paramBayDepthZ).toStringAsFixed(1)}m)',
-                  val: _paramBaysZ.toDouble(),
-                  min: 1,
-                  max: 6,
-                  divisions: 5,
-                  onChanged: (v) => setState(() => _paramBaysZ = v.round()),
-                ),
-                _buildSliderRow(
-                  label: 'Bay Width X',
-                  valueStr: '${_paramBayWidthX.toStringAsFixed(1)} m',
-                  val: _paramBayWidthX,
-                  min: 4.0,
-                  max: 12.0,
-                  divisions: 16,
-                  onChanged: (v) => setState(() => _paramBayWidthX = v),
-                ),
-                _buildSliderRow(
-                  label: 'Bay Depth Z',
-                  valueStr: '${_paramBayDepthZ.toStringAsFixed(1)} m',
-                  val: _paramBayDepthZ,
-                  min: 4.0,
-                  max: 12.0,
-                  divisions: 16,
-                  onChanged: (v) => setState(() => _paramBayDepthZ = v),
-                ),
-                _buildSliderRow(
-                  label: 'Story Height',
-                  valueStr: '${_paramStoryHeight.toStringAsFixed(2)} m',
-                  val: _paramStoryHeight,
-                  min: 2.8,
-                  max: 5.0,
-                  divisions: 22,
-                  onChanged: (v) => setState(() => _paramStoryHeight = v),
-                ),
+                // Sliders
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF101622),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'PARAMETRIC GEOMETRY CONTROLS',
+                        style: TextStyle(color: Color(0xFF00F0FF), fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                      ),
+                      const SizedBox(height: 10),
 
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Text('Lateral Framing System:', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    const SizedBox(width: 14),
-                    DropdownButton<BuildingSystemType>(
-                      value: _paramSystem,
-                      dropdownColor: const Color(0xFF161F2E),
-                      style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 12, fontWeight: FontWeight.bold),
-                      items: const [
-                        DropdownMenuItem(value: BuildingSystemType.xBracedFrame, child: Text('Perimeter X-Braced Frame')),
-                        DropdownMenuItem(value: BuildingSystemType.chevronBraced, child: Text('Inverted-V Chevron Bracing')),
-                        DropdownMenuItem(value: BuildingSystemType.momentFrame, child: Text('Special Moment Frame (SMF)')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _paramSystem = val);
-                      },
-                    ),
-                  ],
+                      _buildSliderRow(
+                        label: 'Number of Stories',
+                        valueStr: '$_paramStories Stories',
+                        val: _paramStories.toDouble(),
+                        min: 1,
+                        max: 25,
+                        divisions: 24,
+                        onChanged: (v) => setState(() => _paramStories = v.round()),
+                      ),
+                      _buildSliderRow(
+                        label: 'Bays along X-Axis',
+                        valueStr: '$_paramBaysX Bays (${(_paramBaysX * _paramBayWidthX).toStringAsFixed(1)}m)',
+                        val: _paramBaysX.toDouble(),
+                        min: 1,
+                        max: 8,
+                        divisions: 7,
+                        onChanged: (v) => setState(() => _paramBaysX = v.round()),
+                      ),
+                      _buildSliderRow(
+                        label: 'Bays along Z-Axis',
+                        valueStr: '$_paramBaysZ Bays (${(_paramBaysZ * _paramBayDepthZ).toStringAsFixed(1)}m)',
+                        val: _paramBaysZ.toDouble(),
+                        min: 1,
+                        max: 6,
+                        divisions: 5,
+                        onChanged: (v) => setState(() => _paramBaysZ = v.round()),
+                      ),
+                      _buildSliderRow(
+                        label: 'Bay Width X',
+                        valueStr: '${_paramBayWidthX.toStringAsFixed(1)} m',
+                        val: _paramBayWidthX,
+                        min: 4.0,
+                        max: 12.0,
+                        divisions: 16,
+                        onChanged: (v) => setState(() => _paramBayWidthX = v),
+                      ),
+                      _buildSliderRow(
+                        label: 'Bay Depth Z',
+                        valueStr: '${_paramBayDepthZ.toStringAsFixed(1)} m',
+                        val: _paramBayDepthZ,
+                        min: 4.0,
+                        max: 12.0,
+                        divisions: 16,
+                        onChanged: (v) => setState(() => _paramBayDepthZ = v),
+                      ),
+                      _buildSliderRow(
+                        label: 'Story Height',
+                        valueStr: '${_paramStoryHeight.toStringAsFixed(2)} m',
+                        val: _paramStoryHeight,
+                        min: 2.8,
+                        max: 5.0,
+                        divisions: 22,
+                        onChanged: (v) => setState(() => _paramStoryHeight = v),
+                      ),
+
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Text('Lateral Framing System:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          const SizedBox(width: 14),
+                          DropdownButton<BuildingSystemType>(
+                            value: _paramSystem,
+                            dropdownColor: const Color(0xFF161F2E),
+                            style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 12, fontWeight: FontWeight.bold),
+                            items: const [
+                              DropdownMenuItem(value: BuildingSystemType.xBracedFrame, child: Text('Perimeter X-Braced Frame')),
+                              DropdownMenuItem(value: BuildingSystemType.chevronBraced, child: Text('Inverted-V Chevron Bracing')),
+                              DropdownMenuItem(value: BuildingSystemType.momentFrame, child: Text('Special Moment Frame (SMF)')),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) setState(() => _paramSystem = val);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          ElevatedButton.icon(
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
+          child: ElevatedButton.icon(
             onPressed: () {
               final newModel = BuildingGeneratorService.generateParametricBuilding(
                 name: 'Parametric Building (${_paramStories}S_${_paramBaysX}x$_paramBaysZ)',
@@ -537,13 +545,13 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00F0FF),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 15),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 4,
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

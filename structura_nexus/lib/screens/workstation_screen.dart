@@ -171,6 +171,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _triggerSolve() {
     setState(() {
+      _modelRevision++;
       try {
         EmbeddedFeaSolver.solve(_model);
       } catch (e) {
@@ -182,6 +183,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ? 'INFER_SURROGATE'
             : 'EXACT_SOLVE',
       );
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewportKey.currentState?.reloadModel();
     });
   }
 
@@ -641,11 +645,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         final dy = (n1.coords.y - n2.coords.y).abs();
         final dz = (n1.coords.z - n2.coords.z).abs();
 
-        if ((dy - 3.6).abs() < 0.2 && (((dx - 6.0).abs() < 0.2 && dz < 0.1) || ((dz - 6.0).abs() < 0.2 && dx < 0.1))) {
+        if (dy >= 2.5 && dy <= 5.5 && ((dx >= 3.0 && dx <= 12.0 && dz < 0.1) || (dz >= 3.0 && dz <= 12.0 && dx < 0.1))) {
           final alreadyConnected = _model.members.any((m) =>
               (m.iNodeId == n1.id && m.jNodeId == n2.id) ||
               (m.iNodeId == n2.id && m.jNodeId == n1.id));
-          if (!alreadyConnected && addedCount < 4) {
+          if (!alreadyConnected && addedCount < 8) {
             _model.members.add(
               StructuralMember(
                 id: 'BRACE_${_model.members.length + 1}',
@@ -982,14 +986,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           context: context,
           builder: (ctx) => StructuralCadEditorDialog(
             initialModel: _model,
-            onModelCommitted: (newModel) {
-              setState(() {
-                _model = newModel;
-                _selectedNodeId = null;
-                _selectedMemberId = null;
-                _triggerSolve();
-              });
-            },
+            onModelCommitted: _importBuildingModel,
           ),
         );
       },
@@ -1002,14 +999,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           context: context,
           builder: (ctx) => StructuralLibraryDialog(
             currentModel: _model,
-            onModelSelected: (newModel) {
-              setState(() {
-                _model = newModel;
-                _selectedNodeId = null;
-                _selectedMemberId = null;
-                _triggerSolve();
-              });
-            },
+            onModelSelected: _importBuildingModel,
           ),
         );
       },
@@ -1124,14 +1114,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       onAuthenticated: () => VisionIngestionDialog.show(
         context,
         apiService: _apiService,
-        onModelSynthesized: (newModel) {
-          setState(() {
-            _model = newModel;
-            _selectedNodeId = null;
-            _selectedMemberId = null;
-            _triggerSolve();
-          });
-        },
+        onModelSynthesized: _importBuildingModel,
       ),
     );
 
@@ -1187,15 +1170,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           context: context,
           builder: (ctx) => EnvironmentalStimulatorDialog(
             model: _model,
-            onStructureModified: () => setState(() {}),
-            onModelReplaced: (newModel) {
-              setState(() {
-                _model = newModel;
-                _selectedNodeId = null;
-                _selectedMemberId = null;
-                _triggerSolve();
-              });
-            },
+            onStructureModified: _triggerSolve,
+            onModelReplaced: _importBuildingModel,
             onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
           ),
         );
@@ -1657,12 +1633,17 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 badge: '3D BMD',
                 onTap: () {
                   setState(() {
-                    if (_model.displayMode == DisplayMode.geometry) {
+                    _modelRevision++;
+                    if (_model.displayMode != DisplayMode.bmdRibbon &&
+                        _model.displayMode != DisplayMode.sfdRibbon) {
                       _model.displayMode = DisplayMode.bmdRibbon;
+                      _showToolSnackBar('Enabled 3D Extruded Bending Moment Diagram (BMD) Ribbons');
                     } else if (_model.displayMode == DisplayMode.bmdRibbon) {
                       _model.displayMode = DisplayMode.sfdRibbon;
+                      _showToolSnackBar('Enabled 3D Extruded Shear Force Diagram (SFD) Ribbons');
                     } else {
                       _model.displayMode = DisplayMode.geometry;
+                      _showToolSnackBar('Restored 3D Geometry Skeleton Display');
                     }
                   });
                 },
