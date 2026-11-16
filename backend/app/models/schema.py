@@ -23,6 +23,13 @@ class MemberModel(BaseModel):
         default=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         description="End releases for 12 local DOF (e.g. pinned ends)"
     )
+    release_i_moment: bool = Field(default=False, description="Pin release bending moments (My, Mz) at start node i")
+    release_j_moment: bool = Field(default=False, description="Pin release bending moments (My, Mz) at end node j")
+    release_torsion: bool = Field(default=False, description="Release torsional moment (Mx) along member axis")
+    cracked_section_factor: Optional[float] = Field(
+        default=None,
+        description="Explicit cracked moment of inertia modifier (ACI 318-19 §6.6.3.1.1 e.g. 0.70 for columns, 0.35 for beams)"
+    )
 
 class StructuralModelInput(BaseModel):
     name: Optional[str] = "Structural Model"
@@ -38,6 +45,10 @@ class StructuralGraphPayload(BaseModel):
     load_combination: str = Field(
         default="1.2D+1.6L",
         description="1.4D | 1.2D+1.6L | 1.2D+1.0W+0.5L | 1.2D+1.0E+0.2S"
+    )
+    consider_cracked_sections: bool = Field(
+        default=True,
+        description="Apply ACI 318-19 Section 6.6.3.1.1 cracked moment of inertia modifiers (0.70 Ig for columns, 0.35 Ig for beams) on concrete members"
     )
     nodes: List[NodeModel]
     members: List[MemberModel]
@@ -212,11 +223,30 @@ class PEPacketResponse(BaseModel):
     sway_amplification_b2: float
     stability_status: str
     certification_hash: str
+    verification_seal_status: str = "VERIFIED_AUTHENTIC"
+    integrity_seal_hmac: Optional[str] = None
+    equilibrium_residual_max_n: Optional[float] = 0.0
+    is_equilibrated: Optional[bool] = True
     member_count: int
     node_count: int
     latex_source: str
     html_report: str
     svg_elevation: str
+
+class VerifySealRequest(BaseModel):
+    certification_hash: str
+    project_name: str
+    governing_dcr: float
+    total_steel_weight_kg: float
+    license_number: str
+    calculation_date: Optional[str] = None
+    integrity_seal_hmac: Optional[str] = None
+
+class VerifySealResponse(BaseModel):
+    is_valid: bool
+    status: str  # "VERIFIED_AUTHENTIC" | "TAMPERED_OR_INVALID_SEAL"
+    audit_message: str
+    timestamp: str
 
 # BIM & CAD Interoperability Schemas
 class S2KExportRequest(BaseModel):

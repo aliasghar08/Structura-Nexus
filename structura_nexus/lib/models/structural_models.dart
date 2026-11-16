@@ -331,6 +331,10 @@ class StructuralMember {
   double slendernessKlR;
   String status; // PASS | FAIL | WARNING
   String? recommendedSection;
+  bool releaseIMoment;
+  bool releaseJMoment;
+  bool releaseTorsion;
+  double? crackedSectionFactor;
 
   StructuralMember({
     required this.id,
@@ -357,6 +361,10 @@ class StructuralMember {
     this.slendernessKlR = 0.0,
     this.status = 'PASS',
     this.recommendedSection,
+    this.releaseIMoment = false,
+    this.releaseJMoment = false,
+    this.releaseTorsion = false,
+    this.crackedSectionFactor,
   })  : iNodeId = iNodeId ?? startNodeId ?? 'N1',
         jNodeId = jNodeId ?? endNodeId ?? 'N2',
         section = section ?? sectionProfile ?? 'W14X48';
@@ -403,6 +411,10 @@ class StructuralMember {
     double? slendernessKlR,
     String? status,
     String? recommendedSection,
+    bool? releaseIMoment,
+    bool? releaseJMoment,
+    bool? releaseTorsion,
+    double? crackedSectionFactor,
   }) {
     return StructuralMember(
       id: id ?? this.id,
@@ -426,6 +438,10 @@ class StructuralMember {
       slendernessKlR: slendernessKlR ?? this.slendernessKlR,
       status: status ?? this.status,
       recommendedSection: recommendedSection ?? this.recommendedSection,
+      releaseIMoment: releaseIMoment ?? this.releaseIMoment,
+      releaseJMoment: releaseJMoment ?? this.releaseJMoment,
+      releaseTorsion: releaseTorsion ?? this.releaseTorsion,
+      crackedSectionFactor: crackedSectionFactor ?? this.crackedSectionFactor,
     );
   }
 

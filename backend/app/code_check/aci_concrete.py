@@ -19,6 +19,8 @@ from ..models.concrete_schema import (
     ConcreteColumnPMRequest,
     ConcreteColumnPMResponse,
     PMPoint,
+    ConcreteCrackCheckRequest,
+    ConcreteCrackCheckResponse,
 )
 from ..solvers.fiber_section_engine import ConcreteFiberSectionIntegrator
 
@@ -216,4 +218,98 @@ class ACI318ConcreteChecker:
             operating_demand={"pu_kn": pu_kn, "mu_knm": mu_knm, "vu_kn": vu_kn},
             latency_ms=round(dt, 2),
             engine="ACI_318_19_FIBER_ANALYTIC",
+        )
+
+    @classmethod
+    def evaluate_crack_serviceability(cls, req: ConcreteCrackCheckRequest) -> ConcreteCrackCheckResponse:
+        """
+        Concrete Serviceability & Crack Width Verification Engine
+        Governed by: ACI 318-19 Section 24.3.2 and ACI 224R-01.
+        """
+        b = req.b
+        h = req.h
+        fc_mpa = req.fc_mpa
+        fy_mpa = req.fy_mpa
+        ms_knm = req.moment_service_knm
+        pu_kn = req.axial_service_kn
+        db_mm = req.bar_diameter_mm
+        n_bars = max(2, req.num_bars)
+        cc_mm = req.cover_mm
+        cond = req.exposure_condition.upper()
+
+        # Physical geometry in mm
+        b_mm = b * 1000.0
+        h_mm = h * 1000.0
+        ab1_mm2 = (math.pi / 4.0) * (db_mm ** 2)
+        as_mm2 = n_bars * ab1_mm2
+        d_mm = h_mm - cc_mm - (db_mm / 2.0)
+
+        # Moduli & Modular ratio
+        Ec_mpa = 4700.0 * math.sqrt(fc_mpa)
+        Es_mpa = 200000.0
+        n_ratio = Es_mpa / Ec_mpa
+        rho = as_mm2 / (b_mm * d_mm)
+
+        # Transformed cracked section neutral axis
+        rn = rho * n_ratio
+        k = math.sqrt(rn * rn + 2.0 * rn) - rn
+        kd_mm = k * d_mm
+
+        # Cracked and Gross moments of inertia
+        Icr_mm4 = (1.0 / 3.0) * b_mm * (kd_mm ** 3) + n_ratio * as_mm2 * ((d_mm - kd_mm) ** 2)
+        Ig_mm4 = (1.0 / 12.0) * b_mm * (h_mm ** 3)
+        cracked_ratio = round(Icr_mm4 / max(Ig_mm4, 1.0), 3)
+
+        # Service tensile steel stress fs
+        ms_nmm = abs(ms_knm) * 1e6
+        fs_elastic = (ms_nmm * (d_mm - kd_mm) / max(Icr_mm4, 1.0)) * n_ratio
+        fs_mpa = min(fs_elastic, (2.0 / 3.0) * fy_mpa)
+        if fs_mpa < 10.0:
+            fs_mpa = 10.0
+
+        # 1. ACI 318-19 Section 24.3.2 Max Rebar Spacing:
+        s_max_formula = 380.0 * (280.0 / fs_mpa) - 2.5 * cc_mm
+        s_max_cap = 300.0 * (280.0 / fs_mpa)
+        s_max_mm = max(50.0, min(s_max_formula, s_max_cap))
+
+        # Actual clear spacing between bars
+        s_actual_mm = max(20.0, (b_mm - 2.0 * cc_mm - db_mm) / max(1, n_bars - 1))
+        spacing_dcr = round(s_actual_mm / max(s_max_mm, 1e-4), 3)
+
+        # 2. Gergely-Lutz / ACI 224R Surface Crack Width:
+        dc_mm = cc_mm + (db_mm / 2.0)
+        A_tension_mm2 = (2.0 * dc_mm * b_mm) / n_bars
+        beta = (h_mm - kd_mm) / max(d_mm - kd_mm, 1.0)
+        beta = max(1.10, min(1.35, beta))
+
+        wk_mm = 0.076 * beta * fs_mpa * math.pow(dc_mm * A_tension_mm2, 1.0 / 3.0) * 1e-3
+        wk_mm = round(wk_mm, 4)
+
+        # Allowable crack widths per ACI 224R Table 4.1
+        allowable_map = {
+            "INTERIOR_DRY": 0.40,
+            "EXTERIOR_MOIST": 0.30,
+            "DEICING_SALTS": 0.20,
+            "WATER_RETAINING": 0.10,
+        }
+        w_allow_mm = allowable_map.get(cond, 0.30)
+        crack_dcr = round(wk_mm / w_allow_mm, 3)
+
+        is_compliant = (crack_dcr <= 1.0) and (spacing_dcr <= 1.0)
+
+        return ConcreteCrackCheckResponse(
+            status="SUCCESS",
+            is_compliant=is_compliant,
+            computed_crack_width_mm=wk_mm,
+            allowable_crack_width_mm=w_allow_mm,
+            crack_width_dcr=crack_dcr,
+            actual_bar_spacing_mm=round(s_actual_mm, 1),
+            max_bar_spacing_mm=round(s_max_mm, 1),
+            spacing_dcr=spacing_dcr,
+            cracked_inertia_ratio=cracked_ratio,
+            exposure_condition=cond,
+            code_governing="ACI 318-19 Section 24.3.2 & ACI 224R-01",
+            service_stress_fs_mpa=round(fs_mpa, 1),
+            effective_depth_d_mm=round(d_mm, 1),
+            neutral_axis_kd_mm=round(kd_mm, 1),
         )

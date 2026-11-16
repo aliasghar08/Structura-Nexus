@@ -86,6 +86,30 @@ class FEA3DSpaceFrameSolver:
             cy = dy / L
             cz = dz / L
 
+            # ACI 318-19 Section 6.6.3.1.1: Concrete Cracked Section Modifiers
+            is_concrete = "CONCRETE" in member.material.upper() or "C4000" in member.material.upper()
+            consider_cracked = getattr(payload, "consider_cracked_sections", True)
+            if is_concrete and consider_cracked:
+                if member.cracked_section_factor is not None:
+                    eff_factor = float(member.cracked_section_factor)
+                elif abs(cy) >= 0.85:
+                    # Compression-dominated column: I_eff = 0.70 * Ig (ACI 318-19 Table 6.6.3.1.1(a))
+                    eff_factor = 0.70
+                else:
+                    # Flexure-dominated beam / girder: I_eff = 0.35 * Ig (ACI 318-19 Table 6.6.3.1.1(a))
+                    eff_factor = 0.35
+                Ix *= eff_factor
+                Iy *= eff_factor
+                J *= 0.20  # ACI 318-19 Table 6.6.3.1.1(b) reduced torsional rigidity
+
+            # Member end moment and torsion releases (pin-pin framing / secondary beam connections)
+            rel = member.releases or [0] * 12
+            rel_tx = getattr(member, "release_torsion", False) or (len(rel) > 3 and (rel[3] == 1 or rel[9] == 1))
+            rel_my1 = getattr(member, "release_i_moment", False) or (len(rel) > 4 and rel[4] == 1)
+            rel_mz1 = getattr(member, "release_i_moment", False) or (len(rel) > 5 and rel[5] == 1)
+            rel_my2 = getattr(member, "release_j_moment", False) or (len(rel) > 10 and rel[10] == 1)
+            rel_mz2 = getattr(member, "release_j_moment", False) or (len(rel) > 11 and rel[11] == 1)
+
             # Compute local y and z unit vectors
             if abs(cx) < 1e-6 and abs(cz) < 1e-6:
                 # Vertical member collinear with Y
@@ -115,56 +139,111 @@ class FEA3DSpaceFrameSolver:
             k_local[6, 0] = -ea_l
             k_local[6, 6] = ea_l
 
-            # Torsion
-            gj_l = (G * J) / L
-            k_local[3, 3] = gj_l
-            k_local[3, 9] = -gj_l
-            k_local[9, 3] = -gj_l
-            k_local[9, 9] = gj_l
+            # Torsion (with optional release)
+            if not rel_tx:
+                gj_l = (G * J) / L
+                k_local[3, 3] = gj_l
+                k_local[3, 9] = -gj_l
+                k_local[9, 3] = -gj_l
+                k_local[9, 9] = gj_l
 
-            # Bending about local Z (deflections in local Y)
+            # Bending about local Z (deflections in local Y, moments Mz)
             eiz = E * Ix
-            k_local[1, 1] = 12.0 * eiz / (L ** 3)
-            k_local[1, 5] = 6.0 * eiz / (L ** 2)
-            k_local[1, 7] = -12.0 * eiz / (L ** 3)
-            k_local[1, 11] = 6.0 * eiz / (L ** 2)
+            if rel_mz1 and rel_mz2:
+                # Both ends pinned in local Z bending (truss/pin-pin action)
+                pass
+            elif rel_mz2:
+                # Pin at end 2 (j-node): 3EI/L^3, 3EI/L^2, 3EI/L
+                k_local[1, 1] = 3.0 * eiz / (L ** 3)
+                k_local[1, 5] = 3.0 * eiz / (L ** 2)
+                k_local[1, 7] = -3.0 * eiz / (L ** 3)
+                k_local[5, 1] = 3.0 * eiz / (L ** 2)
+                k_local[5, 5] = 3.0 * eiz / L
+                k_local[5, 7] = -3.0 * eiz / (L ** 2)
+                k_local[7, 1] = -3.0 * eiz / (L ** 3)
+                k_local[7, 5] = -3.0 * eiz / (L ** 2)
+                k_local[7, 7] = 3.0 * eiz / (L ** 3)
+            elif rel_mz1:
+                # Pin at end 1 (i-node): 3EI/L^3, 3EI/L^2, 3EI/L
+                k_local[1, 1] = 3.0 * eiz / (L ** 3)
+                k_local[1, 7] = -3.0 * eiz / (L ** 3)
+                k_local[1, 11] = 3.0 * eiz / (L ** 2)
+                k_local[7, 1] = -3.0 * eiz / (L ** 3)
+                k_local[7, 7] = 3.0 * eiz / (L ** 3)
+                k_local[7, 11] = -3.0 * eiz / (L ** 2)
+                k_local[11, 1] = 3.0 * eiz / (L ** 2)
+                k_local[11, 7] = -3.0 * eiz / (L ** 2)
+                k_local[11, 11] = 3.0 * eiz / L
+            else:
+                # Standard fixed-fixed in local Z bending
+                k_local[1, 1] = 12.0 * eiz / (L ** 3)
+                k_local[1, 5] = 6.0 * eiz / (L ** 2)
+                k_local[1, 7] = -12.0 * eiz / (L ** 3)
+                k_local[1, 11] = 6.0 * eiz / (L ** 2)
 
-            k_local[5, 1] = 6.0 * eiz / (L ** 2)
-            k_local[5, 5] = 4.0 * eiz / L
-            k_local[5, 7] = -6.0 * eiz / (L ** 2)
-            k_local[5, 11] = 2.0 * eiz / L
+                k_local[5, 1] = 6.0 * eiz / (L ** 2)
+                k_local[5, 5] = 4.0 * eiz / L
+                k_local[5, 7] = -6.0 * eiz / (L ** 2)
+                k_local[5, 11] = 2.0 * eiz / L
 
-            k_local[7, 1] = -12.0 * eiz / (L ** 3)
-            k_local[7, 5] = -6.0 * eiz / (L ** 2)
-            k_local[7, 7] = 12.0 * eiz / (L ** 3)
-            k_local[7, 11] = -6.0 * eiz / (L ** 2)
+                k_local[7, 1] = -12.0 * eiz / (L ** 3)
+                k_local[7, 5] = -6.0 * eiz / (L ** 2)
+                k_local[7, 7] = 12.0 * eiz / (L ** 3)
+                k_local[7, 11] = -6.0 * eiz / (L ** 2)
 
-            k_local[11, 1] = 6.0 * eiz / (L ** 2)
-            k_local[11, 5] = 2.0 * eiz / L
-            k_local[11, 7] = -6.0 * eiz / (L ** 2)
-            k_local[11, 11] = 4.0 * eiz / L
+                k_local[11, 1] = 6.0 * eiz / (L ** 2)
+                k_local[11, 5] = 2.0 * eiz / L
+                k_local[11, 7] = -6.0 * eiz / (L ** 2)
+                k_local[11, 11] = 4.0 * eiz / L
 
-            # Bending about local Y (deflections in local Z)
+            # Bending about local Y (deflections in local Z, moments My)
             eiy = E * Iy
-            k_local[2, 2] = 12.0 * eiy / (L ** 3)
-            k_local[2, 4] = -6.0 * eiy / (L ** 2)
-            k_local[2, 8] = -12.0 * eiy / (L ** 3)
-            k_local[2, 10] = -6.0 * eiy / (L ** 2)
+            if rel_my1 and rel_my2:
+                # Both ends pinned in local Y bending
+                pass
+            elif rel_my2:
+                # Pin at end 2 (j-node)
+                k_local[2, 2] = 3.0 * eiy / (L ** 3)
+                k_local[2, 4] = -3.0 * eiy / (L ** 2)
+                k_local[2, 8] = -3.0 * eiy / (L ** 3)
+                k_local[4, 2] = -3.0 * eiy / (L ** 2)
+                k_local[4, 4] = 3.0 * eiy / L
+                k_local[4, 8] = 3.0 * eiy / (L ** 2)
+                k_local[8, 2] = -3.0 * eiy / (L ** 3)
+                k_local[8, 4] = 3.0 * eiy / (L ** 2)
+                k_local[8, 8] = 3.0 * eiy / (L ** 3)
+            elif rel_my1:
+                # Pin at end 1 (i-node)
+                k_local[2, 2] = 3.0 * eiy / (L ** 3)
+                k_local[2, 8] = -3.0 * eiy / (L ** 3)
+                k_local[2, 10] = -3.0 * eiy / (L ** 2)
+                k_local[8, 2] = -3.0 * eiy / (L ** 3)
+                k_local[8, 8] = 3.0 * eiy / (L ** 3)
+                k_local[8, 10] = 3.0 * eiy / (L ** 2)
+                k_local[10, 2] = -3.0 * eiy / (L ** 2)
+                k_local[10, 8] = 3.0 * eiy / (L ** 2)
+                k_local[10, 10] = 3.0 * eiy / L
+            else:
+                # Standard fixed-fixed in local Y bending
+                k_local[2, 2] = 12.0 * eiy / (L ** 3)
+                k_local[2, 4] = -6.0 * eiy / (L ** 2)
+                k_local[2, 8] = -12.0 * eiy / (L ** 3)
+                k_local[2, 10] = -6.0 * eiy / (L ** 2)
 
-            k_local[4, 2] = -6.0 * eiy / (L ** 2)
-            k_local[4, 4] = 4.0 * eiy / L
-            k_local[4, 8] = 6.0 * eiy / (L ** 2)
-            k_local[4, 10] = 2.0 * eiy / L
+                k_local[4, 2] = -6.0 * eiy / (L ** 2)
+                k_local[4, 4] = 4.0 * eiy / L
+                k_local[4, 8] = 6.0 * eiy / (L ** 2)
+                k_local[4, 10] = 2.0 * eiy / L
 
-            k_local[8, 2] = -12.0 * eiy / (L ** 3)
-            k_local[8, 4] = 6.0 * eiy / (L ** 2)
-            k_local[8, 8] = 12.0 * eiy / (L ** 3)
-            k_local[8, 10] = 6.0 * eiy / (L ** 2)
+                k_local[8, 2] = -12.0 * eiy / (L ** 3)
+                k_local[8, 4] = 6.0 * eiy / (L ** 2)
+                k_local[8, 8] = 12.0 * eiy / (L ** 3)
+                k_local[8, 10] = 6.0 * eiy / (L ** 2)
 
-            k_local[10, 2] = -6.0 * eiy / (L ** 2)
-            k_local[10, 4] = 2.0 * eiy / L
-            k_local[10, 8] = 6.0 * eiy / (L ** 2)
-            k_local[10, 10] = 4.0 * eiy / L
+                k_local[10, 2] = -6.0 * eiy / (L ** 2)
+                k_local[10, 4] = 2.0 * eiy / L
+                k_local[10, 8] = 6.0 * eiy / (L ** 2)
+                k_local[10, 10] = 4.0 * eiy / L
 
             # Transform to global coordinates: K_global_elem = T^T * k_local * T
             k_global_elem = T_12x12.T @ k_local @ T_12x12
@@ -182,6 +261,11 @@ class FEA3DSpaceFrameSolver:
                 "T": T_12x12,
                 "k_local": k_local,
                 "dof_indices": dof_indices,
+                "rel_tx": rel_tx,
+                "rel_my1": rel_my1,
+                "rel_mz1": rel_mz1,
+                "rel_my2": rel_my2,
+                "rel_mz2": rel_mz2,
             }
 
         # 3. Apply Boundary Conditions (Dirichlet Restraints)
@@ -278,6 +362,19 @@ class FEA3DSpaceFrameSolver:
             u_elem_global = U_global[dofs]
             u_elem_local = T @ u_elem_global
             f_elem_local = k_loc @ u_elem_local
+
+            # Enforce exact member end releases on recovered local action tensors
+            if meta.get("rel_tx", False):
+                f_elem_local[3] = 0.0
+                f_elem_local[9] = 0.0
+            if meta.get("rel_my1", False):
+                f_elem_local[4] = 0.0
+            if meta.get("rel_my2", False):
+                f_elem_local[10] = 0.0
+            if meta.get("rel_mz1", False):
+                f_elem_local[5] = 0.0
+            if meta.get("rel_mz2", False):
+                f_elem_local[11] = 0.0
 
             # Internal actions in local axes:
             # Node 1 actions: [N1, Vy1, Vz1, T1, My1, Mz1]

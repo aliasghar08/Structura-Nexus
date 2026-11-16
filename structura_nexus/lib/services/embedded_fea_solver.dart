@@ -52,12 +52,26 @@ class EmbeddedFeaSolver {
       final ix = sec.ixM4;
 
       final eaL = (E * A) / L;
-      final eiz = E * ix;
-
       // Direction cosines for 3D coordinate transformation
       final cx = dx / L;
       final cy = dy / L;
       final cz = dz / L;
+
+      // ACI 318-19 §6.6.3.1.1: Concrete Cracked Section Modifiers
+      double effIx = ix;
+      final isConcrete = member.material.toUpperCase().contains('CONCRETE') || member.material.toUpperCase().contains('C4000');
+      if (isConcrete) {
+        if (member.crackedSectionFactor != null) {
+          effIx *= member.crackedSectionFactor!;
+        } else if (cy.abs() >= 0.85) {
+          // Column: ACI 318-19 Table 6.6.3.1.1(a) -> 0.70 Ig
+          effIx *= 0.70;
+        } else {
+          // Beam: ACI 318-19 Table 6.6.3.1.1(a) -> 0.35 Ig
+          effIx *= 0.35;
+        }
+      }
+      final eiz = E * effIx;
 
       // Simplified global axial/flexural stiffness mapping
       // Axial contribution: eaL * cx*cx, etc.
@@ -78,8 +92,13 @@ class EmbeddedFeaSolver {
         }
       }
 
-      // Bending contribution: 12 * EI / L^3 for flexure
-      final flexK = 12.0 * eiz / (L * L * L);
+      // Bending contribution: 12 * EI / L^3 for fixed-fixed flexure, or 3 * EI / L^3 for released ends
+      double flexK = 12.0 * eiz / (L * L * L);
+      if (member.releaseIMoment && member.releaseJMoment) {
+        flexK = 0.0;
+      } else if (member.releaseIMoment || member.releaseJMoment) {
+        flexK = 3.0 * eiz / (L * L * L);
+      }
       for (int a = 0; a < 3; a++) {
         final rowI = iIdx * 6 + a;
         final rowJ = jIdx * 6 + a;
@@ -189,7 +208,12 @@ class EmbeddedFeaSolver {
 
       final flexDisp = math.sqrt(duy * duy + duz * duz);
       final shearForce = (12.0 * E * sec.ixM4 * flexDisp) / math.max(L * L * L, 1e-4);
-      final momentZ = (6.0 * E * sec.ixM4 * flexDisp) / math.max(L * L, 1e-4);
+      double momentZ = (6.0 * E * sec.ixM4 * flexDisp) / math.max(L * L, 1e-4);
+      if (member.releaseIMoment && member.releaseJMoment) {
+        momentZ = 0.0;
+      } else if (member.releaseIMoment || member.releaseJMoment) {
+        momentZ = (3.0 * E * sec.ixM4 * flexDisp) / math.max(L * L, 1e-4);
+      }
 
       member.axialForceN = axialForce;
       member.shearY = shearForce;

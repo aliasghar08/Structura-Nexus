@@ -54,3 +54,36 @@ class ConcreteColumnPMResponse(BaseModel):
     latency_ms: float
     engine: str = "ACI_318_19_FIBER_ANALYTIC"
 
+
+class ConcreteCrackCheckRequest(BaseModel):
+    b: float = Field(default=0.35, description="Section width in meters")
+    h: float = Field(default=0.60, description="Section total depth in meters")
+    fc_mpa: float = Field(default=28.0, description="Concrete compressive strength f'c in MPa")
+    fy_mpa: float = Field(default=420.0, description="Rebar yield strength fy in MPa")
+    moment_service_knm: float = Field(default=120.0, description="Service flexural moment Ms in kN*m (1.0D + 1.0L)")
+    axial_service_kn: float = Field(default=0.0, description="Service axial load in kN (compression positive)")
+    bar_diameter_mm: float = Field(default=25.0, description="Longitudinal tension rebar diameter in mm")
+    num_bars: int = Field(default=4, description="Number of tension reinforcement bars")
+    cover_mm: float = Field(default=40.0, description="Concrete clear cover to tension face in mm")
+    exposure_condition: str = Field(
+        default="EXTERIOR_MOIST",
+        description="INTERIOR_DRY | EXTERIOR_MOIST | DEICING_SALTS | WATER_RETAINING"
+    )
+
+
+class ConcreteCrackCheckResponse(BaseModel):
+    status: str = "SUCCESS"
+    is_compliant: bool
+    computed_crack_width_mm: float
+    allowable_crack_width_mm: float
+    crack_width_dcr: float
+    actual_bar_spacing_mm: float
+    max_bar_spacing_mm: float
+    spacing_dcr: float
+    cracked_inertia_ratio: float  # I_cr / I_g
+    exposure_condition: str
+    code_governing: str = "ACI 318-19 Section 24.3.2 & ACI 224R-01"
+    service_stress_fs_mpa: float
+    effective_depth_d_mm: float
+    neutral_axis_kd_mm: float
+
