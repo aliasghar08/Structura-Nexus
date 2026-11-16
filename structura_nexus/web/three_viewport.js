@@ -614,7 +614,13 @@
       this._updateSelectionHighlight();
     }
 
+    setHighlightedMembers(memberIds) {
+      this.highlightedMemberIds = new Set(memberIds || []);
+      this._updateSelectionHighlight();
+    }
+
     _updateSelectionHighlight() {
+      if (!this.highlightedMemberIds) this.highlightedMemberIds = new Set();
       this.nodeMeshes.forEach((mesh) => {
         if (!mesh.material || !mesh.material.emissive) return;
         const isSel = (this.selectedNodeId && mesh.userData.nodeId === this.selectedNodeId) ||
@@ -636,9 +642,14 @@
         if (!m.mesh || !m.mesh.material || !m.mesh.material.emissive) return;
         const isSel = (this.selectedMemberId && m.id === this.selectedMemberId) ||
                       (this.selectedMemberIds && this.selectedMemberIds.has(m.id));
+        const isHigh = this.highlightedMemberIds.has(m.id);
+
         if (isSel) {
           m.mesh.material.emissive.setHex(0x00ffff);
           m.mesh.material.emissiveIntensity = 0.85;
+        } else if (isHigh) {
+          m.mesh.material.emissive.setHex(0xff0055); // Spatial voice critical highlight
+          m.mesh.material.emissiveIntensity = 0.95;
         } else {
           m.mesh.material.emissive.setHex(m.baseColor);
           m.mesh.material.emissiveIntensity = m.dcr > 1.0 ? 0.4 : 0.12;

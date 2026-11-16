@@ -1036,3 +1036,88 @@ async def websocket_structural_graph(websocket: WebSocket):
     except Exception as e:
         logger.error(f"WebSocket processing exception: {str(e)}")
         await websocket.send_text(json.dumps({"status": "ERROR", "message": str(e)}))
+
+
+# -------------------------------------------------------------
+# v4.2 FRONTIER ENDPOINTS: Topology, Shop QA & Voice Copilot
+# -------------------------------------------------------------
+from backend.app.ai.topology_diffusion import (
+    TopologyDiffusionEngine,
+    TopologyOptimizationRequest,
+    TopologyOptimizationResponse,
+)
+from backend.app.ai.shop_drawing_auditor import (
+    ShopDrawingAuditor,
+    ShopDrawingAuditRequest,
+    ShopDrawingAuditResponse,
+)
+from backend.app.ai.voice_copilot import (
+    VoiceCopilotParser,
+    VoiceCommandRequest,
+    VoiceCommandResponse,
+)
+
+
+@app.post("/api/v1/ai/topology-optimize", response_model=TopologyOptimizationResponse)
+@app.post("/api/v4/ai/topology-optimize", response_model=TopologyOptimizationResponse)
+def optimize_3d_topology(request: TopologyOptimizationRequest):
+    """
+    Synthesizes optimal 3D Diagrid / Voronoi Exoskeleton topologies via Neural SIMP density fields.
+    Discretizes principal stress trajectories into 12-DOF frame models with 18-30% steel mass reduction.
+    """
+    try:
+        response = TopologyDiffusionEngine.synthesize_optimal_topology(request)
+        return response
+    except Exception as e:
+        logger.error(f"Topology optimization error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/ai/audit-shop-drawing", response_model=ShopDrawingAuditResponse)
+@app.post("/api/v4/ai/audit-shop-drawing", response_model=ShopDrawingAuditResponse)
+def audit_shop_drawing(request: ShopDrawingAuditRequest):
+    """
+    Multimodal visual QA audit of steel connections and RC rebar cages against AISC 360-16 Chapter J & ACI 318-19.
+    """
+    try:
+        response = ShopDrawingAuditor.audit_connection(request)
+        return response
+    except Exception as e:
+        logger.error(f"Shop drawing audit error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v4/ai/voice-command", response_model=VoiceCommandResponse)
+def parse_voice_command(request: VoiceCommandRequest):
+    """
+    Processes spatial voice engineering commands into deterministic structural mutations and viewport actions.
+    """
+    try:
+        response = VoiceCopilotParser.process_command(request.command, request.current_model)
+        return response
+    except Exception as e:
+        logger.error(f"Voice command processing error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.websocket("/api/v4/ai/voice-copilot")
+async def websocket_voice_copilot(websocket: WebSocket):
+    """
+    Bidirectional WebSocket for low-latency Gemini Live Spatial Voice Co-Pilot interactions.
+    """
+    await websocket.accept()
+    logger.info("Voice Co-Pilot WebSocket connected")
+    try:
+        while True:
+            text_data = await websocket.receive_text()
+            data = json.loads(text_data)
+            cmd = data.get("command", "")
+            model_state = data.get("current_model", None)
+            res = VoiceCopilotParser.process_command(cmd, model_state)
+            await websocket.send_text(res.model_dump_json())
+    except WebSocketDisconnect:
+        logger.info("Voice Co-Pilot WebSocket disconnected normally")
+    except Exception as e:
+        logger.error(f"Voice Co-Pilot WebSocket error: {str(e)}")
+        await websocket.send_text(json.dumps({"status": "ERROR", "message": str(e)}))
+

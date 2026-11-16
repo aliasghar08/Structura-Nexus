@@ -24,6 +24,7 @@ extension type ThreeViewer(JSObject _) implements JSObject {
   external void setCameraPreset(JSString preset);
   external void zoomIn();
   external void zoomOut();
+  external void setHighlightedMembers(JSAny memberIds);
 }
 
 extension type NodeDragDetail(JSObject _) implements JSObject {
@@ -93,6 +94,13 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   void setCameraPreset(String preset) {
     try {
       _viewer?.setCameraPreset(preset.toJS);
+    } catch (_) {}
+  }
+
+  void setHighlightedMembers(List<String> memberIds) {
+    try {
+      final jsArr = memberIds.map((id) => id.toJS).toList().toJS;
+      _viewer?.setHighlightedMembers(jsArr);
     } catch (_) {}
   }
 

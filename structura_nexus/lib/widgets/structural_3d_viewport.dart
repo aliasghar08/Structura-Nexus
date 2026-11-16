@@ -99,6 +99,12 @@ class Structural3DViewportState extends State<Structural3DViewport>
     });
   }
 
+  void setHighlightedMembers(List<String> memberIds) {
+    if (_useThreeJs) {
+      _threeJsKey.currentState?.setHighlightedMembers(memberIds);
+    }
+  }
+
   void zoomIn() {
     if (_useThreeJs) {
       _threeJsKey.currentState?.zoomIn();

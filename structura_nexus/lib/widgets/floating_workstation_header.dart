@@ -51,6 +51,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenMacAiInspector;
   final VoidCallback? onOpenAutonomousSwarm;
   final VoidCallback? onOpenParetoExplorer;
+  final VoidCallback? onOpenGenerativeTopology;
+  final VoidCallback? onOpenShopDrawingAudit;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
   final bool canUndo;
@@ -95,6 +97,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenMacAiInspector,
     this.onOpenAutonomousSwarm,
     this.onOpenParetoExplorer,
+    this.onOpenGenerativeTopology,
+    this.onOpenShopDrawingAudit,
     this.onUndo,
     this.onRedo,
     this.canUndo = false,
@@ -314,6 +318,18 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                               label: "Autonomous 4-Agent Swarm (v4.0 Self-Healer)",
                               icon: Icons.hub_rounded,
                               onTap: () => widget.onOpenAutonomousSwarm?.call(),
+                            ),
+                          if (widget.onOpenGenerativeTopology != null)
+                            _MenuAction(
+                              label: "3D Topology Synthesizer (Neural SIMP)",
+                              icon: Icons.architecture_rounded,
+                              onTap: () => widget.onOpenGenerativeTopology?.call(),
+                            ),
+                          if (widget.onOpenShopDrawingAudit != null)
+                            _MenuAction(
+                              label: "Shop-Drawing & Site QA (ConnectionNet-AI)",
+                              icon: Icons.assignment_turned_in_rounded,
+                              onTap: () => widget.onOpenShopDrawingAudit?.call(),
                             ),
                           if (widget.onOpenParetoExplorer != null)
                             _MenuAction(

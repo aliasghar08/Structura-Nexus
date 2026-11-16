@@ -39,6 +39,7 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   void reloadModel() {}
   void updateDisplacements(Map<String, dynamic> displacements) {}
   void setCameraPreset(String preset) {}
+  void setHighlightedMembers(List<String> memberIds) {}
   void zoomIn() {}
   void zoomOut() {}
 

@@ -48,6 +48,10 @@ import '../widgets/time_history_player.dart';
 import '../widgets/pareto_frontier_dock.dart';
 import '../widgets/autonomous_swarm_dialog.dart';
 import '../widgets/slideable_workspace_menu.dart';
+import '../widgets/generative_topology_dialog.dart';
+import '../widgets/shop_drawing_audit_dialog.dart';
+import '../widgets/voice_copilot_pill.dart';
+import '../services/voice_copilot_service.dart';
 import '../services/workspace_storage.dart';
 import '../services/dart_neural_engine.dart';
 
@@ -364,7 +368,44 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     _authSubscription = FirebaseAuthService().authStateChanges.listen((_) {
       if (mounted) setState(() {});
     });
+
+    // v4.2 Gemini Live Spatial Voice Co-Pilot Handlers
+    final voiceService = VoiceCopilotService.instance;
+    voiceService.onAddChevronBracing = () {
+      if (mounted) {
+        setState(() {
+          _addXBracing();
+        });
+      }
+    };
+    voiceService.onApplyWindLoads = (mph, exp) {
+      if (mounted) {
+        final fxN = 25000.0 * (mph / 145.0) * (mph / 145.0);
+        setState(() {
+          _applyWindLoads(fxN);
+        });
+      }
+    };
+    voiceService.onHighlightMembers = (memberIds) {
+      _viewportKey.currentState?.setHighlightedMembers(memberIds);
+    };
+    voiceService.onRunAutoSizer = () {
+      _openGenerativeOptimizer();
+    };
+    voiceService.onSolveModel = () {
+      _triggerSolve();
+    };
   }
+
+  void _openGenerativeOptimizer() => _requireAuth(
+    featureName: 'Generative AI Section Auto-Sizer',
+    onAuthenticated: () => GenerativeOptimizerDialog.show(
+      context,
+      model: _model,
+      apiService: _apiService,
+      onStructureModified: _triggerSolve,
+    ),
+  );
 
   @override
   void dispose() {
@@ -1301,6 +1342,34 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       );
     }
 
+    void onOpenGenerativeTopology() {
+      showDialog(
+        context: context,
+        builder: (ctx) => GenerativeTopologyDialog(
+          currentModel: _model,
+          onCommitModel: (newModel) {
+            _saveUndoState();
+            setState(() {
+              _model = newModel;
+              _selectedNodeId = null;
+              _selectedMemberId = null;
+              _selectedNodeIds.clear();
+              _selectedMemberIds.clear();
+            });
+            _commitModelMutation('Committed 3D Diagrid Exoskeleton to Viewport');
+            _triggerSolve();
+          },
+        ),
+      );
+    }
+
+    void onOpenShopDrawingAudit() {
+      showDialog(
+        context: context,
+        builder: (ctx) => const ShopDrawingAuditDialog(),
+      );
+    }
+
     void onOpenSeismicModal() => _requireAuth(
       featureName: 'Dynamic Modal Vibration Analysis',
       onAuthenticated: () => SeismicModalDialog.show(
@@ -1626,6 +1695,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenMacAiInspector: onOpenMacAiInspector,
               onOpenAutonomousSwarm: onOpenAutonomousSwarm,
               onOpenParetoExplorer: onOpenParetoExplorer,
+              onOpenGenerativeTopology: onOpenGenerativeTopology,
+              onOpenShopDrawingAudit: onOpenShopDrawingAudit,
               onUndo: _undo,
               onRedo: _redo,
               canUndo: _undoStack.isNotEmpty,
@@ -1715,6 +1786,15 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onAutoSizerPressed: onOptimize,
               onStabilityPressed: onOpenLateralStability,
               onParetoPressed: onOpenParetoExplorer,
+            ),
+          ),
+
+          // Layer 2.5: v4.2 Gemini Live Spatial Voice Co-Pilot Floating Pill
+          Positioned(
+            bottom: MediaQuery.paddingOf(context).bottom + 72,
+            right: 18,
+            child: VoiceCopilotPill(
+              getCurrentModelState: () => _model.toGraphPayload('VOICE_STATE'),
             ),
           ),
 
