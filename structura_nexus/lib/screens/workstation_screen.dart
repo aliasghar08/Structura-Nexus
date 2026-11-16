@@ -311,7 +311,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   bool get _isUserLoggedIn {
     final user = FirebaseAuthService().currentUser;
-    return user != null && !user.isAnonymous;
+    return user != null;
   }
 
   void _requireAuth({

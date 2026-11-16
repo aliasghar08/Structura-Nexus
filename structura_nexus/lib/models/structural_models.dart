@@ -331,9 +331,11 @@ class StructuralMember {
   double slendernessKlR;
   String status; // PASS | FAIL | WARNING
   String? recommendedSection;
-  bool releaseIMoment;
-  bool releaseJMoment;
-  bool releaseTorsion;
+  bool releaseStartMz;
+  bool releaseEndMz;
+  bool releaseStartMy;
+  bool releaseEndMy;
+  bool releaseMx;
   double? crackedSectionFactor;
 
   StructuralMember({
@@ -361,13 +363,43 @@ class StructuralMember {
     this.slendernessKlR = 0.0,
     this.status = 'PASS',
     this.recommendedSection,
-    this.releaseIMoment = false,
-    this.releaseJMoment = false,
-    this.releaseTorsion = false,
+    bool releaseIMoment = false,
+    bool releaseJMoment = false,
+    bool releaseTorsion = false,
+    bool? releaseStartMz,
+    bool? releaseEndMz,
+    bool? releaseStartMy,
+    bool? releaseEndMy,
+    bool? releaseMx,
     this.crackedSectionFactor,
   })  : iNodeId = iNodeId ?? startNodeId ?? 'N1',
         jNodeId = jNodeId ?? endNodeId ?? 'N2',
-        section = section ?? sectionProfile ?? 'W14X48';
+        section = section ?? sectionProfile ?? 'W14X48',
+        releaseStartMz = releaseStartMz ?? releaseIMoment,
+        releaseEndMz = releaseEndMz ?? releaseJMoment,
+        releaseStartMy = releaseStartMy ?? false,
+        releaseEndMy = releaseEndMy ?? false,
+        releaseMx = releaseMx ?? releaseTorsion;
+
+  bool get releaseIMoment => releaseStartMz || releaseStartMy;
+  set releaseIMoment(bool v) {
+    releaseStartMz = v;
+    releaseStartMy = v;
+  }
+
+  bool get releaseJMoment => releaseEndMz || releaseEndMy;
+  set releaseJMoment(bool v) {
+    releaseEndMz = v;
+    releaseEndMy = v;
+  }
+
+  bool get releaseTorsion => releaseMx;
+  set releaseTorsion(bool v) {
+    releaseMx = v;
+  }
+
+  bool get hasReleases => releaseStartMz || releaseEndMz || releaseStartMy || releaseEndMy || releaseMx;
+  bool get isCracked => (crackedSectionFactor != null && crackedSectionFactor! < 1.0) || material.toUpperCase().contains('CONCRETE');
 
   String get startNodeId => iNodeId;
   String get endNodeId => jNodeId;
@@ -414,6 +446,11 @@ class StructuralMember {
     bool? releaseIMoment,
     bool? releaseJMoment,
     bool? releaseTorsion,
+    bool? releaseStartMz,
+    bool? releaseEndMz,
+    bool? releaseStartMy,
+    bool? releaseEndMy,
+    bool? releaseMx,
     double? crackedSectionFactor,
   }) {
     return StructuralMember(
@@ -438,9 +475,11 @@ class StructuralMember {
       slendernessKlR: slendernessKlR ?? this.slendernessKlR,
       status: status ?? this.status,
       recommendedSection: recommendedSection ?? this.recommendedSection,
-      releaseIMoment: releaseIMoment ?? this.releaseIMoment,
-      releaseJMoment: releaseJMoment ?? this.releaseJMoment,
-      releaseTorsion: releaseTorsion ?? this.releaseTorsion,
+      releaseStartMz: releaseStartMz ?? (releaseIMoment ?? this.releaseStartMz),
+      releaseEndMz: releaseEndMz ?? (releaseJMoment ?? this.releaseEndMz),
+      releaseStartMy: releaseStartMy ?? this.releaseStartMy,
+      releaseEndMy: releaseEndMy ?? this.releaseEndMy,
+      releaseMx: releaseMx ?? (releaseTorsion ?? this.releaseMx),
       crackedSectionFactor: crackedSectionFactor ?? this.crackedSectionFactor,
     );
   }
@@ -449,21 +488,39 @@ class StructuralMember {
         'id': id,
         'i_node': iNodeId,
         'j_node': jNodeId,
+        'startNodeId': iNodeId,
+        'endNodeId': jNodeId,
         'section': section,
+        'sectionProfile': section,
         'material': material,
         'governing_dcr': governingDcr,
         'status': status,
         'axial_force_n': axialForceN,
         'shear_y': shearY,
         'moment_z': momentZ,
+        'release_start_mz': releaseStartMz,
+        'release_end_mz': releaseEndMz,
+        'release_start_my': releaseStartMy,
+        'release_end_my': releaseEndMy,
+        'release_mx': releaseMx,
+        'release_i_moment': releaseIMoment,
+        'release_j_moment': releaseJMoment,
+        'release_torsion': releaseTorsion,
+        'cracked_section_factor': crackedSectionFactor,
       };
 
   factory StructuralMember.fromJson(Map<String, dynamic> json) => StructuralMember(
         id: json['id'],
-        iNodeId: json['i_node'],
-        jNodeId: json['j_node'],
-        section: json['section'] ?? 'W14X48',
+        iNodeId: json['i_node'] ?? json['startNodeId'],
+        jNodeId: json['j_node'] ?? json['endNodeId'],
+        section: json['section'] ?? json['sectionProfile'] ?? 'W14X48',
         material: json['material'] ?? 'A992_STEEL',
+        releaseStartMz: json['release_start_mz'] ?? json['release_i_moment'] ?? false,
+        releaseEndMz: json['release_end_mz'] ?? json['release_j_moment'] ?? false,
+        releaseStartMy: json['release_start_my'] ?? false,
+        releaseEndMy: json['release_end_my'] ?? false,
+        releaseMx: json['release_mx'] ?? json['release_torsion'] ?? false,
+        crackedSectionFactor: json['cracked_section_factor'] != null ? (json['cracked_section_factor'] as num).toDouble() : null,
       );
 }
 

@@ -34,6 +34,8 @@
       this.diagramGroup = new THREE.Group(); // BMD ribbons
       this.sfdGroup = new THREE.Group();     // SFD ribbons
       this.loadsGroup = new THREE.Group();   // 3D Force vector arrows
+      this.releasesGroup = new THREE.Group(); // Release hinges & cracked glyphs
+      this.releaseGlyphs = [];
 
       // Viewport flags & state
       this.currentModel = null;
@@ -239,6 +241,7 @@
       this.scene.add(this.diagramGroup);
       this.scene.add(this.sfdGroup);
       this.scene.add(this.loadsGroup);
+      this.scene.add(this.releasesGroup);
 
       // 7. Event Listeners (Window Resize & Interactive Node Dragging)
       window.addEventListener("resize", () => this.onResize());
@@ -682,6 +685,24 @@
           m.mesh.scale.set(1.0, scaleY, 1.0);
         }
       });
+
+      // Update position of incident release hinge rings
+      if (this.releaseGlyphs) {
+        this.releaseGlyphs.forEach((rel) => {
+          if (rel.iNodeId === nodeId || rel.jNodeId === nodeId) {
+            const p1 = this.nodeMap[rel.iNodeId];
+            const p2 = this.nodeMap[rel.jNodeId];
+            if (!p1 || !p2) return;
+            const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+            const sign = rel.type === 'start' ? 1.0 : -1.0;
+            const targetPos = rel.type === 'start' ? p1 : p2;
+            const offsetDist = 0.35 * (this.geomScale || 1.0) * sign;
+            rel.mesh.position.copy(targetPos).addScaledVector(dir, offsetDist);
+            const ringAxis = new THREE.Vector3(0, 0, 1);
+            rel.mesh.quaternion.setFromUnitVectors(ringAxis, dir);
+          }
+        });
+      }
     }
 
     onResize() {
@@ -762,6 +783,46 @@
       return group;
     }
 
+    createReleaseHingeGlyph(nodePos, memberDir, sign = 1.0, geomScale = 1.0) {
+      const ringGroup = new THREE.Group();
+      const ringGeo = new THREE.TorusGeometry(0.13 * geomScale, 0.035 * geomScale, 8, 20);
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        emissive: 0x00f0ff,
+        emissiveIntensity: 0.85,
+        metalness: 0.85,
+        roughness: 0.2,
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringGroup.add(ringMesh);
+
+      const offsetDist = 0.35 * geomScale * sign;
+      const pos = new THREE.Vector3().copy(nodePos).addScaledVector(memberDir, offsetDist);
+      ringGroup.position.copy(pos);
+
+      const ringAxis = new THREE.Vector3(0, 0, 1);
+      ringGroup.quaternion.setFromUnitVectors(ringAxis, memberDir);
+
+      return ringGroup;
+    }
+
+    createCrackedIndicator(p1, p2, dir, length, geomScale = 1.0) {
+      const sleeveRadius = 0.095 * geomScale;
+      const sleeveGeo = new THREE.CylinderGeometry(sleeveRadius, sleeveRadius, length * 0.92, 10, 1, true);
+      const sleeveMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.35,
+      });
+      const sleeveMesh = new THREE.Mesh(sleeveGeo, sleeveMat);
+      const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+      sleeveMesh.position.copy(mid);
+      const axis = new THREE.Vector3(0, 1, 0);
+      sleeveMesh.quaternion.setFromUnitVectors(axis, dir);
+      this.releasesGroup.add(sleeveMesh);
+    }
+
     loadModel(model, forceRefit = false) {
       if (!model) return;
       this.currentModel = model;
@@ -778,11 +839,13 @@
       this._disposeGroup(this.diagramGroup);
       this._disposeGroup(this.sfdGroup);
       this._disposeGroup(this.loadsGroup);
+      this._disposeGroup(this.releasesGroup);
 
       this.nodeMeshes = [];
       this.memberMeshes = [];
       this.supportGlyphs = {};
       this.loadGlyphs = {};
+      this.releaseGlyphs = [];
       this.nodeMap = {};
       this.baseNodePositions = {};
       this.nodeDisplacements = {};
@@ -837,6 +900,7 @@
       }
 
       const geomScale = Math.max(1.0, Math.min(maxDim / 18.0, 2.2));
+      this.geomScale = geomScale;
 
       // 1. Render Nodes
       const nodeGeo = new THREE.SphereGeometry(0.14 * geomScale, 14, 14);
@@ -1028,6 +1092,33 @@
         // 3. Optional Extruded BMD & SFD Ribbons
         this.createBmdRibbon(p1, p2, dir, dcr, geomScale);
         this.createSfdRibbon(p1, p2, dir, dcr, geomScale);
+
+        // 4. Circular Release-Hinge Glyphs (Emerald-Cyan Ring)
+        const relStart = m.release_start_mz || m.releaseStartMz || m.release_start_my || m.releaseStartMy || m.release_i_moment || m.releaseIMoment;
+        const relEnd = m.release_end_mz || m.releaseEndMz || m.release_end_my || m.releaseEndMy || m.release_j_moment || m.releaseJMoment;
+
+        if (relStart) {
+          const startRing = this.createReleaseHingeGlyph(p1, dir, 1.0, geomScale);
+          if (startRing) {
+            this.releasesGroup.add(startRing);
+            this.releaseGlyphs.push({ mesh: startRing, iNodeId: iId, jNodeId: jId, type: 'start' });
+          }
+        }
+        if (relEnd) {
+          const endRing = this.createReleaseHingeGlyph(p2, dir, -1.0, geomScale);
+          if (endRing) {
+            this.releasesGroup.add(endRing);
+            this.releaseGlyphs.push({ mesh: endRing, iNodeId: iId, jNodeId: jId, type: 'end' });
+          }
+        }
+
+        // 5. Cracked Member Visual Indicator (ACI 318-19 I_eff < 1.0 Ig)
+        const isCracked = (m.cracked_section_factor != null && m.cracked_section_factor < 1.0) ||
+                          (m.crackedSectionFactor != null && m.crackedSectionFactor < 1.0) ||
+                          (m.material && m.material.toUpperCase().includes('CONCRETE'));
+        if (isCracked) {
+          this.createCrackedIndicator(p1, p2, dir, distance, geomScale);
+        }
       });
 
       // Center camera focus on bounding center & auto-frame only when topology bounds change or forced

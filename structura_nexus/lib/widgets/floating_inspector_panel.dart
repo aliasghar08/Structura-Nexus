@@ -813,6 +813,130 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         _dataRow("Axial Force P", "${(member.axialForceN / 1000.0).toStringAsFixed(2)} kN"),
         _dataRow("Shear Force V", "${(member.shearForceN / 1000.0).toStringAsFixed(2)} kN"),
         _dataRow("Bending Moment M", "${(member.bendingMomentNm / 1000.0).toStringAsFixed(2)} kN·m"),
+        GlassPod.divider(),
+
+        // 1. Member End Releases (Static Condensation)
+        Row(
+          children: [
+            Flexible(child: _sectionLabel("MEMBER END RELEASES (PINNED)")),
+            const SizedBox(width: 4),
+            const InfoTooltip(
+              message: "Static condensation of rotational/torsional DOF at joints. Eliminates spurious moments and torsion in supporting framing.",
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _buildReleaseToggleChip(
+              label: "Start Mz",
+              tooltip: "Release in-plane bending moment at start node i",
+              isActive: member.releaseStartMz,
+              onTap: () {
+                member.releaseStartMz = !member.releaseStartMz;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildReleaseToggleChip(
+              label: "End Mz",
+              tooltip: "Release in-plane bending moment at end node j",
+              isActive: member.releaseEndMz,
+              onTap: () {
+                member.releaseEndMz = !member.releaseEndMz;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildReleaseToggleChip(
+              label: "Start My",
+              tooltip: "Release out-of-plane bending moment at start node i",
+              isActive: member.releaseStartMy,
+              onTap: () {
+                member.releaseStartMy = !member.releaseStartMy;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildReleaseToggleChip(
+              label: "End My",
+              tooltip: "Release out-of-plane bending moment at end node j",
+              isActive: member.releaseEndMy,
+              onTap: () {
+                member.releaseEndMy = !member.releaseEndMy;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildReleaseToggleChip(
+              label: "Torsion (Mx)",
+              tooltip: "Release torsional moment along member axis",
+              isActive: member.releaseMx,
+              onTap: () {
+                member.releaseMx = !member.releaseMx;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+          ],
+        ),
+        GlassPod.divider(),
+
+        // 2. ACI 318-19 Cracked Stiffness Modifiers (Ieff)
+        Row(
+          children: [
+            Flexible(child: _sectionLabel("ACI 318-19 CRACKED STIFFNESS (I_eff)")),
+            const SizedBox(width: 4),
+            const InfoTooltip(
+              message: "Applies ACI 318-19 §6.6.3.1.1 effective moment of inertia modifiers (0.70 Ig columns, 0.35 Ig beams, 0.20 Jg torsion) for accurate lateral drift and seismic analysis.",
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _buildStiffnessPresetChip(
+              label: "Gross (1.0 Ig)",
+              isActive: member.crackedSectionFactor == null || member.crackedSectionFactor == 1.0,
+              onTap: () {
+                member.crackedSectionFactor = 1.0;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildStiffnessPresetChip(
+              label: "ACI Beam (0.35 Ig)",
+              isActive: member.crackedSectionFactor == 0.35,
+              onTap: () {
+                member.crackedSectionFactor = 0.35;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildStiffnessPresetChip(
+              label: "ACI Column (0.70 Ig)",
+              isActive: member.crackedSectionFactor == 0.70,
+              onTap: () {
+                member.crackedSectionFactor = 0.70;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+            _buildStiffnessPresetChip(
+              label: "Torsion Cracked (0.20 Jg)",
+              isActive: member.crackedSectionFactor == 0.20,
+              onTap: () {
+                member.crackedSectionFactor = 0.20;
+                setState(() {});
+                widget.onModelChanged();
+              },
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -955,6 +1079,107 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             color: isSelected ? Colors.black : Colors.white70,
             fontSize: 9.5,
             fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReleaseToggleChip({
+    required String label,
+    required String tooltip,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      textStyle: const TextStyle(color: Color(0xFF00F0FF), fontSize: 11),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B101B),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.6)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        mouseCursor: SystemMouseCursors.click,
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: isActive ? const Color(0xFF10B981) : const Color(0xFF161E2E),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: isActive ? const Color(0xFF34D399) : Colors.white.withValues(alpha: 0.16),
+              width: isActive ? 1.5 : 1.0,
+            ),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                      blurRadius: 8,
+                    )
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                size: 11,
+                color: isActive ? Colors.black : const Color(0xFF8B949E),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? Colors.black : Colors.white70,
+                  fontSize: 10,
+                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStiffnessPresetChip({
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF00F0FF) : const Color(0xFF161E2E),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isActive ? const Color(0xFF00F0FF) : Colors.white.withValues(alpha: 0.14),
+            width: 1.0,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF00F0FF).withValues(alpha: 0.45),
+                    blurRadius: 8,
+                  )
+                ]
+              : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.black : Colors.white70,
+            fontSize: 9.5,
+            fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
           ),
         ),
       ),

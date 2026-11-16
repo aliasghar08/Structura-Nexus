@@ -104,3 +104,4 @@ class VoiceCopilotParser:
             spoken_feedback=f"Understood: '{transcript}'. Ready to execute structural command.",
             suggested_viewport_action=None,
         )
+

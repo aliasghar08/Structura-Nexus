@@ -31,6 +31,11 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
   double _pu = 1200.0; // kN
   double _mu = 280.0; // kN-m
 
+  String _exposureCondition = 'EXTERIOR_MOIST';
+  final double _coverMm = 40.0;
+  final double _barDiaMm = 25.0;
+  final int _numBars = 4;
+
   bool _showCalibration = false;
   late Map<String, dynamic> _prediction;
 
@@ -50,6 +55,67 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
       puKn: _pu,
       muKnm: _mu,
     );
+  }
+
+  Map<String, dynamic> _computeCrackServiceability() {
+    final bMm = _b * 1000.0;
+    final hMm = _h * 1000.0;
+    final ab1Mm2 = (math.pi / 4.0) * (_barDiaMm * _barDiaMm);
+    final asMm2 = _numBars * ab1Mm2;
+    final dMm = hMm - _coverMm - (_barDiaMm / 2.0);
+
+    final ecMpa = 4700.0 * math.sqrt(_fc);
+    const esMpa = 200000.0;
+    final nRatio = esMpa / ecMpa;
+    final rhoVal = asMm2 / (bMm * dMm);
+
+    final rn = rhoVal * nRatio;
+    final k = math.sqrt(rn * rn + 2.0 * rn) - rn;
+    final kdMm = k * dMm;
+
+    final icrMm4 = (1.0 / 3.0) * bMm * (kdMm * kdMm * kdMm) + nRatio * asMm2 * ((dMm - kdMm) * (dMm - kdMm));
+    final igMm4 = (1.0 / 12.0) * bMm * (hMm * hMm * hMm);
+    final iEffRatio = icrMm4 / math.max(igMm4, 1.0);
+
+    final msNmm = _mu.abs() * 1e6;
+    final fsElastic = (msNmm * (dMm - kdMm) / math.max(icrMm4, 1.0)) * nRatio;
+    final fsMpa = math.max(10.0, math.min(fsElastic, (2.0 / 3.0) * _fy));
+
+    final sMaxFormula = 380.0 * (280.0 / fsMpa) - 2.5 * _coverMm;
+    final sMaxCap = 300.0 * (280.0 / fsMpa);
+    final sMaxMm = math.max(50.0, math.min(sMaxFormula, sMaxCap));
+
+    final sActualMm = math.max(20.0, (bMm - 2.0 * _coverMm - _barDiaMm) / math.max(1, _numBars - 1));
+    final spacingDcr = sActualMm / math.max(sMaxMm, 1e-4);
+
+    final dcMm = _coverMm + (_barDiaMm / 2.0);
+    final aTensionMm2 = (2.0 * dcMm * bMm) / _numBars;
+    var beta = (hMm - kdMm) / math.max(dMm - kdMm, 1.0);
+    beta = math.max(1.10, math.min(1.35, beta));
+
+    final wkMm = 0.076 * beta * fsMpa * math.pow(dcMm * aTensionMm2, 1.0 / 3.0) * 1e-3;
+
+    final allowableMap = {
+      'INTERIOR_DRY': 0.40,
+      'EXTERIOR_MOIST': 0.30,
+      'DEICING_SALTS': 0.20,
+      'WATER_RETAINING': 0.10,
+    };
+    final wAllowMm = allowableMap[_exposureCondition] ?? 0.30;
+    final crackDcr = wkMm / wAllowMm;
+    final isCrackPass = crackDcr <= 1.0 && spacingDcr <= 1.0;
+
+    return {
+      'wk_mm': wkMm,
+      'w_allow_mm': wAllowMm,
+      'crack_dcr': crackDcr,
+      's_actual_mm': sActualMm,
+      's_max_mm': sMaxMm,
+      'spacing_dcr': spacingDcr,
+      'fs_mpa': fsMpa,
+      'ieff_ratio': iEffRatio,
+      'is_crack_pass': isCrackPass,
+    };
   }
 
   @override
@@ -74,34 +140,42 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.4)),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.4)),
+                        ),
+                        child: const Icon(Icons.architecture, color: Color(0xFF00F0FF), size: 20),
                       ),
-                      child: const Icon(Icons.architecture, color: Color(0xFF00F0FF), size: 20),
-                    ),
-                    const SizedBox(width: 14),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "PROPRIETARY CONCRETE STUDIO",
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "PROPRIETARY CONCRETE STUDIO",
+                              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              "SectionNet-PM Neural Surrogate & Fiber Discretization (In-Browser: ${latency.toStringAsFixed(2)} ms)",
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
                         ),
-                        Text(
-                          "SectionNet-PM Neural Surrogate & Fiber Discretization (In-Browser: ${latency.toStringAsFixed(2)} ms)",
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 12),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     OutlinedButton.icon(
                       onPressed: () {
@@ -209,10 +283,14 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text(
-                                            "NEURAL REBAR RECOMMENDATION",
-                                            style: TextStyle(color: Color(0xFF58A6FF), fontSize: 10.5, fontWeight: FontWeight.bold),
+                                          const Expanded(
+                                            child: Text(
+                                              "NEURAL REBAR RECOMMENDATION",
+                                              style: TextStyle(color: Color(0xFF58A6FF), fontSize: 10.5, fontWeight: FontWeight.bold),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
+                                          const SizedBox(width: 6),
                                           Text(
                                             "${optRhoPct.toStringAsFixed(2)}%",
                                             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
@@ -269,31 +347,37 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: (isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149)).withValues(alpha: 0.2),
-                                          borderRadius: BorderRadius.circular(10),
-                                          border: Border.all(color: isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149)),
-                                        ),
-                                        child: Text(
-                                          isPass ? "PASS (DCR ${dcr.toStringAsFixed(2)})" : "OVERSTRESSED (DCR ${dcr.toStringAsFixed(2)})",
-                                          style: TextStyle(
-                                            color: isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: (isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149)).withValues(alpha: 0.2),
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149)),
+                                          ),
+                                          child: Text(
+                                            isPass ? "PASS (DCR ${dcr.toStringAsFixed(2)})" : "OVERSTRESSED (DCR ${dcr.toStringAsFixed(2)})",
+                                            style: TextStyle(
+                                              color: isPass ? const Color(0xFF3FB950) : const Color(0xFFF85149),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Text(
-                                        "ACI 318-19 Design Envelope (φPn vs φMn)",
-                                        style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            "ACI 318-19 Envelope",
+                                            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     "φPn(max): ${(_prediction['max_phi_pn_kn'] as num?)?.toStringAsFixed(0)} kN",
                                     style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
@@ -326,6 +410,9 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 10),
+                              // ACI 318-19 §24.3.2 / ACI 224R Crack Serviceability Control Panel
+                              _buildCrackServiceabilityCard(_computeCrackServiceability()),
                             ],
                           ),
                         ),
@@ -334,6 +421,111 @@ class _ConcretePmDialogState extends State<ConcretePmDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCrackServiceabilityCard(Map<String, dynamic> crack) {
+    final isCrackPass = crack['is_crack_pass'] as bool;
+    final wkMm = crack['wk_mm'] as double;
+    final wAllowMm = crack['w_allow_mm'] as double;
+    final sActualMm = crack['s_actual_mm'] as double;
+    final sMaxMm = crack['s_max_mm'] as double;
+    final iEff = crack['ieff_ratio'] as double;
+    const condOptions = ['INTERIOR_DRY', 'EXTERIOR_MOIST', 'DEICING_SALTS', 'WATER_RETAINING'];
+
+    final statusColor = isCrackPass ? const Color(0xFF10B981) : const Color(0xFFEF4444);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161E2E).withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Row(
+                  children: [
+                    Icon(Icons.shield_outlined, color: Color(0xFF00F0FF), size: 14),
+                    SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        "ACI 318-19 §24.3.2 / ACI 224R CRACK CONTROL",
+                        style: TextStyle(color: Color(0xFF00F0FF), fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.6)),
+                ),
+                child: Text(
+                  isCrackPass ? "PASS / VERIFIED" : "EXCEEDS LIMIT",
+                  style: TextStyle(color: statusColor, fontSize: 9.5, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 4,
+            children: [
+              Text(
+                "Crack Width wk: ${wkMm.toStringAsFixed(3)} mm (≤ ${wAllowMm.toStringAsFixed(2)} mm)",
+                style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600),
+              ),
+              Text(
+                "Bar Spacing s: ${sActualMm.toStringAsFixed(0)} mm (≤ ${sMaxMm.toStringAsFixed(0)} mm)",
+                style: const TextStyle(color: Colors.white70, fontSize: 10.5),
+              ),
+              Text(
+                "I_eff / I_g: ${iEff.toStringAsFixed(2)}",
+                style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 10.5, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 5,
+            children: condOptions.map((cond) {
+              final isSel = _exposureCondition == cond;
+              return InkWell(
+                onTap: () => setState(() => _exposureCondition = cond),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isSel ? const Color(0xFF00F0FF) : const Color(0xFF0B101B),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: isSel ? const Color(0xFF00F0FF) : Colors.white24),
+                  ),
+                  child: Text(
+                    cond.replaceAll('_', ' '),
+                    style: TextStyle(
+                      color: isSel ? Colors.black : Colors.white70,
+                      fontSize: 8.5,
+                      fontWeight: isSel ? FontWeight.w900 : FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

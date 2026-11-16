@@ -1,7 +1,20 @@
 """
-STRUCTURA NEXUS v4.2 — SHOWCASE REEL & KEYFRAME GENERATOR
-Automates 1080p Playwright capture of all v4.2 & v4.1 frontier engineering milestones,
-copies screenshots to docs/screenshots/, iCloud, and Artifacts, and compiles docs/Structura_Nexus_v4_2_Showcase.mp4 with ffmpeg.
+STRUCTURA NEXUS v4.2.1 — SHOWCASE REEL & KEYFRAME GENERATOR
+Automates 1080p Playwright capture of all v4.2.1 civil integrity and frontier engineering milestones:
+1. 12-DOF Direct Stiffness 3D Viewport
+2. Member End Releases & ACI 318-19 Cracked Modifiers in Selection Inspector & 3D WebGL Glyphs
+3. Proprietary Concrete Studio with ACI 318-19 §24.3.2 Crack Control & Gergely-Lutz wk
+4. Cryptographic PE Calculation Seal Auditor & HMAC-SHA256 Tamper Detection
+5. Frontier AI & Generative Suite Menu
+6. Generative 3D Diagrid Topology Synthesizer
+7. Committed 3D Diagrid Exoskeleton in Viewport
+8. Shop-Drawing QA Moment End-Plate (AISC J Pass)
+9. Shop-Drawing QA Defect Callout & AISC J3.4 Punchlist
+10. Gemini Live Spatial Voice Co-Pilot Floating Pill
+11. 3D Viewport Voice Emissive Member Highlights
+12. WebGPU 60 FPS Pareto Frontier HUD
+13. Apple Silicon MPS Active Learning Card & 10 Surrogates
+Compiles docs/Structura_Nexus_v4_2_Showcase.mp4 with ffmpeg at 1080p 60 FPS.
 """
 
 import os
@@ -27,10 +40,10 @@ def run_showcase_capture():
     from playwright.sync_api import sync_playwright
 
     print("======================================================================")
-    print(" STRUCTURA NEXUS v4.2 — SHOWCASE REEL KEYFRAME GENERATION")
+    print(" STRUCTURA NEXUS v4.2.1 — SHOWCASE REEL KEYFRAME GENERATION")
     print("======================================================================")
 
-    port = 5055
+    port = 5058
     server_proc = subprocess.Popen(
         [sys.executable, "-m", "http.server", str(port), "--directory", str(BUILD_WEB)],
         stdout=subprocess.DEVNULL,
@@ -71,81 +84,164 @@ def run_showcase_capture():
             # 1. Main Viewport & Direct Stiffness Matrix State
             save_frame("v4_2_01_workstation_ready_3d", "12-DOF Direct Stiffness 3D Viewport")
 
-            # 2. Click "AI & GEN" in floating header
-            # Floating header is centered at top (y: 38). AI & GEN is approx x: 670
+            # 2. Select Member M1 and Toggle Member End Releases & Cracked Stiffness
+            print("Selecting member M1 in viewport & opening Floating Inspector Panel...")
+            page.evaluate("""
+                window.dispatchEvent(new CustomEvent('structura-member-selected', { detail: { memberId: 'M1' } }));
+            """)
+            page.wait_for_timeout(1200)
+
+            # In FloatingInspectorPanel (docked on right around x: 1720, y: 350-550):
+            # Click "Start Mz" pill (approx x: 1680, y: 550) or locate text
+            print("Toggling Start Mz release and ACI Beam (0.35 Ig) cracked stiffness...")
+            try:
+                start_mz_btn = page.get_by_text("Start Mz", exact=True)
+                if start_mz_btn.count() > 0:
+                    start_mz_btn.first.click()
+                    page.wait_for_timeout(500)
+                
+                end_mz_btn = page.get_by_text("End Mz", exact=True)
+                if end_mz_btn.count() > 0:
+                    end_mz_btn.first.click()
+                    page.wait_for_timeout(500)
+
+                beam_crack_btn = page.get_by_text("ACI Beam (0.35 Ig)", exact=False)
+                if beam_crack_btn.count() > 0:
+                    beam_crack_btn.first.click()
+                    page.wait_for_timeout(800)
+            except Exception as e:
+                print(f"Note on inspector interaction: {e}")
+
+            save_frame("v4_2_02_member_releases_and_cracked_stiffness_inspector", "Member End Releases & ACI 318-19 Cracked Modifiers")
+
+            # Deselect member
+            page.evaluate("""
+                window.dispatchEvent(new CustomEvent('structura-multi-selected', { detail: { nodeIds: [], memberIds: [] } }));
+            """)
+            page.wait_for_timeout(800)
+
+            # 3. Open Concrete Studio (ACI 318-19 Crack Control)
+            print("Opening TOOLS & SUITE Drawer to launch Concrete Studio...")
+            page.mouse.click(35, 38)
+            page.wait_for_timeout(1000)
+
+            # Click Concrete Studio (around x: 140, y: 220)
+            concrete_item = page.get_by_text("Concrete Studio", exact=False)
+            if concrete_item.count() > 0:
+                concrete_item.first.click()
+            else:
+                page.mouse.click(140, 220)
+            page.wait_for_timeout(2000)
+
+            # Toggle Exposure Condition to Water Retaining in Concrete Studio
+            water_btn = page.get_by_text("WATER RETAINING", exact=True)
+            if water_btn.count() > 0:
+                water_btn.first.click()
+                page.wait_for_timeout(800)
+
+            save_frame("v4_2_03_concrete_crack_serviceability_studio", "Proprietary Concrete Studio (ACI 318-19 & ACI 224R Crack Control)")
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(800)
+
+            # 4. Open PE Calculation Packet & Digital Seal Verifier
+            print("Opening PE Calculation Packet & Digital Seal Auditor...")
+            page.mouse.click(35, 38)
+            page.wait_for_timeout(1000)
+            pe_item = page.get_by_text("PE Calcs & BIM", exact=False)
+            if pe_item.count() > 0:
+                pe_item.first.click()
+            else:
+                page.mouse.click(140, 290)
+            page.wait_for_timeout(2000)
+
+            # Switch to "VERIFY PE SEAL" tab
+            verify_tab = page.get_by_text("VERIFY PE SEAL", exact=True)
+            if verify_tab.count() > 0:
+                verify_tab.first.click()
+                page.wait_for_timeout(1000)
+
+            # Click LOAD CURRENT PACKET button
+            load_btn = page.get_by_text("LOAD CURRENT PACKET", exact=True)
+            if load_btn.count() > 0:
+                load_btn.first.click()
+                page.wait_for_timeout(1500)
+
+            save_frame("v4_2_04_pe_packet_hmac_seal_auditor", "Cryptographic PE Calculation Seal Auditor & HMAC-SHA256 Interlock")
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(800)
+
+            # 5. Click "AI & GEN" in floating header
             print("Opening AI & GEN dropdown menu...")
             page.mouse.click(670, 38)
             page.wait_for_timeout(1000)
-            save_frame("v4_2_02_ai_generative_menu", "Frontier AI & Generative Suite Menu")
+            save_frame("v4_2_05_ai_generative_menu", "Frontier AI & Generative Suite Menu")
 
-            # 3. Click "3D Topology Synthesizer (Neural SIMP)" (second item in menu: x: 670, y: 155)
+            # 6. Click "3D Topology Synthesizer (Neural SIMP)" (second item in menu: x: 670, y: 155)
             print("Opening 3D Topology Synthesizer...")
             page.mouse.click(670, 155)
             page.wait_for_timeout(1500)
-            save_frame("v4_2_03_generative_3d_topology_synthesizer", "Generative 3D Diagrid Topology Synthesizer")
+            save_frame("v4_2_06_generative_3d_topology_synthesizer", "Generative 3D Diagrid Topology Synthesizer")
 
-            # 4. Click "Commit Exoskeleton to Viewport" (bottom right of dialog: x: 1250, y: 885)
+            # 7. Click "Commit Exoskeleton to Viewport" (bottom right of dialog: x: 1250, y: 885)
             print("Committing Exoskeleton to Viewport...")
             page.mouse.click(1250, 885)
             page.wait_for_timeout(2000)
-            save_frame("v4_2_04_topology_exoskeleton_committed_3d", "Committed 3D Diagrid Exoskeleton in Viewport")
+            save_frame("v4_2_07_topology_exoskeleton_committed_3d", "Committed 3D Diagrid Exoskeleton in Viewport")
 
-            # 5. Open Shop-Drawing & Site QA (click AI & GEN at 670, 38 then item 3 at 670, 205)
+            # 8. Open Shop-Drawing & Site QA (click AI & GEN at 670, 38 then item 3 at 670, 205)
             print("Opening Shop-Drawing & Site Connection Visual QA Auditor...")
             page.mouse.click(670, 38)
             page.wait_for_timeout(800)
             page.mouse.click(670, 205)
             page.wait_for_timeout(1500)
-            save_frame("v4_2_05_shop_drawing_visual_qa_moment", "Shop-Drawing QA Moment End-Plate (AISC J Pass)")
+            save_frame("v4_2_08_shop_drawing_visual_qa_moment", "Shop-Drawing QA Moment End-Plate (AISC J Pass)")
 
-            # 6. Switch to Baseplate & Anchors preset in Shop Drawing Dialog (tab 2: x: 960, y: 245)
+            # 9. Switch to Baseplate & Anchors preset in Shop Drawing Dialog (tab 2: x: 960, y: 245)
             print("Switching to Baseplate & Anchors Defect preset...")
             page.mouse.click(960, 245)
             page.wait_for_timeout(1200)
-            save_frame("v4_2_06_shop_drawing_visual_qa_baseplate_defect", "Shop-Drawing QA Defect Callout & AISC J3.4 Punchlist")
+            save_frame("v4_2_09_shop_drawing_visual_qa_baseplate_defect", "Shop-Drawing QA Defect Callout & AISC J3.4 Punchlist")
 
             # Close dialog (close button top-right: x: 1350, y: 195)
             page.mouse.click(1350, 195)
             page.wait_for_timeout(800)
 
-            # 7. Expand Gemini Live Spatial Voice Co-Pilot pill (bottom right: pill is at x: 1750, y: 970)
+            # 10. Expand Gemini Live Spatial Voice Co-Pilot pill (bottom right: pill is at x: 1880, y: 970)
             print("Expanding Gemini Live Spatial Voice Co-Pilot Pill...")
             page.mouse.click(1880, 970)
             page.wait_for_timeout(800)
-            save_frame("v4_2_07_live_spatial_voice_copilot_tray", "Gemini Live Spatial Voice Co-Pilot Floating Pill")
+            save_frame("v4_2_10_live_spatial_voice_copilot_tray", "Gemini Live Spatial Voice Co-Pilot Floating Pill")
 
-            # 8. Trigger "Highlight columns with DCR above 0.85" quick chip (around x: 1720, y: 1045)
+            # 11. Trigger "Highlight columns with DCR above 0.85" quick chip (around x: 1720, y: 1045)
             print("Triggering Voice Critical Emissive Highlights...")
             page.mouse.click(1720, 1045)
             page.wait_for_timeout(1200)
-            save_frame("v4_2_08_voice_emissive_critical_highlights_3d", "3D Viewport Voice Emissive Member Highlights")
+            save_frame("v4_2_11_voice_emissive_critical_highlights_3d", "3D Viewport Voice Emissive Member Highlights")
 
-            # 9. Open Pareto Frontier (60 FPS) Dock (AI & GEN -> item 4: x: 670, y: 255)
+            # 12. Open Pareto Frontier (60 FPS) Dock (AI & GEN -> item 4: x: 670, y: 255)
             print("Opening WebGPU Pareto Frontier Dock...")
             page.mouse.click(670, 38)
             page.wait_for_timeout(800)
             page.mouse.click(670, 255)
             page.wait_for_timeout(1500)
-            # Drag Pareto slider (x: 800 -> 1050, y: 550)
             page.mouse.move(800, 550)
             page.mouse.down()
             page.mouse.move(1050, 550)
             page.mouse.up()
             page.wait_for_timeout(1000)
-            save_frame("v4_2_09_webgpu_pareto_frontier_hud", "WebGPU 60 FPS Pareto Frontier HUD")
+            save_frame("v4_2_12_webgpu_pareto_frontier_hud", "WebGPU 60 FPS Pareto Frontier HUD")
 
             # Close Pareto dock (x: 1220, y: 395)
             page.mouse.click(1220, 395)
             page.wait_for_timeout(800)
 
-            # 10. Open Mac AI Surrogates & Active Learning Card (top-left hamburger drawer x: 35, y: 38)
+            # 13. Open Mac AI Surrogates & Active Learning Card (top-left hamburger drawer x: 35, y: 38)
             print("Opening Mac AI Surrogates dialog...")
             page.mouse.click(35, 38)
             page.wait_for_timeout(1000)
-            # Click Mac AI Surrogates item in drawer: x: 140, y: 365
             page.mouse.click(140, 365)
             page.wait_for_timeout(1500)
-            save_frame("v4_2_10_mac_mps_active_learning_card", "Apple Silicon MPS Active Learning Card & 10 Surrogates")
+            save_frame("v4_2_13_mac_mps_active_learning_card", "Apple Silicon MPS Active Learning Card & 10 Surrogates")
 
             browser.close()
 

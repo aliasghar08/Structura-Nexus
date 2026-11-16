@@ -94,9 +94,9 @@ class EmbeddedFeaSolver {
 
       // Bending contribution: 12 * EI / L^3 for fixed-fixed flexure, or 3 * EI / L^3 for released ends
       double flexK = 12.0 * eiz / (L * L * L);
-      if (member.releaseIMoment && member.releaseJMoment) {
+      if ((member.releaseStartMz && member.releaseEndMz) || (member.releaseIMoment && member.releaseJMoment)) {
         flexK = 0.0;
-      } else if (member.releaseIMoment || member.releaseJMoment) {
+      } else if (member.releaseStartMz || member.releaseEndMz || member.releaseIMoment || member.releaseJMoment) {
         flexK = 3.0 * eiz / (L * L * L);
       }
       for (int a = 0; a < 3; a++) {
@@ -209,9 +209,9 @@ class EmbeddedFeaSolver {
       final flexDisp = math.sqrt(duy * duy + duz * duz);
       final shearForce = (12.0 * E * sec.ixM4 * flexDisp) / math.max(L * L * L, 1e-4);
       double momentZ = (6.0 * E * sec.ixM4 * flexDisp) / math.max(L * L, 1e-4);
-      if (member.releaseIMoment && member.releaseJMoment) {
+      if ((member.releaseStartMz && member.releaseEndMz) || (member.releaseIMoment && member.releaseJMoment)) {
         momentZ = 0.0;
-      } else if (member.releaseIMoment || member.releaseJMoment) {
+      } else if (member.releaseStartMz || member.releaseEndMz || member.releaseIMoment || member.releaseJMoment) {
         momentZ = (3.0 * E * sec.ixM4 * flexDisp) / math.max(L * L, 1e-4);
       }
 
@@ -220,6 +220,7 @@ class EmbeddedFeaSolver {
       member.shearZ = 0.0;
       member.momentY = 0.0;
       member.momentZ = momentZ;
+      member.torsion = (member.releaseMx || member.releaseTorsion) ? 0.0 : member.torsion;
       member.maxDeflection = flexDisp;
 
       // AISC 360-16 Limit State Evaluation
