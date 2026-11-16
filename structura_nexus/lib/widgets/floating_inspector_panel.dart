@@ -16,6 +16,8 @@ class FloatingInspectorPanel extends StatefulWidget {
   final String? selectedMemberId;
   final VoidCallback onModelChanged;
   final VoidCallback onClose;
+  final ValueChanged<String>? onSelectNode;
+  final ValueChanged<String>? onSelectMember;
 
   /// Panel width. Defaults to 330 (desktop side card); pass `double.infinity`
   /// for full-width phone bottom sheets.
@@ -28,6 +30,8 @@ class FloatingInspectorPanel extends StatefulWidget {
     this.selectedMemberId,
     required this.onModelChanged,
     required this.onClose,
+    this.onSelectNode,
+    this.onSelectMember,
     this.width = 330,
   });
 
@@ -244,6 +248,75 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ],
           ),
         ),
+        if (widget.model.criticalMember != null || widget.model.maxDeflectionNode != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (widget.model.criticalMember != null)
+                Expanded(
+                  child: InkWell(
+                    onTap: () => widget.onSelectMember?.call(widget.model.criticalMember!.id),
+                    mouseCursor: SystemMouseCursors.click,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            "CRITICAL MEMBER",
+                            style: TextStyle(color: Color(0xFFF59E0B), fontSize: 8.5, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${widget.model.criticalMember!.id} (DCR ${widget.model.criticalMember!.governingDcr.toStringAsFixed(2)})",
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              if (widget.model.criticalMember != null && widget.model.maxDeflectionNode != null)
+                const SizedBox(width: 8),
+              if (widget.model.maxDeflectionNode != null)
+                Expanded(
+                  child: InkWell(
+                    onTap: () => widget.onSelectNode?.call(widget.model.maxDeflectionNode!.id),
+                    mouseCursor: SystemMouseCursors.click,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00F0FF).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.45)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            "PEAK DRIFT JOINT",
+                            style: TextStyle(color: Color(0xFF00F0FF), fontSize: 8.5, fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.model.maxDeflectionNode!.id,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -404,7 +477,50 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         ),
         GlassPod.divider(),
 
-        // 3. Predicted Displacements
+        // 3. Applied Nodal Forces (kN)
+        Row(
+          children: [
+            Flexible(child: _sectionLabel("APPLIED NODAL LOADS")),
+            const SizedBox(width: 4),
+            const InfoTooltip(
+              message: "Applied external nodal forces (Fx, Fy, Fz) in kilonewtons.",
+            ),
+          ],
+        ),
+        _dataRow("Force Fx", "${(node.fxN / 1000.0).toStringAsFixed(2)} kN"),
+        _dataRow("Force Fy (Gravity)", "${(node.fyN / 1000.0).toStringAsFixed(2)} kN"),
+        _dataRow("Force Fz", "${(node.fzN / 1000.0).toStringAsFixed(2)} kN"),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            _buildSupportPresetChip("-50 kN Y", () {
+              while (node.loads.length < 6) {
+                node.loads.add(0.0);
+              }
+              node.loads[1] = -50000.0;
+              setState(() {});
+              widget.onModelChanged();
+            }, (node.fyN + 50000.0).abs() < 10.0),
+            _buildSupportPresetChip("+25 kN X", () {
+              while (node.loads.length < 6) {
+                node.loads.add(0.0);
+              }
+              node.loads[0] = 25000.0;
+              setState(() {});
+              widget.onModelChanged();
+            }, (node.fxN - 25000.0).abs() < 10.0),
+            _buildSupportPresetChip("0 kN CLEAR", () {
+              node.loads = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+              setState(() {});
+              widget.onModelChanged();
+            }, !node.hasLoad),
+          ],
+        ),
+        GlassPod.divider(),
+
+        // 4. Predicted Displacements
         Row(
           children: [
             Flexible(child: _sectionLabel("PREDICTED DISPLACEMENTS")),
@@ -417,6 +533,21 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         _dataRow("δx", "${(node.dispX * 1000).toStringAsFixed(2)} mm"),
         _dataRow("δy", "${(node.dispY * 1000).toStringAsFixed(2)} mm"),
         _dataRow("δz", "${(node.dispZ * 1000).toStringAsFixed(2)} mm"),
+        if (node.restraint.any((r) => r == 1)) ...[
+          GlassPod.divider(),
+          Row(
+            children: [
+              Flexible(child: _sectionLabel("SUPPORT REACTIONS")),
+              const SizedBox(width: 4),
+              const InfoTooltip(
+                message: "Support reaction forces computed at restrained DOFs.",
+              ),
+            ],
+          ),
+          _dataRow("Reaction Rx", "${((node.reactions.isNotEmpty ? node.reactions[0] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
+          _dataRow("Reaction Ry", "${((node.reactions.length > 1 ? node.reactions[1] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
+          _dataRow("Reaction Rz", "${((node.reactions.length > 2 ? node.reactions[2] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
+        ],
       ],
     );
   }
@@ -425,6 +556,9 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
     final statusColor = member.governingDcr > 1.0
         ? const Color(0xFFEF4444)
         : (member.governingDcr > 0.85 ? const Color(0xFFF59E0B) : const Color(0xFF10B981));
+    final exactLength = widget.model.getMemberLength(member);
+    final exactWeight = widget.model.getMemberWeightKg(member);
+    const sectionOptions = ['W14X90', 'W18X35', 'W14X48', 'W24X76', 'W12X26', 'HSS8X8X1/2'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -439,8 +573,22 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           ],
         ),
         _dataRow("Section", member.sectionProfile),
-        _dataRow("Length", "${member.length.toStringAsFixed(2)} m"),
+        _dataRow("Length", "${exactLength.toStringAsFixed(2)} m"),
+        _dataRow("Mass", "${exactWeight.toStringAsFixed(1)} kg"),
         _dataRow("Nodes", "${member.startNodeId} → ${member.endNodeId}"),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 5,
+          runSpacing: 5,
+          children: sectionOptions.map((sec) {
+            final isSelected = member.section == sec;
+            return _buildSupportPresetChip(sec, () {
+              member.section = sec;
+              setState(() {});
+              widget.onModelChanged();
+            }, isSelected);
+          }).toList(),
+        ),
         GlassPod.divider(),
 
         Row(
@@ -483,9 +631,9 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ),
           ],
         ),
-        _dataRow("Axial Force P", "${member.axialForceN.toStringAsFixed(1)} kN"),
-        _dataRow("Shear Force V", "${member.shearForceN.toStringAsFixed(1)} kN"),
-        _dataRow("Bending Moment M", "${member.bendingMomentNm.toStringAsFixed(1)} kN·m"),
+        _dataRow("Axial Force P", "${(member.axialForceN / 1000.0).toStringAsFixed(2)} kN"),
+        _dataRow("Shear Force V", "${(member.shearForceN / 1000.0).toStringAsFixed(2)} kN"),
+        _dataRow("Bending Moment M", "${(member.bendingMomentNm / 1000.0).toStringAsFixed(2)} kN·m"),
       ],
     );
   }

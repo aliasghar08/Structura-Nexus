@@ -44,6 +44,7 @@ import '../widgets/vision_ingestion_dialog.dart';
 import '../widgets/foundation_studio_dialog.dart';
 import '../widgets/time_history_player.dart';
 import '../widgets/pareto_frontier_dock.dart';
+import '../widgets/autonomous_swarm_dialog.dart';
 import '../widgets/slideable_workspace_menu.dart';
 import '../services/workspace_storage.dart';
 import '../services/dart_neural_engine.dart';
@@ -60,6 +61,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   final GlobalKey<Structural3DViewportState> _viewportKey = GlobalKey<Structural3DViewportState>();
   final GlobalKey<SlideableWorkspaceMenuState> _workspaceMenuKey = GlobalKey<SlideableWorkspaceMenuState>();
   late StructuralModel _model;
+  final List<StructuralModel> _undoStack = [];
+  final List<StructuralModel> _redoStack = [];
   final StructuralApiService _apiService = StructuralApiService();
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
@@ -69,6 +72,38 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool _isNlthaActive = false;
   int _modelRevision = 0;
   StreamSubscription<dynamic>? _authSubscription;
+
+  void _saveUndoState() {
+    _undoStack.add(_model.copyWith());
+    if (_undoStack.length > 30) {
+      _undoStack.removeAt(0);
+    }
+    _redoStack.clear();
+  }
+
+  void _undo() {
+    if (_undoStack.isEmpty) {
+      _showToolSnackBar('Nothing to undo.');
+      return;
+    }
+    _redoStack.add(_model.copyWith());
+    _model = _undoStack.removeLast();
+    _selectedNodeId = null;
+    _selectedMemberId = null;
+    _commitModelMutation('Undo applied (${_model.nodes.length} joints, ${_model.members.length} members)');
+  }
+
+  void _redo() {
+    if (_redoStack.isEmpty) {
+      _showToolSnackBar('Nothing to redo.');
+      return;
+    }
+    _undoStack.add(_model.copyWith());
+    _model = _redoStack.removeLast();
+    _selectedNodeId = null;
+    _selectedMemberId = null;
+    _commitModelMutation('Redo applied (${_model.nodes.length} joints, ${_model.members.length} members)');
+  }
 
   void _commitModelMutation(String snackbarMessage, {bool refitCamera = false}) {
     setState(() {
@@ -190,28 +225,34 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     });
   }
 
-  void _optimizeSections() async {
-    final success = await _apiService.triggerRemoteOptimization(_model);
-    if (success) {
-      setState(() {
-        _triggerSolve();
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFF10B981),
-            content: Row(
-              children: const [
-                Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('AISC Section Optimization successfully executed!'),
-              ],
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+  void _optimizeSections() {
+    _saveUndoState();
+    const orderedSections = [
+      'W12X26',
+      'W18X35',
+      'W14X48',
+      'W14X68',
+      'W24X76',
+      'W14X90',
+      'W14X120',
+      'W24X131',
+    ];
+    int modifiedCount = 0;
+    for (final m in _model.members) {
+      int idx = orderedSections.indexOf(m.section);
+      if (idx == -1) idx = 2;
+      if (m.governingDcr > 0.95 && idx < orderedSections.length - 1) {
+        m.section = orderedSections[idx + 1];
+        modifiedCount++;
+      } else if (m.governingDcr < 0.38 && idx > 0) {
+        m.section = orderedSections[idx - 1];
+        modifiedCount++;
       }
     }
+    _commitModelMutation(
+      'AISC 360-16 Auto-Sizer optimized $modifiedCount members (Max DCR: ${_model.governingDcr.toStringAsFixed(3)})',
+    );
+    _apiService.triggerRemoteOptimization(_model);
   }
 
   void _loadPreset(String presetKey) {
@@ -248,6 +289,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _importBuildingModel(StructuralModel newModel) {
+    _saveUndoState();
     setState(() {
       _model = newModel;
       _modelRevision++;
@@ -517,6 +559,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       _showToolSnackBar('No joints on canvas to extrude. Draw joints or synthesize a frame first.');
       return;
     }
+    _saveUndoState();
     double maxY = _model.nodes.map((n) => n.coords.y).reduce(math.max);
     final topNodes = _model.nodes.where((n) => (n.coords.y - maxY).abs() < 0.1).toList();
     if (topNodes.isEmpty) return;
@@ -566,6 +609,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _extendBayX() {
     if (_model.nodes.isEmpty) return;
+    _saveUndoState();
     double maxX = _model.nodes.map((n) => n.coords.x).reduce(math.max);
     final sideNodes = _model.nodes.where((n) => (n.coords.x - maxX).abs() < 0.1).toList();
     if (sideNodes.isEmpty) return;
@@ -618,6 +662,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _extendBayZ() {
     if (_model.nodes.isEmpty) return;
+    _saveUndoState();
     double maxZ = _model.nodes.map((n) => n.coords.z).reduce(math.max);
     final rearNodes = _model.nodes.where((n) => (n.coords.z - maxZ).abs() < 0.1).toList();
     if (rearNodes.isEmpty) return;
@@ -669,6 +714,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _addXBracing() {
+    _saveUndoState();
     int addedCount = 0;
     for (int i = 0; i < _model.nodes.length; i++) {
       for (int j = i + 1; j < _model.nodes.length; j++) {
@@ -713,6 +759,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final nI = _model.getNode(target.iNodeId);
     final nJ = _model.getNode(target.jNodeId);
     if (nI == null || nJ == null) return;
+    _saveUndoState();
 
     final mid = (nI.coords + nJ.coords) * 0.5;
     final midId = 'N_${_model.nodes.length + 1}';
@@ -836,6 +883,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _assignSupport(List<int> restraint, String name) {
+    _saveUndoState();
     int count = 0;
     if (_selectedNodeId != null) {
       final n = _model.getNode(_selectedNodeId!);
@@ -855,6 +903,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _assignSection(String sectionName) {
+    _saveUndoState();
     int count = 0;
     if (_selectedMemberId != null) {
       final m = _model.getMember(_selectedMemberId!);
@@ -872,6 +921,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _applyGravityLoads(double fyN) {
+    _saveUndoState();
     int count = 0;
     if (_selectedNodeId != null) {
       final n = _model.getNode(_selectedNodeId!);
@@ -893,6 +943,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _applyWindLoads(double fxN) {
     if (_model.nodes.isEmpty) return;
+    _saveUndoState();
     double minX = _model.nodes.map((n) => n.coords.x).reduce(math.min);
     int count = 0;
     for (final n in _model.nodes) {
@@ -1055,6 +1106,21 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           currentModel: _model,
         ),
       );
+    }
+
+    void onOpenAutonomousSwarm() {
+      AutonomousSwarmDialog.show(
+        context,
+        model: _model,
+        onStructureModified: () {
+          _saveUndoState();
+          _commitModelMutation('Applied Swarm-Healed AISC 360-16 Topology to 3D Frame');
+        },
+      );
+    }
+
+    void onOpenParetoExplorer() {
+      ParetoFrontierDock.show(context, model: _model);
     }
 
     void onOpenSeismicModal() => _requireAuth(
@@ -1358,6 +1424,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOptimize: onOptimize,
               onOpenBuildingTemplates: onOpenBuildingTemplates,
               onOpenMacAiInspector: onOpenMacAiInspector,
+              onOpenAutonomousSwarm: onOpenAutonomousSwarm,
+              onOpenParetoExplorer: onOpenParetoExplorer,
+              onUndo: _undo,
+              onRedo: _redo,
+              canUndo: _undoStack.isNotEmpty,
+              canRedo: _redoStack.isNotEmpty,
               onEngineChanged: (engine) {
                 _requireAuth(
                   featureName: 'Solver Engine Switcher',
@@ -1611,7 +1683,16 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 color: const Color(0xFF10B981),
                 category: 'ASSIGN & RESTRAIN',
                 badge: 'AISC 360',
-                onTap: onOptimize,
+                onTap: _optimizeSections,
+              ),
+              WorkspaceToolItem(
+                label: 'Autonomous 4-Agent Swarm',
+                subtitle: 'v4.0 Architect ↔ Auditor ↔ Self-Healer',
+                icon: Icons.hub_rounded,
+                color: const Color(0xFF00F0FF),
+                category: 'ASSIGN & RESTRAIN',
+                badge: 'v4.0 AI',
+                onTap: onOpenAutonomousSwarm,
               ),
 
               // 3. LOADS
@@ -1719,6 +1800,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   model: _model,
                   selectedNodeId: _selectedNodeId,
                   selectedMemberId: _selectedMemberId,
+                  onSelectNode: (nodeId) {
+                    setState(() {
+                      _selectedNodeId = nodeId;
+                      _selectedMemberId = null;
+                    });
+                  },
+                  onSelectMember: (memberId) {
+                    setState(() {
+                      _selectedMemberId = memberId;
+                      _selectedNodeId = null;
+                    });
+                  },
                   onModelChanged: () {
                     _commitModelMutation('Updated structural properties');
                   },

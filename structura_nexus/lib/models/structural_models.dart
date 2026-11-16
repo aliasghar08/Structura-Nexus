@@ -534,6 +534,46 @@ class StructuralModel {
     }
   }
 
+  double getMemberLength(StructuralMember m) {
+    final n1 = getNode(m.iNodeId);
+    final n2 = getNode(m.jNodeId);
+    if (n1 != null && n2 != null) {
+      return (n2.coords - n1.coords).length;
+    }
+    return m.lengthM;
+  }
+
+  double getMemberWeightKg(StructuralMember m) {
+    final len = getMemberLength(m);
+    final prof = SectionProfile.catalog[m.section];
+    return (prof?.weightKgM ?? 50.0) * len;
+  }
+
+  StructuralMember? get criticalMember {
+    if (members.isEmpty) return null;
+    StructuralMember best = members.first;
+    for (final m in members) {
+      if (m.governingDcr > best.governingDcr) {
+        best = m;
+      }
+    }
+    return best;
+  }
+
+  StructuralNode? get maxDeflectionNode {
+    if (nodes.isEmpty) return null;
+    StructuralNode best = nodes.first;
+    double bestMag = -1.0;
+    for (final n in nodes) {
+      final mag = math.sqrt(n.dispX * n.dispX + n.dispY * n.dispY + n.dispZ * n.dispZ);
+      if (mag > bestMag) {
+        bestMag = mag;
+        best = n;
+      }
+    }
+    return best;
+  }
+
   StructuralModel copyWith({
     String? sessionId,
     String? name,

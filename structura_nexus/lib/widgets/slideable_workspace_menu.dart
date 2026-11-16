@@ -475,7 +475,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
               ? _buildExpandedMenu(
                   context,
                   effectiveWidth,
-                  screenSize.height - clampedTop - (screenSize.height >= 720 ? 185.0 : 110.0),
+                  screenSize.height - clampedTop - (screenSize.height >= 850 ? 205.0 : (screenSize.height >= 720 ? 185.0 : 110.0)),
                 )
               : _buildCollapsedPill(context, isLeft, maxTop),
         ),
@@ -1020,12 +1020,12 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   }
 
   // --------------------------------------------------------------------------
-  // Category Selection Tabs
+  // Category Selection Tabs (Compact single-row so all 5 tabs fit in 310px)
   // --------------------------------------------------------------------------
   Widget _buildCategorySelector() {
     final categories = _categories;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
@@ -1034,7 +1034,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
           children: categories.map((cat) {
             final isSel = _activeCategory == cat;
             return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2.5),
+              padding: const EdgeInsets.symmetric(horizontal: 1.5),
               child: InkWell(
                 onTap: () {
                   setState(() => _activeCategory = cat);
@@ -1043,12 +1043,12 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                   }
                 },
                 mouseCursor: SystemMouseCursors.click,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 5.5, vertical: 3.5),
                   decoration: BoxDecoration(
                     color: isSel ? const Color(0xFF00F0FF) : const Color(0xFF141B2B),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(5),
                     border: Border.all(
                       color: isSel ? const Color(0xFF00F0FF) : Colors.white10,
                       width: 0.8,
@@ -1059,7 +1059,8 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                       cat,
                       style: TextStyle(
                         color: isSel ? Colors.black : Colors.white70,
-                        fontSize: 9,
+                        fontSize: 8.2,
+                        letterSpacing: -0.2,
                         fontWeight: isSel ? FontWeight.w900 : FontWeight.w600,
                       ),
                     ),

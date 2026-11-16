@@ -15,6 +15,7 @@ extension type ThreeViewer(JSObject _) implements JSObject {
   external void loadModel(JSAny model);
   external void setDeformationMode(bool enabled, double scale);
   external void setBmdVisible(bool visible);
+  external void setSfdVisible(bool visible);
   external void setStressOverlay(bool visible);
   external void updatePredictedDisplacements(JSAny displacements);
   external void setCameraPreset(JSString preset);
@@ -217,11 +218,21 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       if (parsedObj != null) {
         _viewer!.loadModel(parsedObj);
       }
-      _viewer!.setDeformationMode(widget.showDeformation, widget.deformationScale);
-      _viewer!.setBmdVisible(widget.showBmd);
-      _viewer!.setStressOverlay(widget.showStressGradient);
+      _syncDisplayOptions();
     } catch (e) {
       debugPrint('[ThreeJsStructuralViewport] Error syncing model: $e');
+    }
+  }
+
+  void _syncDisplayOptions() {
+    try {
+      if (_viewer == null) return;
+      _viewer!.setDeformationMode(widget.showDeformation, widget.deformationScale);
+      _viewer!.setBmdVisible(widget.showBmd);
+      _viewer!.setSfdVisible(widget.showSfd);
+      _viewer!.setStressOverlay(widget.showStressGradient);
+    } catch (e) {
+      debugPrint('[ThreeJsStructuralViewport] Error syncing display options: $e');
     }
   }
 
@@ -246,18 +257,21 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   @override
   void didUpdateWidget(covariant ThreeJsStructuralViewport oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final bool needsSync = widget.modelRevision != oldWidget.modelRevision ||
+    final bool needsModelSync = widget.modelRevision != oldWidget.modelRevision ||
         widget.model != oldWidget.model ||
         widget.model.nodes.length != oldWidget.model.nodes.length ||
-        widget.model.members.length != oldWidget.model.members.length ||
-        widget.showDeformation != oldWidget.showDeformation ||
+        widget.model.members.length != oldWidget.model.members.length;
+
+    final bool needsDisplaySync = widget.showDeformation != oldWidget.showDeformation ||
         widget.deformationScale != oldWidget.deformationScale ||
         widget.showBmd != oldWidget.showBmd ||
         widget.showSfd != oldWidget.showSfd ||
         widget.showStressGradient != oldWidget.showStressGradient;
 
-    if (needsSync) {
+    if (needsModelSync) {
       _syncModel();
+    } else if (needsDisplaySync) {
+      _syncDisplayOptions();
     }
   }
 

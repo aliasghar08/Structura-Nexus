@@ -95,12 +95,25 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll down for remaining restraint items
-      await tester.drag(find.byType(ListView).first, const Offset(0, -100));
+      await tester.drag(find.byType(ListView).first, const Offset(0, -180));
       await tester.pumpAndSettle();
 
       // 11. Assign W18X35 (Girder Beam)
       expect(find.text('Assign W18X35 (Girder Beam)'), findsOneWidget);
       await tester.tap(find.text('Assign W18X35 (Girder Beam)'));
+      await tester.pumpAndSettle();
+
+      // 11b. AISC Section Auto-Sizer
+      expect(find.text('AISC Section Auto-Sizer'), findsOneWidget);
+      await tester.tap(find.text('AISC Section Auto-Sizer'));
+      await tester.pumpAndSettle();
+
+      // 11c. Autonomous 4-Agent Swarm (v4.0)
+      expect(find.text('Autonomous 4-Agent Swarm'), findsOneWidget);
+      await tester.tap(find.text('Autonomous 4-Agent Swarm'));
+      await tester.pumpAndSettle();
+      expect(find.text('AUTONOMOUS 4-AGENT ENGINEERING SWARM (v4.0)'), findsOneWidget);
+      await tester.tap(find.text('APPLY SWARM-HEALED TOPOLOGY TO 3D FRAME'));
       await tester.pumpAndSettle();
 
       // Switch Category tab: LOADS

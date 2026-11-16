@@ -1,6 +1,7 @@
 /**
- * Structura Nexus: High-Performance Hardware-Accelerated Three.js WebGL Engine
- * Multi-story space frame rendering, extruded BMD/SFD ribbons, deformation magnification,
+ * Structura Nexus v4.0: High-Performance Hardware-Accelerated Three.js WebGL Engine
+ * Multi-story space frame rendering, extruded BMD/SFD ribbons, 3D nodal force vectors,
+ * distinct Fixed/Pinned/Roller support glyphs, deformation magnification,
  * real-time pointer raycasting, node drag-and-morph, and 60 FPS surrogate streaming.
  */
 
@@ -30,7 +31,9 @@
       // Group containers - guaranteed non-null
       this.structureGroup = new THREE.Group();
       this.deformationGroup = new THREE.Group();
-      this.diagramGroup = new THREE.Group();
+      this.diagramGroup = new THREE.Group(); // BMD ribbons
+      this.sfdGroup = new THREE.Group();     // SFD ribbons
+      this.loadsGroup = new THREE.Group();   // 3D Force vector arrows
 
       // Viewport flags & state
       this.currentModel = null;
@@ -40,15 +43,19 @@
       this.showSfd = false;
       this.animTime = 0.0;
       this.lastRenderedRevision = -1;
+      this._lastBoundsSignature = null;
+      this.selectedNodeId = null;
+      this.selectedMemberId = null;
 
       // Meshes and topology references
       this.nodeMeshes = [];
       this.memberMeshes = [];
       this.supportGlyphs = {};
+      this.loadGlyphs = {};
       this.nodeMap = {}; // nodeId -> THREE.Vector3
       this.baseNodePositions = {}; // nodeId -> THREE.Vector3
       this.nodeDisplacements = {}; // nodeId -> THREE.Vector3
-      this.memberData = []; // [{ id, iNodeId, jNodeId, mesh, dcr, ... }]
+      this.memberData = []; // [{ id, iNodeId, jNodeId, mesh, dcr, baseColor, ... }]
 
       // Interactive Pointer Raycasting & Dragging
       this.raycaster = new THREE.Raycaster();
@@ -68,6 +75,27 @@
       }
     }
 
+    _disposeGroup(group) {
+      if (!group) return;
+      while (group.children.length > 0) {
+        const obj = group.children[0];
+        group.remove(obj);
+        if (obj.children && obj.children.length > 0) {
+          this._disposeGroup(obj);
+        }
+        if (obj.geometry) {
+          obj.geometry.dispose();
+        }
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach((m) => m && m.dispose && m.dispose());
+          } else if (obj.material.dispose) {
+            obj.material.dispose();
+          }
+        }
+      }
+    }
+
     _waitForContainer() {
       if (this._waitTimer) return;
       let attempts = 0;
@@ -80,7 +108,7 @@
           if (this._pendingModel) {
             const pending = this._pendingModel;
             this._pendingModel = null;
-            this.loadModel(pending);
+            this.loadModel(pending, true);
           }
         } else if (attempts++ < 200) {
           this._waitTimer = setTimeout(poll, 30);
@@ -153,7 +181,7 @@
       this.container.appendChild(this.renderer.domElement);
 
       // 3. Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.78);
       this.scene.add(ambientLight);
 
       const dirLight1 = new THREE.DirectionalLight(0x00f0ff, 0.95); // Cyan key
@@ -189,8 +217,6 @@
           if (this.controls) this.controls.enabled = true;
         });
 
-        // Prevent OrbitControls on the Three.js canvas from zooming when hovering over UI menus,
-        // without blocking wheel events on <flutter-view> / <flt-glass-pane>
         this.renderer.domElement.addEventListener(
           "wheel",
           (e) => {
@@ -206,6 +232,8 @@
       this.scene.add(this.structureGroup);
       this.scene.add(this.deformationGroup);
       this.scene.add(this.diagramGroup);
+      this.scene.add(this.sfdGroup);
+      this.scene.add(this.loadsGroup);
 
       // 7. Event Listeners (Window Resize & Interactive Node Dragging)
       window.addEventListener("resize", () => this.onResize());
@@ -219,7 +247,7 @@
       if (this._pendingModel) {
         const pending = this._pendingModel;
         this._pendingModel = null;
-        this.loadModel(pending);
+        this.loadModel(pending, true);
       }
     }
 
@@ -278,12 +306,7 @@
           this.controls.enabled = false;
         }
 
-        // Highlight dragged/selected node
-        if (hitMesh.material && hitMesh.material.emissive) {
-          hitMesh.userData.savedEmissive = hitMesh.material.emissive.getHex();
-          hitMesh.material.emissive.setHex(0x00ffff);
-          hitMesh.material.emissiveIntensity = 0.85;
-        }
+        this.setSelectedEntity(hitMesh.userData.nodeId, null);
 
         // Setup drag plane perpendicular to camera ray at the node's position
         this.camera.getWorldDirection(this.planeNormal);
@@ -314,6 +337,7 @@
         if (memberHits.length > 0) {
           const hitMem = memberHits[0].object;
           if (hitMem.userData && hitMem.userData.memberId) {
+            this.setSelectedEntity(null, hitMem.userData.memberId);
             window.dispatchEvent(
               new CustomEvent("structura-member-selected", {
                 detail: { memberId: hitMem.userData.memberId },
@@ -357,6 +381,9 @@
             const glyph = this.supportGlyphs[nodeId];
             glyph.position.set(nx, ny - (glyph.userData.yOffset || 0.15), nz);
           }
+          if (this.loadGlyphs[nodeId]) {
+            this.loadGlyphs[nodeId].position.set(nx, ny, nz);
+          }
 
           this.morphIncidentMembers(nodeId);
 
@@ -367,11 +394,16 @@
           );
         }
       } else {
-        const intersects = this.raycaster.intersectObjects(this.nodeMeshes, false);
-        if (intersects.length > 0) {
+        const nodeIntersects = this.raycaster.intersectObjects(this.nodeMeshes, false);
+        if (nodeIntersects.length > 0) {
           this.renderer.domElement.style.cursor = "grab";
         } else {
-          this.renderer.domElement.style.cursor = "default";
+          const memIntersects = this.raycaster.intersectObjects(this.memberMeshes, false);
+          if (memIntersects.length > 0) {
+            this.renderer.domElement.style.cursor = "pointer";
+          } else {
+            this.renderer.domElement.style.cursor = "default";
+          }
         }
       }
     }
@@ -383,18 +415,13 @@
         const fy = this.draggedNodeMesh.position.y;
         const fz = this.draggedNodeMesh.position.z;
 
-        if (this.draggedNodeMesh.material && this.draggedNodeMesh.material.emissive) {
-          const orig = this.draggedNodeMesh.userData.savedEmissive || 0x004455;
-          this.draggedNodeMesh.material.emissive.setHex(orig);
-          this.draggedNodeMesh.material.emissiveIntensity = 0.3;
-        }
-
         this.isDraggingNode = false;
         this.draggedNodeMesh = null;
         if (this.controls && !window.__structuraMenuHovered) {
           this.controls.enabled = true;
         }
         this.renderer.domElement.style.cursor = "default";
+        this._updateSelectionHighlight();
 
         if (this.dragMoved) {
           window.dispatchEvent(
@@ -404,6 +431,42 @@
           );
         }
       }
+    }
+
+    setSelectedEntity(nodeId, memberId) {
+      this.selectedNodeId = nodeId || null;
+      this.selectedMemberId = memberId || null;
+      this._updateSelectionHighlight();
+    }
+
+    _updateSelectionHighlight() {
+      this.nodeMeshes.forEach((mesh) => {
+        if (!mesh.material || !mesh.material.emissive) return;
+        const isSel = this.selectedNodeId && mesh.userData.nodeId === this.selectedNodeId;
+        if (isSel) {
+          mesh.material.emissive.setHex(0xffffff);
+          mesh.material.emissiveIntensity = 0.95;
+          mesh.scale.set(1.35, 1.35, 1.35);
+        } else {
+          const baseEmissive = mesh.userData.baseEmissive ?? 0x004455;
+          const baseIntensity = mesh.userData.baseEmissiveIntensity ?? 0.35;
+          mesh.material.emissive.setHex(baseEmissive);
+          mesh.material.emissiveIntensity = baseIntensity;
+          mesh.scale.set(1.0, 1.0, 1.0);
+        }
+      });
+
+      this.memberData.forEach((m) => {
+        if (!m.mesh || !m.mesh.material || !m.mesh.material.emissive) return;
+        const isSel = this.selectedMemberId && m.id === this.selectedMemberId;
+        if (isSel) {
+          m.mesh.material.emissive.setHex(0x00ffff);
+          m.mesh.material.emissiveIntensity = 0.85;
+        } else {
+          m.mesh.material.emissive.setHex(m.baseColor);
+          m.mesh.material.emissiveIntensity = m.dcr > 1.0 ? 0.4 : 0.12;
+        }
+      });
     }
 
     morphIncidentMembers(nodeId) {
@@ -466,7 +529,52 @@
       }
     }
 
-    loadModel(model) {
+    createForceArrow(x, y, z, fx, fy, fz, geomScale = 1.0) {
+      const mag = Math.hypot(fx, fy, fz);
+      if (mag < 1.0) return null;
+
+      const group = new THREE.Group();
+      group.position.set(x, y, z);
+
+      const dir = new THREE.Vector3(fx, fy, fz).normalize();
+      // Color: Crimson-magenta for downward gravity, Cyan for lateral wind/seismic
+      const isGravityDominant = Math.abs(fy) >= Math.hypot(fx, fz);
+      const arrowColor = isGravityDominant ? 0xff2a6d : 0x00f0ff;
+
+      // Scale length logarithmically between 0.7m and 1.6m
+      const kN = mag / 1000.0;
+      const totalLen = Math.min(1.65, Math.max(0.75, 0.55 + Math.log10(Math.max(kN, 1.0)) * 0.35)) * geomScale;
+      const headLen = 0.28 * geomScale;
+      const shaftLen = Math.max(totalLen - headLen, 0.3 * geomScale);
+
+      // Build arrow along +Y local axis, with tip at origin (0,0,0) pointing in +Y,
+      // so the arrowhead touches the node sphere cleanly
+      const shaftGeo = new THREE.CylinderGeometry(0.038 * geomScale, 0.038 * geomScale, shaftLen, 10);
+      const arrowMat = new THREE.MeshStandardMaterial({
+        color: arrowColor,
+        emissive: arrowColor,
+        emissiveIntensity: 0.75,
+        metalness: 0.4,
+        roughness: 0.2,
+      });
+
+      const shaftMesh = new THREE.Mesh(shaftGeo, arrowMat);
+      shaftMesh.position.set(0, -(headLen + shaftLen * 0.5 + 0.16 * geomScale), 0);
+
+      const headGeo = new THREE.ConeGeometry(0.11 * geomScale, headLen, 12);
+      const headMesh = new THREE.Mesh(headGeo, arrowMat);
+      headMesh.position.set(0, -(headLen * 0.5 + 0.16 * geomScale), 0);
+
+      group.add(shaftMesh);
+      group.add(headMesh);
+
+      const upAxis = new THREE.Vector3(0, 1, 0);
+      group.quaternion.setFromUnitVectors(upAxis, dir);
+
+      return group;
+    }
+
+    loadModel(model, forceRefit = false) {
       if (!model) return;
       this.currentModel = model;
 
@@ -476,24 +584,17 @@
         return;
       }
 
-      // Clear existing meshes cleanly
-      while (this.structureGroup.children.length > 0) {
-        const obj = this.structureGroup.children[0];
-        this.structureGroup.remove(obj);
-        if (obj.geometry) obj.geometry.dispose();
-      }
-      while (this.deformationGroup.children.length > 0) {
-        const obj = this.deformationGroup.children[0];
-        this.deformationGroup.remove(obj);
-      }
-      while (this.diagramGroup.children.length > 0) {
-        const obj = this.diagramGroup.children[0];
-        this.diagramGroup.remove(obj);
-      }
+      // Cleanly dispose all GPU geometries and materials
+      this._disposeGroup(this.structureGroup);
+      this._disposeGroup(this.deformationGroup);
+      this._disposeGroup(this.diagramGroup);
+      this._disposeGroup(this.sfdGroup);
+      this._disposeGroup(this.loadsGroup);
 
       this.nodeMeshes = [];
       this.memberMeshes = [];
       this.supportGlyphs = {};
+      this.loadGlyphs = {};
       this.nodeMap = {};
       this.baseNodePositions = {};
       this.nodeDisplacements = {};
@@ -532,7 +633,15 @@
       // Update Ground Grid to center beneath the structure
       if (this.gridHelper) {
         this.scene.remove(this.gridHelper);
-        const gridSpan = Math.max(Math.ceil(Math.max(spanX, spanZ) * 2.2 / 10) * 10, 40);
+        if (this.gridHelper.geometry) this.gridHelper.geometry.dispose();
+        if (this.gridHelper.material) {
+          if (Array.isArray(this.gridHelper.material)) {
+            this.gridHelper.material.forEach((m) => m && m.dispose && m.dispose());
+          } else if (this.gridHelper.material.dispose) {
+            this.gridHelper.material.dispose();
+          }
+        }
+        const gridSpan = Math.max(Math.ceil((Math.max(spanX, spanZ) * 2.2) / 10) * 10, 40);
         const divisions = Math.min(Math.max(Math.round(gridSpan / 2), 20), 80);
         this.gridHelper = new THREE.GridHelper(gridSpan, divisions, 0x00e5ff, 0x1f293d);
         this.gridHelper.position.set(cx, -0.02, cz);
@@ -556,6 +665,16 @@
 
       const pinnedConeGeo = new THREE.ConeGeometry(0.24 * geomScale, 0.36 * geomScale, 14);
       const pinnedConeMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.7 });
+
+      const rollerCylGeo = new THREE.CylinderGeometry(0.16 * geomScale, 0.16 * geomScale, 0.36 * geomScale, 14);
+      rollerCylGeo.rotateZ(Math.PI / 2);
+      const rollerCylMat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        metalness: 0.75,
+        roughness: 0.2,
+        emissive: 0x065f46,
+        emissiveIntensity: 0.35,
+      });
 
       const connectedNodeIds = new Set();
       members.forEach((m) => {
@@ -592,25 +711,44 @@
           (isStandalone ? standaloneMat : nodeMat).clone()
         );
         nodeMesh.position.set(x, y, z);
-        nodeMesh.userData = { nodeId: n.id, isRestrained: false };
+        nodeMesh.userData = {
+          nodeId: n.id,
+          isRestrained: false,
+          baseEmissive: isStandalone ? 0x00f0ff : 0x004455,
+          baseEmissiveIntensity: isStandalone ? 0.9 : 0.35,
+        };
 
         this.structureGroup.add(nodeMesh);
         this.nodeMeshes.push(nodeMesh);
 
-        // Boundary support glyphs
-        const isRestrained = n.isRestrained || (n.restraint && n.restraint.some((r) => r === 1));
+        // Boundary support glyphs (Fixed vs Pinned vs Roller)
+        const restraint = n.restraint || [0, 0, 0, 0, 0, 0];
+        const isRestrained = n.isRestrained || restraint.some((r) => r === 1);
         if (isRestrained) {
           nodeMesh.userData.isRestrained = true;
-          const isFixed = n.restraint && n.restraint.slice(0, 3).every((r) => r === 1);
-          if (isFixed) {
-            const fixMesh = new THREE.Mesh(fixedBoxGeo, fixedBoxMat);
+          const allTransFixed = restraint.slice(0, 3).every((r) => r === 1);
+          const anyRotFixed = restraint.slice(3, 6).some((r) => r === 1);
+          const isRoller = restraint[1] === 1 && !allTransFixed;
+
+          if (allTransFixed && anyRotFixed) {
+            // Fixed Base (Blue Box)
+            const fixMesh = new THREE.Mesh(fixedBoxGeo.clone(), fixedBoxMat.clone());
             const yOff = 0.12 * geomScale;
             fixMesh.position.set(x, y - yOff, z);
             fixMesh.userData = { yOffset: yOff };
             this.structureGroup.add(fixMesh);
             this.supportGlyphs[n.id] = fixMesh;
+          } else if (isRoller) {
+            // Roller Support (Emerald Roller Cylinder)
+            const rolMesh = new THREE.Mesh(rollerCylGeo.clone(), rollerCylMat.clone());
+            const yOff = 0.16 * geomScale;
+            rolMesh.position.set(x, y - yOff, z);
+            rolMesh.userData = { yOffset: yOff };
+            this.structureGroup.add(rolMesh);
+            this.supportGlyphs[n.id] = rolMesh;
           } else {
-            const pinMesh = new THREE.Mesh(pinnedConeGeo, pinnedConeMat);
+            // Pinned Base (Amber Cone)
+            const pinMesh = new THREE.Mesh(pinnedConeGeo.clone(), pinnedConeMat.clone());
             const yOff = 0.18 * geomScale;
             pinMesh.position.set(x, y - yOff, z);
             pinMesh.userData = { yOffset: yOff };
@@ -618,7 +756,30 @@
             this.supportGlyphs[n.id] = pinMesh;
           }
         }
+
+        // 3D Nodal Force Vector Arrows
+        const loads = n.loads || [0, 0, 0, 0, 0, 0];
+        const fx = loads[0] || 0.0;
+        const fy = loads[1] || 0.0;
+        const fz = loads[2] || 0.0;
+        const arrowGroup = this.createForceArrow(x, y, z, fx, fy, fz, geomScale);
+        if (arrowGroup) {
+          this.loadsGroup.add(arrowGroup);
+          this.loadGlyphs[n.id] = arrowGroup;
+        }
       });
+
+      // Dispose template geometries/materials after cloning
+      nodeGeo.dispose();
+      nodeMat.dispose();
+      fixedBoxGeo.dispose();
+      fixedBoxMat.dispose();
+      pinnedConeGeo.dispose();
+      pinnedConeMat.dispose();
+      rollerCylGeo.dispose();
+      rollerCylMat.dispose();
+      standaloneGeo.dispose();
+      standaloneMat.dispose();
 
       // 2. Render Members
       members.forEach((m) => {
@@ -632,7 +793,7 @@
         const dcr = m.governingDcr ?? m.governing_dcr ?? 0.45;
 
         // DCR color coding (Green -> Blue -> Amber -> Red)
-        let memberColor = 0x3b82f6; // Standard engineering steel blue
+        let memberColor = 0x3b82f6;
         if (dcr > 1.0) {
           memberColor = 0xef4444; // Critical overstressed red
         } else if (dcr >= 0.85) {
@@ -673,42 +834,49 @@
           mesh: cylMesh,
           initialLength: distance,
           dcr: dcr,
+          baseColor: memberColor,
         });
 
-        // 3. Optional Extruded BMD (Bending Moment Diagram) Ribbon
+        // 3. Optional Extruded BMD & SFD Ribbons
         this.createBmdRibbon(p1, p2, dir, dcr, geomScale);
+        this.createSfdRibbon(p1, p2, dir, dcr, geomScale);
       });
 
-      // Center camera focus on bounding center & auto-frame the structure
+      // Center camera focus on bounding center & auto-frame only when topology bounds change or forced
       if (nodes.length > 0) {
         this.currentCenter = new THREE.Vector3(cx, cy, cz);
         this.currentMaxDim = maxDim;
 
         const fovRad = ((this.camera && this.camera.fov ? this.camera.fov : 45) * Math.PI) / 180;
-        const fitDistance = Math.max(((maxDim / 2) / Math.tan(fovRad / 2)) * 1.65, 13.0);
+        const fitDistance = Math.max((maxDim / 2 / Math.tan(fovRad / 2)) * 1.65, 13.0);
         this.fitDistance = fitDistance;
 
-        if (this.controls) {
-          this.controls.target.set(cx, cy, cz);
-        }
+        const boundsSignature = `${nodes.length}:${members.length}:${cx.toFixed(1)}:${cy.toFixed(1)}:${cz.toFixed(1)}:${maxDim.toFixed(1)}`;
+        const shouldRefit = forceRefit || this._lastBoundsSignature !== boundsSignature;
+        this._lastBoundsSignature = boundsSignature;
 
-        if (this.camera) {
-          this.camera.position.set(
-            cx + fitDistance * 0.72,
-            cy + fitDistance * 0.52,
-            cz + fitDistance * 0.82
-          );
-          this.camera.lookAt(cx, cy, cz);
-        }
-
-        if (this.controls) {
-          this.controls.update();
+        if (shouldRefit) {
+          if (this.controls) {
+            this.controls.target.set(cx, cy, cz);
+          }
+          if (this.camera) {
+            this.camera.position.set(
+              cx + fitDistance * 0.72,
+              cy + fitDistance * 0.52,
+              cz + fitDistance * 0.82
+            );
+            this.camera.lookAt(cx, cy, cz);
+          }
+          if (this.controls) {
+            this.controls.update();
+          }
         }
       }
 
       if (this.showDeformation) {
         this._applyDeformationState();
       }
+      this._updateSelectionHighlight();
 
       console.log(
         `[ThreeViewer] Rendered model "${model.session_id || "workspace"}": ${this.nodeMeshes.length} joints, ${this.memberMeshes.length} members`
@@ -727,9 +895,15 @@
           const dx = disp ? disp.x * scale : 0.0;
           const dy = disp ? disp.y * scale : 0.0;
           const dz = disp ? disp.z * scale : 0.0;
-          mesh.position.set(base.x + dx, base.y + dy, base.z + dz);
+          const nx = base.x + dx;
+          const ny = base.y + dy;
+          const nz = base.z + dz;
+          mesh.position.set(nx, ny, nz);
           if (this.nodeMap[nodeId]) {
-            this.nodeMap[nodeId].set(base.x + dx, base.y + dy, base.z + dz);
+            this.nodeMap[nodeId].set(nx, ny, nz);
+          }
+          if (this.loadGlyphs[nodeId]) {
+            this.loadGlyphs[nodeId].position.set(nx, ny, nz);
           }
         }
       });
@@ -772,10 +946,16 @@
           const dx = (disp.dx || 0.0) * scale;
           const dy = (disp.dy || 0.0) * scale;
           const dz = (disp.dz || 0.0) * scale;
+          const nx = base.x + dx;
+          const ny = base.y + dy;
+          const nz = base.z + dz;
 
-          mesh.position.set(base.x + dx, base.y + dy, base.z + dz);
+          mesh.position.set(nx, ny, nz);
           if (this.nodeMap[nodeId]) {
-            this.nodeMap[nodeId].set(base.x + dx, base.y + dy, base.z + dz);
+            this.nodeMap[nodeId].set(nx, ny, nz);
+          }
+          if (this.loadGlyphs[nodeId]) {
+            this.loadGlyphs[nodeId].position.set(nx, ny, nz);
           }
         }
       });
@@ -831,6 +1011,36 @@
       this.diagramGroup.add(bmdMesh);
     }
 
+    createSfdRibbon(p1, p2, dir, dcr, geomScale = 1.0) {
+      const normal = new THREE.Vector3(-dir.y, dir.x, 0).normalize();
+      if (normal.length() < 0.1) normal.set(0, 0, 1);
+
+      const offsetMag = Math.min(0.75 * geomScale, Math.max(0.32 * geomScale, (0.22 + dcr * 0.35) * geomScale));
+      const mid = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
+
+      const points = [
+        p1.clone(),
+        p1.clone().addScaledVector(normal, offsetMag),
+        mid.clone().addScaledVector(normal, offsetMag),
+        mid.clone().addScaledVector(normal, -offsetMag),
+        p2.clone().addScaledVector(normal, -offsetMag),
+        p2.clone(),
+      ];
+
+      const curve = new THREE.CatmullRomCurve3(points, false, "catmullrom", 0.05);
+      const tubeGeo = new THREE.TubeGeometry(curve, 18, 0.045 * geomScale, 8, false);
+      const sfdMat = new THREE.MeshBasicMaterial({
+        color: 0x00f0ff,
+        wireframe: false,
+        transparent: true,
+        opacity: 0.92,
+      });
+
+      const sfdMesh = new THREE.Mesh(tubeGeo, sfdMat);
+      sfdMesh.visible = this.showSfd;
+      this.sfdGroup.add(sfdMesh);
+    }
+
     setDeformationMode(enabled, scale = 50.0) {
       const changed = this.showDeformation !== enabled || this.deformationScale !== scale;
       this.showDeformation = enabled;
@@ -843,6 +1053,11 @@
     setBmdVisible(visible) {
       this.showBmd = visible;
       this.diagramGroup.children.forEach((c) => (c.visible = visible));
+    }
+
+    setSfdVisible(visible) {
+      this.showSfd = visible;
+      this.sfdGroup.children.forEach((c) => (c.visible = visible));
     }
 
     setStressOverlay(visible) {
@@ -901,6 +1116,11 @@
 
     dispose() {
       if (this.animId) cancelAnimationFrame(this.animId);
+      this._disposeGroup(this.structureGroup);
+      this._disposeGroup(this.deformationGroup);
+      this._disposeGroup(this.diagramGroup);
+      this._disposeGroup(this.sfdGroup);
+      this._disposeGroup(this.loadsGroup);
       if (this.renderer && this.renderer.domElement) {
         this.renderer.domElement.remove();
       }

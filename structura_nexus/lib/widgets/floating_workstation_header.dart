@@ -49,6 +49,12 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOptimize;
   final VoidCallback? onOpenBuildingTemplates;
   final VoidCallback? onOpenMacAiInspector;
+  final VoidCallback? onOpenAutonomousSwarm;
+  final VoidCallback? onOpenParetoExplorer;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
+  final bool canUndo;
+  final bool canRedo;
 
   const FloatingWorkstationHeader({
     super.key,
@@ -87,6 +93,12 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOptimize,
     this.onOpenBuildingTemplates,
     this.onOpenMacAiInspector,
+    this.onOpenAutonomousSwarm,
+    this.onOpenParetoExplorer,
+    this.onUndo,
+    this.onRedo,
+    this.canUndo = false,
+    this.canRedo = false,
   });
 
   @override
@@ -236,7 +248,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text(
-                                        "v3.4.0-REV-A",
+                                        "v4.0.0-FRONTIER",
                                         style: TextStyle(color: Color(0xFF58A6FF), fontSize: 8.5, fontWeight: FontWeight.bold),
                                       ),
                                     ),
@@ -297,6 +309,18 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         label: "AI & GEN",
                         icon: Icons.auto_awesome_rounded,
                         onTap: () => _showModalMenu(context, "AI & GENERATIVE SUITE", [
+                          if (widget.onOpenAutonomousSwarm != null)
+                            _MenuAction(
+                              label: "Autonomous 4-Agent Swarm (v4.0 Self-Healer)",
+                              icon: Icons.hub_rounded,
+                              onTap: () => widget.onOpenAutonomousSwarm?.call(),
+                            ),
+                          if (widget.onOpenParetoExplorer != null)
+                            _MenuAction(
+                              label: "WebGPU 512-Topology Pareto Explorer",
+                              icon: Icons.scatter_plot_rounded,
+                              onTap: () => widget.onOpenParetoExplorer?.call(),
+                            ),
                           _MenuAction(
                             label: "AI Structural Copilot (Gemini Agent)",
                             icon: Icons.psychology_rounded,
@@ -445,7 +469,54 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                       _buildRendererToggle(),
                       const SizedBox(width: 8),
 
-                      // 8. Camera Presets (ISO / TOP / FRONT) & Zoom Controls
+                      // 8. Undo / Redo History Controls
+                      if (widget.onUndo != null || widget.onRedo != null) ...[
+                        GlassPod(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          borderRadius: 16,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Tooltip(
+                                message: 'Undo (Ctrl+Z)',
+                                child: InkWell(
+                                  onTap: widget.canUndo ? widget.onUndo : null,
+                                  mouseCursor: widget.canUndo ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                      Icons.undo_rounded,
+                                      size: 15,
+                                      color: widget.canUndo ? const Color(0xFF00F0FF) : Colors.white24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Tooltip(
+                                message: 'Redo (Ctrl+Y)',
+                                child: InkWell(
+                                  onTap: widget.canRedo ? widget.onRedo : null,
+                                  mouseCursor: widget.canRedo ? SystemMouseCursors.click : SystemMouseCursors.basic,
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                      Icons.redo_rounded,
+                                      size: 15,
+                                      color: widget.canRedo ? const Color(0xFF00F0FF) : Colors.white24,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+
+                      // 9. Camera Presets (ISO / TOP / FRONT) & Zoom Controls
                       _buildCameraControls(),
                       const SizedBox(width: 8),
 
