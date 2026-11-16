@@ -317,7 +317,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                             ),
                           if (widget.onOpenParetoExplorer != null)
                             _MenuAction(
-                              label: "WebGPU 512-Topology Pareto Explorer",
+                              label: "Pareto Frontier (60 FPS)",
                               icon: Icons.scatter_plot_rounded,
                               onTap: () => widget.onOpenParetoExplorer?.call(),
                             ),

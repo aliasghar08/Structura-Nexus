@@ -46,6 +46,11 @@
       this._lastBoundsSignature = null;
       this.selectedNodeId = null;
       this.selectedMemberId = null;
+      this.selectedNodeIds = new Set();
+      this.selectedMemberIds = new Set();
+      this.isMarqueeSelecting = false;
+      this.marqueeStart = { x: 0, y: 0 };
+      this.marqueeBoxEl = null;
 
       // Meshes and topology references
       this.nodeMeshes = [];
@@ -297,6 +302,78 @@
       this.raycaster.setFromCamera(this.mouse, this.camera);
       const nodeHits = this.raycaster.intersectObjects(this.nodeMeshes, false);
 
+      // Handle Shift + Click multi-selection on Node
+      if (e.shiftKey && nodeHits.length > 0) {
+        const hitMesh = nodeHits[0].object;
+        const nid = hitMesh.userData.nodeId;
+        if (this.selectedNodeIds.has(nid)) {
+          this.selectedNodeIds.delete(nid);
+        } else {
+          this.selectedNodeIds.add(nid);
+        }
+        this.selectedNodeId = this.selectedNodeIds.size === 1 ? Array.from(this.selectedNodeIds)[0] : null;
+        this._updateSelectionHighlight();
+        window.dispatchEvent(
+          new CustomEvent("structura-multi-selected", {
+            detail: {
+              nodeIds: Array.from(this.selectedNodeIds),
+              memberIds: Array.from(this.selectedMemberIds),
+            },
+          })
+        );
+        return;
+      }
+
+      // Handle Shift + Click multi-selection on Member
+      if (e.shiftKey) {
+        const memberHits = this.raycaster.intersectObjects(this.memberMeshes, false);
+        if (memberHits.length > 0) {
+          const hitMem = memberHits[0].object;
+          if (hitMem.userData && hitMem.userData.memberId) {
+            const mid = hitMem.userData.memberId;
+            if (this.selectedMemberIds.has(mid)) {
+              this.selectedMemberIds.delete(mid);
+            } else {
+              this.selectedMemberIds.add(mid);
+            }
+            this.selectedMemberId = this.selectedMemberIds.size === 1 ? Array.from(this.selectedMemberIds)[0] : null;
+            this._updateSelectionHighlight();
+            window.dispatchEvent(
+              new CustomEvent("structura-multi-selected", {
+                detail: {
+                  nodeIds: Array.from(this.selectedNodeIds),
+                  memberIds: Array.from(this.selectedMemberIds),
+                },
+              })
+            );
+            return;
+          }
+        }
+
+        // Shift + Drag initiated on empty space -> start screen marquee bounding box
+        this.isMarqueeSelecting = true;
+        this.marqueeStart = { x: e.clientX, y: e.clientY };
+        if (this.controls) {
+          this.controls.enabled = false;
+        }
+        if (!this.marqueeBoxEl) {
+          this.marqueeBoxEl = document.createElement("div");
+          this.marqueeBoxEl.id = "structura-marquee-box";
+          this.marqueeBoxEl.style.position = "fixed";
+          this.marqueeBoxEl.style.pointerEvents = "none";
+          this.marqueeBoxEl.style.backgroundColor = "rgba(0, 240, 255, 0.2)";
+          this.marqueeBoxEl.style.border = "1px dashed #00f0ff";
+          this.marqueeBoxEl.style.zIndex = "999999";
+          document.body.appendChild(this.marqueeBoxEl);
+        }
+        this.marqueeBoxEl.style.left = e.clientX + "px";
+        this.marqueeBoxEl.style.top = e.clientY + "px";
+        this.marqueeBoxEl.style.width = "0px";
+        this.marqueeBoxEl.style.height = "0px";
+        this.marqueeBoxEl.style.display = "block";
+        return;
+      }
+
       if (nodeHits.length > 0) {
         const hitMesh = nodeHits[0].object;
         this.isDraggingNode = true;
@@ -344,12 +421,33 @@
               })
             );
           }
+        } else {
+          // Clicked empty space without shift: deselect
+          this.clearSelection();
+          window.dispatchEvent(
+            new CustomEvent("structura-multi-selected", {
+              detail: { nodeIds: [], memberIds: [] },
+            })
+          );
         }
       }
     }
 
     onPointerMove(e) {
       if (window.__structuraMenuHovered) return;
+
+      if (this.isMarqueeSelecting && this.marqueeBoxEl) {
+        const minX = Math.min(this.marqueeStart.x, e.clientX);
+        const maxX = Math.max(this.marqueeStart.x, e.clientX);
+        const minY = Math.min(this.marqueeStart.y, e.clientY);
+        const maxY = Math.max(this.marqueeStart.y, e.clientY);
+        this.marqueeBoxEl.style.left = minX + "px";
+        this.marqueeBoxEl.style.top = minY + "px";
+        this.marqueeBoxEl.style.width = Math.max(0, maxX - minX) + "px";
+        this.marqueeBoxEl.style.height = Math.max(0, maxY - minY) + "px";
+        return;
+      }
+
       this.updateMouseCoords(e);
       this.raycaster.setFromCamera(this.mouse, this.camera);
 
@@ -409,6 +507,65 @@
     }
 
     onPointerUp(e) {
+      if (this.isMarqueeSelecting) {
+        this.isMarqueeSelecting = false;
+        if (this.marqueeBoxEl) {
+          this.marqueeBoxEl.style.display = "none";
+        }
+        if (this.controls && !window.__structuraMenuHovered) {
+          this.controls.enabled = true;
+        }
+
+        const minX = Math.min(this.marqueeStart.x, e.clientX);
+        const maxX = Math.max(this.marqueeStart.x, e.clientX);
+        const minY = Math.min(this.marqueeStart.y, e.clientY);
+        const maxY = Math.max(this.marqueeStart.y, e.clientY);
+
+        if ((maxX - minX > 4) || (maxY - minY > 4)) {
+          const rect = this.renderer.domElement.getBoundingClientRect();
+          this.nodeMeshes.forEach((mesh) => {
+            const p = mesh.position.clone().project(this.camera);
+            if (p.z < 1.0) {
+              const sx = ((p.x + 1) / 2) * rect.width + rect.left;
+              const sy = ((-p.y + 1) / 2) * rect.height + rect.top;
+              if (sx >= minX && sx <= maxX && sy >= minY && sy <= maxY) {
+                this.selectedNodeIds.add(mesh.userData.nodeId);
+              }
+            }
+          });
+
+          this.memberData.forEach((m) => {
+            if (this.nodeMap[m.iNodeId] && this.nodeMap[m.jNodeId]) {
+              const mid = new THREE.Vector3()
+                .addVectors(this.nodeMap[m.iNodeId], this.nodeMap[m.jNodeId])
+                .multiplyScalar(0.5);
+              const p = mid.project(this.camera);
+              if (p.z < 1.0) {
+                const sx = ((p.x + 1) / 2) * rect.width + rect.left;
+                const sy = ((-p.y + 1) / 2) * rect.height + rect.top;
+                if (sx >= minX && sx <= maxX && sy >= minY && sy <= maxY) {
+                  this.selectedMemberIds.add(m.id);
+                }
+              }
+            }
+          });
+
+          this.selectedNodeId = this.selectedNodeIds.size === 1 ? Array.from(this.selectedNodeIds)[0] : null;
+          this.selectedMemberId = this.selectedMemberIds.size === 1 ? Array.from(this.selectedMemberIds)[0] : null;
+          this._updateSelectionHighlight();
+
+          window.dispatchEvent(
+            new CustomEvent("structura-multi-selected", {
+              detail: {
+                nodeIds: Array.from(this.selectedNodeIds),
+                memberIds: Array.from(this.selectedMemberIds),
+              },
+            })
+          );
+        }
+        return;
+      }
+
       if (this.isDraggingNode && this.draggedNodeMesh) {
         const nodeId = this.draggedNodeMesh.userData.nodeId;
         const fx = this.draggedNodeMesh.position.x;
@@ -436,13 +593,32 @@
     setSelectedEntity(nodeId, memberId) {
       this.selectedNodeId = nodeId || null;
       this.selectedMemberId = memberId || null;
+      this.selectedNodeIds = new Set(nodeId ? [nodeId] : []);
+      this.selectedMemberIds = new Set(memberId ? [memberId] : []);
+      this._updateSelectionHighlight();
+    }
+
+    setSelectedEntities(nodeIds, memberIds) {
+      this.selectedNodeIds = new Set(nodeIds || []);
+      this.selectedMemberIds = new Set(memberIds || []);
+      this.selectedNodeId = this.selectedNodeIds.size === 1 ? Array.from(this.selectedNodeIds)[0] : null;
+      this.selectedMemberId = this.selectedMemberIds.size === 1 ? Array.from(this.selectedMemberIds)[0] : null;
+      this._updateSelectionHighlight();
+    }
+
+    clearSelection() {
+      this.selectedNodeId = null;
+      this.selectedMemberId = null;
+      this.selectedNodeIds.clear();
+      this.selectedMemberIds.clear();
       this._updateSelectionHighlight();
     }
 
     _updateSelectionHighlight() {
       this.nodeMeshes.forEach((mesh) => {
         if (!mesh.material || !mesh.material.emissive) return;
-        const isSel = this.selectedNodeId && mesh.userData.nodeId === this.selectedNodeId;
+        const isSel = (this.selectedNodeId && mesh.userData.nodeId === this.selectedNodeId) ||
+                      (this.selectedNodeIds && this.selectedNodeIds.has(mesh.userData.nodeId));
         if (isSel) {
           mesh.material.emissive.setHex(0xffffff);
           mesh.material.emissiveIntensity = 0.95;
@@ -458,7 +634,8 @@
 
       this.memberData.forEach((m) => {
         if (!m.mesh || !m.mesh.material || !m.mesh.material.emissive) return;
-        const isSel = this.selectedMemberId && m.id === this.selectedMemberId;
+        const isSel = (this.selectedMemberId && m.id === this.selectedMemberId) ||
+                      (this.selectedMemberIds && this.selectedMemberIds.has(m.id));
         if (isSel) {
           m.mesh.material.emissive.setHex(0x00ffff);
           m.mesh.material.emissiveIntensity = 0.85;

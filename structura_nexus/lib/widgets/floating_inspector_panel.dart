@@ -14,10 +14,17 @@ class FloatingInspectorPanel extends StatefulWidget {
   final StructuralModel model;
   final String? selectedNodeId;
   final String? selectedMemberId;
+  final Set<String>? selectedNodeIds;
+  final Set<String>? selectedMemberIds;
   final VoidCallback onModelChanged;
   final VoidCallback onClose;
   final ValueChanged<String>? onSelectNode;
   final ValueChanged<String>? onSelectMember;
+  final void Function(String section)? onBatchAssignSection;
+  final void Function(String support)? onBatchAssignSupport;
+  final void Function(double fx, double fy, double fz)? onBatchApplyLoads;
+  final VoidCallback? onBatchDelete;
+  final VoidCallback? onDeselectAll;
 
   /// Panel width. Defaults to 330 (desktop side card); pass `double.infinity`
   /// for full-width phone bottom sheets.
@@ -28,10 +35,17 @@ class FloatingInspectorPanel extends StatefulWidget {
     required this.model,
     this.selectedNodeId,
     this.selectedMemberId,
+    this.selectedNodeIds,
+    this.selectedMemberIds,
     required this.onModelChanged,
     required this.onClose,
     this.onSelectNode,
     this.onSelectMember,
+    this.onBatchAssignSection,
+    this.onBatchAssignSupport,
+    this.onBatchApplyLoads,
+    this.onBatchDelete,
+    this.onDeselectAll,
     this.width = 330,
   });
 
@@ -99,6 +113,9 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             )
         : null;
 
+    final totalSelected = (widget.selectedNodeIds?.length ?? 0) + (widget.selectedMemberIds?.length ?? 0);
+    final isBatchMode = totalSelected > 1;
+
     return AnimatedBuilder(
       animation: animation,
       builder: (context, child) {
@@ -146,11 +163,13 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          selectedNode != null
-                              ? "JOINT: ${selectedNode.id}"
-                              : (selectedMember != null
-                                  ? "MEMBER: ${selectedMember.id}"
-                                  : "SELECTION INSPECTOR"),
+                          isBatchMode
+                              ? "BATCH EDIT MODE (${widget.selectedNodeIds?.length ?? 0}J, ${widget.selectedMemberIds?.length ?? 0}M)"
+                              : (selectedNode != null
+                                  ? "JOINT: ${selectedNode.id}"
+                                  : (selectedMember != null
+                                      ? "MEMBER: ${selectedMember.id}"
+                                      : "SELECTION INSPECTOR")),
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
@@ -178,11 +197,13 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
                       onNotification: (notification) => true,
                       child: SingleChildScrollView(
                         physics: const ClampingScrollPhysics(),
-                        child: selectedNode != null
-                            ? _buildNodeDetails(selectedNode)
-                            : (selectedMember != null
-                                ? _buildMemberDetails(selectedMember)
-                                : _buildEmptyState()),
+                        child: isBatchMode
+                            ? _buildBatchDetails(totalSelected)
+                            : (selectedNode != null
+                                ? _buildNodeDetails(selectedNode)
+                                : (selectedMember != null
+                                    ? _buildMemberDetails(selectedMember)
+                                    : _buildEmptyState())),
                       ),
                     ),
                   ),
@@ -192,6 +213,164 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBatchDetails(int totalSelected) {
+    final nodeCount = widget.selectedNodeIds?.length ?? 0;
+    final memberCount = widget.selectedMemberIds?.length ?? 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Summary Card
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00F0FF).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.select_all_rounded, color: Color(0xFF00F0FF), size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$nodeCount Joints, $memberCount Members',
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              if (widget.onDeselectAll != null)
+                TextButton(
+                  onPressed: widget.onDeselectAll,
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Deselect', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Member Batch Actions
+        if (memberCount > 0) ...[
+          _headerText('BATCH AISC SECTION ASSIGNMENT'),
+          const SizedBox(height: 6),
+          const Text(
+            'Apply section to all selected members:',
+            style: TextStyle(color: Colors.white60, fontSize: 10),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              'W14x90',
+              'W24x68',
+              'W18x35',
+              'W12x26',
+              'HSS8x8x1/2',
+              'HSS6x6x3/8',
+            ].map((sec) => ActionChip(
+              label: Text(sec, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+              backgroundColor: const Color(0xFF1B2433),
+              side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.4)),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              onPressed: () => widget.onBatchAssignSection?.call(sec),
+            )).toList(),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // Node Batch Actions
+        if (nodeCount > 0) ...[
+          _headerText('BATCH SUPPORT RESTRAINTS'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _batchSupportChip('Fixed Base', 'FIXED', const Color(0xFFEF4444)),
+              _batchSupportChip('Pinned Base', 'PINNED', const Color(0xFFF59E0B)),
+              _batchSupportChip('Roller Support', 'ROLLER', const Color(0xFF10B981)),
+              _batchSupportChip('Free / Release', 'FREE', const Color(0xFF6B7280)),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          _headerText('BATCH NODAL LOADS'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _batchLoadChip('-100 kN Gravity (Fy)', 0.0, -100000.0, 0.0),
+              _batchLoadChip('+50 kN Wind (Fx)', 50000.0, 0.0, 0.0),
+              _batchLoadChip('+50 kN Wind (Fz)', 0.0, 0.0, 50000.0),
+              _batchLoadChip('Zero Loads', 0.0, 0.0, 0.0),
+            ],
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // Batch Delete Button
+        if (widget.onBatchDelete != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: widget.onBatchDelete,
+            icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: Color(0xFFEF4444)),
+            label: Text(
+              'Batch Delete Selected ($totalSelected)',
+              style: const TextStyle(color: Color(0xFFEF4444), fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.5)),
+              backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.1),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _batchSupportChip(String label, String type, Color color) {
+    return ActionChip(
+      label: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xFF161F2E),
+      side: BorderSide(color: color.withValues(alpha: 0.5)),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      onPressed: () => widget.onBatchAssignSupport?.call(type),
+    );
+  }
+
+  Widget _headerText(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        color: Color(0xFF00F0FF),
+        fontSize: 10,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 0.8,
+      ),
+    );
+  }
+
+  Widget _batchLoadChip(String label, double fx, double fy, double fz) {
+    return ActionChip(
+      label: Text(label, style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 10, fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xFF161F2E),
+      side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.4)),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      onPressed: () => widget.onBatchApplyLoads?.call(fx, fy, fz),
     );
   }
 

@@ -112,3 +112,23 @@ def test_v4_uncertainty_gating_api_endpoint():
     data = response.json()
     assert "epistemic_variance" in data
     assert "solver_used" in data
+
+
+def test_v4_active_learning_daemon_finetune_endpoint():
+    """
+    Tests POST /api/v4/surrogate/finetune and GET /api/v4/surrogate/ood-queue-status.
+    """
+    # 1. Check OOD queue status
+    status_res = client.get("/api/v4/surrogate/ood-queue-status")
+    assert status_res.status_code == 200
+    status_data = status_res.json()
+    assert "queue_count" in status_data
+    assert "threshold" in status_data
+
+    # 2. Trigger Active Learning fine-tune
+    ft_res = client.post("/api/v4/surrogate/finetune", json={"epochs": 3, "learning_rate": 0.0001})
+    assert ft_res.status_code == 200
+    ft_data = ft_res.json()
+    assert ft_data["status"] == "COMPLETED"
+    assert "error_reduction_pct" in ft_data
+    assert "quantized_bundle" in ft_data

@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 import '../services/dart_neural_engine.dart';
+import '../services/structural_api_service.dart';
 
 class MacNeuralInspectorDialog extends StatefulWidget {
   final StructuralModel currentModel;
@@ -23,10 +24,17 @@ class MacNeuralInspectorDialog extends StatefulWidget {
 
 class _MacNeuralInspectorDialogState extends State<MacNeuralInspectorDialog> {
   final DartNeuralEngine _neuralEngine = DartNeuralEngine.instance;
+  final StructuralApiService _apiService = StructuralApiService();
 
   bool _isBenchmarking = false;
   Map<String, dynamic>? _benchmarkResults;
   double _totalBenchmarkLatencyMs = 0.0;
+
+  bool _isFinetuning = false;
+  Map<String, dynamic>? _finetuneResult;
+  int _oodQueueCount = 0;
+  double _currentUncertainty = 0.0124;
+  double _routingThreshold = 0.080;
 
   @override
   void initState() {
@@ -34,6 +42,27 @@ class _MacNeuralInspectorDialogState extends State<MacNeuralInspectorDialog> {
     _neuralEngine.initialize().then((_) {
       if (mounted) setState(() {});
     });
+    _apiService.getOodQueueStatus().then((status) {
+      if (mounted) {
+        setState(() {
+          _oodQueueCount = (status['queue_count'] as num?)?.toInt() ?? 0;
+          _currentUncertainty = (status['latest_variance'] as num?)?.toDouble() ?? 0.0124;
+          _routingThreshold = (status['threshold'] as num?)?.toDouble() ?? 0.080;
+        });
+      }
+    });
+  }
+
+  void _triggerFinetune() async {
+    setState(() => _isFinetuning = true);
+    final res = await _apiService.triggerSurrogateFinetune(epochs: 15);
+    if (mounted) {
+      setState(() {
+        _isFinetuning = false;
+        _finetuneResult = res;
+        _oodQueueCount = 0;
+      });
+    }
   }
 
   void _runBenchmark() async {
@@ -129,6 +158,7 @@ class _MacNeuralInspectorDialogState extends State<MacNeuralInspectorDialog> {
             children: [
               _buildHeader(),
               _buildTelemetryOverview(),
+              _buildActiveLearningCard(),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.all(20),
@@ -236,6 +266,119 @@ class _MacNeuralInspectorDialogState extends State<MacNeuralInspectorDialog> {
                 children: [
                   Text(title, style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.bold)),
                   Text(val, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActiveLearningCard() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF131A29),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.psychology_rounded, color: Color(0xFF00F0FF), size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'EPISTEMIC UNCERTAINTY GATING & ACTIVE LEARNING DAEMON',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    ),
+                    Text(
+                      'M=5 Monte Carlo Dropout • Physics-Informed Equilibrium Loss (Apple Silicon MPS)',
+                      style: TextStyle(color: Colors.white60, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _isFinetuning ? null : _triggerFinetune,
+                icon: _isFinetuning
+                    ? const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF0D1117)))
+                    : const Icon(Icons.auto_fix_high_rounded, size: 14, color: Color(0xFF0D1117)),
+                label: Text(
+                  _isFinetuning ? 'Fine-Tuning on MPS...' : 'Trigger Active Learning Fine-Tune',
+                  style: const TextStyle(color: Color(0xFF0D1117), fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00F0FF),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _metricPill('INFERENCE UNCERTAINTY (σ²)', _currentUncertainty.toStringAsFixed(4), Icons.show_chart_rounded, const Color(0xFF7EE787)),
+              const SizedBox(width: 10),
+              _metricPill('12-DOF DSM GATING THRESHOLD', _routingThreshold.toStringAsFixed(3), Icons.shield_rounded, const Color(0xFFFFA657)),
+              const SizedBox(width: 10),
+              _metricPill('OOD HARD EXAMPLES QUEUE', '$_oodQueueCount structures', Icons.queue_rounded, const Color(0xFF38BDF8)),
+            ],
+          ),
+          if (_finetuneResult != null) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF7EE787).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF7EE787).withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                'MPS Fine-Tuning Complete: ${_finetuneResult!['error_reduction_pct']}% PINN error reduction (${_finetuneResult!['initial_pinn_loss']} -> ${_finetuneResult!['final_pinn_loss']}) • ${_finetuneResult!['quantized_bundle']} updated.',
+                style: const TextStyle(color: Color(0xFF7EE787), fontSize: 10.5, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _metricPill(String title, String val, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0F1D),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(color: color, fontSize: 8.5, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
+                  Text(val, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
                 ],
               ),
             ),

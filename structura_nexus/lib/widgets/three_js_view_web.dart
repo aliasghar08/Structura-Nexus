@@ -11,6 +11,9 @@ external JSObject? _initStructuraThreeViewer(JSString containerId);
 @JS('JSON.parse')
 external JSAny? _jsonParse(JSString jsonStr);
 
+@JS('JSON.stringify')
+external JSString _jsonStringify(JSAny? obj);
+
 extension type ThreeViewer(JSObject _) implements JSObject {
   external void loadModel(JSAny model);
   external void setDeformationMode(bool enabled, double scale);
@@ -41,6 +44,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final bool showStressGradient;
   final void Function(String? nodeId)? onNodeSelected;
   final void Function(String? memberId)? onMemberSelected;
+  final void Function(Set<String> nodeIds, Set<String> memberIds)? onMultiSelectChanged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
 
@@ -55,6 +59,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.showStressGradient = true,
     this.onNodeSelected,
     this.onMemberSelected,
+    this.onMultiSelectChanged,
     this.onNodeDragged,
     this.onNodeDragEnd,
   });
@@ -73,6 +78,7 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   JSFunction? _dragEndListener;
   JSFunction? _nodeSelectListener;
   JSFunction? _memberSelectListener;
+  JSFunction? _multiSelectListener;
 
   @override
   void initState() {
@@ -153,10 +159,24 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       }
     }).toJS;
 
+    _multiSelectListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        try {
+          final jsonStr = _jsonStringify(customEv.detail).toDart;
+          final map = jsonDecode(jsonStr) as Map<String, dynamic>;
+          final nList = (map['nodeIds'] as List<dynamic>?)?.map((e) => e.toString()).toSet() ?? <String>{};
+          final mList = (map['memberIds'] as List<dynamic>?)?.map((e) => e.toString()).toSet() ?? <String>{};
+          widget.onMultiSelectChanged?.call(nList, mList);
+        } catch (_) {}
+      }
+    }).toJS;
+
     web.window.addEventListener('structura-node-dragged', _dragListener);
     web.window.addEventListener('structura-node-drag-end', _dragEndListener);
     web.window.addEventListener('structura-node-selected', _nodeSelectListener);
     web.window.addEventListener('structura-member-selected', _memberSelectListener);
+    web.window.addEventListener('structura-multi-selected', _multiSelectListener);
   }
 
   @override
@@ -172,6 +192,9 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     }
     if (_memberSelectListener != null) {
       web.window.removeEventListener('structura-member-selected', _memberSelectListener);
+    }
+    if (_multiSelectListener != null) {
+      web.window.removeEventListener('structura-multi-selected', _multiSelectListener);
     }
     super.dispose();
   }

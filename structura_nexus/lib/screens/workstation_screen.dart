@@ -6,7 +6,9 @@
 
 import 'dart:async';
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vector_math/vector_math_64.dart' hide Colors;
 import '../models/structural_models.dart';
 import '../data/benchmark_presets.dart';
@@ -67,6 +69,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   final RealtimeSurrogateStreamer _surrogateStreamer = RealtimeSurrogateStreamer();
   String? _selectedNodeId;
   String? _selectedMemberId;
+  final Set<String> _selectedNodeIds = {};
+  final Set<String> _selectedMemberIds = {};
   bool? _isInspectorOpen;
   double? _inspectorTopOffset;
   bool _isNlthaActive = false;
@@ -75,7 +79,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   void _saveUndoState() {
     _undoStack.add(_model.copyWith());
-    if (_undoStack.length > 30) {
+    if (_undoStack.length > 50) {
       _undoStack.removeAt(0);
     }
     _redoStack.clear();
@@ -90,6 +94,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     _model = _undoStack.removeLast();
     _selectedNodeId = null;
     _selectedMemberId = null;
+    _selectedNodeIds.clear();
+    _selectedMemberIds.clear();
     _commitModelMutation('Undo applied (${_model.nodes.length} joints, ${_model.members.length} members)');
   }
 
@@ -102,7 +108,170 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     _model = _redoStack.removeLast();
     _selectedNodeId = null;
     _selectedMemberId = null;
+    _selectedNodeIds.clear();
+    _selectedMemberIds.clear();
     _commitModelMutation('Redo applied (${_model.nodes.length} joints, ${_model.members.length} members)');
+  }
+
+  bool _isTextInputFocused() {
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus == null) return false;
+    final widget = primaryFocus.context?.widget;
+    return widget is EditableText;
+  }
+
+  KeyEventResult _handleGlobalKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (_isTextInputFocused()) return KeyEventResult.ignored;
+
+    final isMac = defaultTargetPlatform == TargetPlatform.macOS;
+    final isModifier = isMac
+        ? HardwareKeyboard.instance.isMetaPressed
+        : HardwareKeyboard.instance.isControlPressed;
+    final isShift = HardwareKeyboard.instance.isShiftPressed;
+
+    // Cmd/Ctrl + Z: Undo
+    if (isModifier && !isShift && event.logicalKey == LogicalKeyboardKey.keyZ) {
+      _undo();
+      return KeyEventResult.handled;
+    }
+
+    // Cmd/Ctrl + Y or Cmd/Ctrl + Shift + Z: Redo
+    if ((isModifier && event.logicalKey == LogicalKeyboardKey.keyY) ||
+        (isModifier && isShift && event.logicalKey == LogicalKeyboardKey.keyZ)) {
+      _redo();
+      return KeyEventResult.handled;
+    }
+
+    // Delete / Backspace: Delete selected
+    if (event.logicalKey == LogicalKeyboardKey.delete ||
+        event.logicalKey == LogicalKeyboardKey.backspace) {
+      if (_selectedNodeId != null ||
+          _selectedMemberId != null ||
+          _selectedNodeIds.isNotEmpty ||
+          _selectedMemberIds.isNotEmpty) {
+        _deleteSelectedElements();
+        return KeyEventResult.handled;
+      }
+    }
+
+    // Escape: Deselect all
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      _deselectAll();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
+
+  void _deleteSelectedElements() {
+    final nodesToDelete = Set<String>.from(_selectedNodeIds);
+    if (_selectedNodeId != null) nodesToDelete.add(_selectedNodeId!);
+
+    final membersToDelete = Set<String>.from(_selectedMemberIds);
+    if (_selectedMemberId != null) membersToDelete.add(_selectedMemberId!);
+
+    if (nodesToDelete.isEmpty && membersToDelete.isEmpty) return;
+
+    _saveUndoState();
+
+    final remainingMembers = _model.members.where((m) {
+      if (membersToDelete.contains(m.id)) return false;
+      if (nodesToDelete.contains(m.iNodeId) || nodesToDelete.contains(m.jNodeId)) return false;
+      return true;
+    }).toList();
+
+    final remainingNodes = _model.nodes.where((n) => !nodesToDelete.contains(n.id)).toList();
+
+    _model = _model.copyWith(nodes: remainingNodes, members: remainingMembers);
+    _selectedNodeId = null;
+    _selectedMemberId = null;
+    _selectedNodeIds.clear();
+    _selectedMemberIds.clear();
+    _commitModelMutation('Deleted selected entities.');
+  }
+
+  void _deselectAll() {
+    setState(() {
+      _selectedNodeId = null;
+      _selectedMemberId = null;
+      _selectedNodeIds.clear();
+      _selectedMemberIds.clear();
+    });
+  }
+
+  void _batchAssignSection(String section) {
+    if (_selectedMemberIds.isEmpty && _selectedMemberId == null) return;
+    final targetIds = Set<String>.from(_selectedMemberIds);
+    if (_selectedMemberId != null) targetIds.add(_selectedMemberId!);
+
+    _saveUndoState();
+    final updated = _model.members.map((m) {
+      if (targetIds.contains(m.id)) {
+        return m.copyWith(section: section);
+      }
+      return m;
+    }).toList();
+
+    _model = _model.copyWith(members: updated);
+    _commitModelMutation('Assigned $section to ${targetIds.length} members');
+  }
+
+  void _batchAssignSupport(String supportType) {
+    if (_selectedNodeIds.isEmpty && _selectedNodeId == null) return;
+    final targetIds = Set<String>.from(_selectedNodeIds);
+    if (_selectedNodeId != null) targetIds.add(_selectedNodeId!);
+
+    List<int> restraint = [0, 0, 0, 0, 0, 0];
+    if (supportType == 'FIXED') {
+      restraint = [1, 1, 1, 1, 1, 1];
+    } else if (supportType == 'PINNED') {
+      restraint = [1, 1, 1, 0, 0, 0];
+    } else if (supportType == 'ROLLER') {
+      restraint = [0, 1, 0, 0, 0, 0];
+    }
+
+    _saveUndoState();
+    final updated = _model.nodes.map((n) {
+      if (targetIds.contains(n.id)) {
+        return n.copyWith(restraint: List<int>.from(restraint));
+      }
+      return n;
+    }).toList();
+
+    _model = _model.copyWith(nodes: updated);
+    _commitModelMutation('Assigned $supportType support to ${targetIds.length} joints');
+  }
+
+  void _batchApplyLoads(double fx, double fy, double fz) {
+    if (_selectedNodeIds.isEmpty && _selectedNodeId == null) return;
+    final targetIds = Set<String>.from(_selectedNodeIds);
+    if (_selectedNodeId != null) targetIds.add(_selectedNodeId!);
+
+    _saveUndoState();
+    final updated = _model.nodes.map((n) {
+      if (targetIds.contains(n.id)) {
+        final currentLoads = List<double>.from(n.loads);
+        if (fx == 0 && fy == 0 && fz == 0) {
+          return n.copyWith(loads: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        } else {
+          return n.copyWith(
+            loads: [
+              (currentLoads.isNotEmpty ? currentLoads[0] : 0.0) + fx,
+              (currentLoads.length > 1 ? currentLoads[1] : 0.0) + fy,
+              (currentLoads.length > 2 ? currentLoads[2] : 0.0) + fz,
+              0.0,
+              0.0,
+              0.0,
+            ],
+          );
+        }
+      }
+      return n;
+    }).toList();
+
+    _model = _model.copyWith(nodes: updated);
+    _commitModelMutation('Applied loads across ${targetIds.length} joints');
   }
 
   void _commitModelMutation(String snackbarMessage, {bool refitCamera = false}) {
@@ -1120,7 +1289,16 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
 
     void onOpenParetoExplorer() {
-      ParetoFrontierDock.show(context, model: _model);
+      ParetoFrontierDock.show(
+        context,
+        model: _model,
+        onCommit: (optimized) {
+          _saveUndoState();
+          _model = optimized;
+          _commitModelMutation('Committed Pareto Optimal Design to 3D Viewport');
+          _triggerSolve();
+        },
+      );
     }
 
     void onOpenSeismicModal() => _requireAuth(
@@ -1302,8 +1480,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final effectiveInspectorTop = (_inspectorTopOffset ?? defaultInspectorTop).clamp(60.0, maxInspectorTop);
     final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
-    return Scaffold(
-      key: _scaffoldKey,
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _handleGlobalKeyEvent,
+      child: Scaffold(
+        key: _scaffoldKey,
       backgroundColor: const Color(0xFF070B12), // Deep canvas black
       drawer: WorkstationDrawer(
         onOpenCopilot: onOpenCopilot,
@@ -1342,7 +1523,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onNodeSelected: (id) {
                 setState(() {
                   _selectedNodeId = id;
+                  _selectedNodeIds.clear();
+                  _selectedMemberIds.clear();
                   if (id != null) {
+                    _selectedNodeIds.add(id);
                     _selectedMemberId = null;
                     _setInspectorOpen(true);
                   }
@@ -1351,8 +1535,24 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onMemberSelected: (id) {
                 setState(() {
                   _selectedMemberId = id;
+                  _selectedNodeIds.clear();
+                  _selectedMemberIds.clear();
                   if (id != null) {
+                    _selectedMemberIds.add(id);
                     _selectedNodeId = null;
+                    _setInspectorOpen(true);
+                  }
+                });
+              },
+              onMultiSelectChanged: (nodeIds, memberIds) {
+                setState(() {
+                  _selectedNodeIds.clear();
+                  _selectedNodeIds.addAll(nodeIds);
+                  _selectedMemberIds.clear();
+                  _selectedMemberIds.addAll(memberIds);
+                  _selectedNodeId = nodeIds.length == 1 ? nodeIds.first : null;
+                  _selectedMemberId = memberIds.length == 1 ? memberIds.first : null;
+                  if (nodeIds.isNotEmpty || memberIds.isNotEmpty) {
                     _setInspectorOpen(true);
                   }
                 });
@@ -1514,7 +1714,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               },
               onAutoSizerPressed: onOptimize,
               onStabilityPressed: onOpenLateralStability,
-              onParetoPressed: () => ParetoFrontierDock.show(context, model: _model),
+              onParetoPressed: onOpenParetoExplorer,
             ),
           ),
 
@@ -1800,18 +2000,31 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   model: _model,
                   selectedNodeId: _selectedNodeId,
                   selectedMemberId: _selectedMemberId,
+                  selectedNodeIds: _selectedNodeIds,
+                  selectedMemberIds: _selectedMemberIds,
                   onSelectNode: (nodeId) {
                     setState(() {
                       _selectedNodeId = nodeId;
+                      _selectedNodeIds.clear();
+                      _selectedNodeIds.add(nodeId);
                       _selectedMemberId = null;
+                      _selectedMemberIds.clear();
                     });
                   },
                   onSelectMember: (memberId) {
                     setState(() {
                       _selectedMemberId = memberId;
+                      _selectedMemberIds.clear();
+                      _selectedMemberIds.add(memberId);
                       _selectedNodeId = null;
+                      _selectedNodeIds.clear();
                     });
                   },
+                  onBatchAssignSection: _batchAssignSection,
+                  onBatchAssignSupport: _batchAssignSupport,
+                  onBatchApplyLoads: _batchApplyLoads,
+                  onBatchDelete: _deleteSelectedElements,
+                  onDeselectAll: _deselectAll,
                   onModelChanged: () {
                     _commitModelMutation('Updated structural properties');
                   },
@@ -1854,6 +2067,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           const FloatingCopyrightWatermark(),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

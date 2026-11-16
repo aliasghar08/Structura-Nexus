@@ -958,9 +958,10 @@ class UncertaintyGatingRequest(BaseModel):
     variance_threshold: float = 0.08
 
 @app.post("/api/v1/surrogate/uncertainty-gated-predict", response_model=UncertaintyGatingResult)
+@app.post("/api/v4/surrogate/uncertainty-gated-predict", response_model=UncertaintyGatingResult)
 def uncertainty_gated_predict(request: UncertaintyGatingRequest):
     """
-    Epistemic variance gating via MC-Dropout. If variance > 0.08, falls back to exact 12-DOF DSM.
+    Epistemic variance gating via MC-Dropout. If max(variance) > 0.08, falls back to exact 12-DOF DSM.
     """
     try:
         return UncertaintyRouter.evaluate_and_route(
@@ -970,6 +971,34 @@ def uncertainty_gated_predict(request: UncertaintyGatingRequest):
         )
     except Exception as e:
         logger.error(f"Uncertainty gating error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/surrogate/ood-queue-status")
+@app.get("/api/v4/surrogate/ood-queue-status")
+def get_ood_queue_status():
+    """Returns current active learning hard example queue size and threshold."""
+    return UncertaintyRouter.get_queue_status()
+
+
+class FinetuneRequest(BaseModel):
+    epochs: int = 15
+    learning_rate: float = 1e-4
+
+@app.post("/api/v1/surrogate/finetune")
+@app.post("/api/v4/surrogate/finetune")
+def trigger_surrogate_finetune(req: Optional[FinetuneRequest] = None):
+    """
+    Triggers active learning Physics-Informed Equilibrium loss training on Apple Silicon MPS/CPU.
+    """
+    try:
+        from scripts.active_learning_daemon import run_active_learning_cycle
+        epochs = req.epochs if req else 15
+        lr = req.learning_rate if req else 1e-4
+        result = run_active_learning_cycle(epochs=epochs, learning_rate=lr)
+        return result
+    except Exception as e:
+        logger.error(f"Fine-tuning daemon execution error: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
