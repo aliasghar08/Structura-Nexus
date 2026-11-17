@@ -1,7 +1,7 @@
 # Structura Nexus
 
 > **Autonomous Frontier AI Workstation for Structural, Civil & Mechanical Engineering**  
-> **System Architecture**: `v4.3.0-FRONTIER` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
+> **System Architecture**: `v4.4.0-APEX` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `UFC 4-023-03` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
 > **Platform Support**: Native Apple Silicon macOS (`arm64`), Windows (`x64`), Linux & WebGPU PWA (`https://structura-nexus.web.app`)  
 > **Hardware Acceleration**: WebGPU Parallel WGSL Compute • Apple Silicon MPS • WebGL Three.js 3D GPU • Pure Dart SIMD Runtime  
 > **Live Production Web Application**: [https://structura-nexus.web.app](https://structura-nexus.web.app)  
@@ -13,7 +13,20 @@
 
 ## 🏗️ Executive Overview
 
-**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**, **Automated Tributary Gravity ($1.2D + 1.6L$) & ASCE 7-16 Lateral Load Propagation**, **Native Apple Silicon macOS & Windows Desktop Packaging**, and **Real-Time Multi-Engineer Cloud Collaboration with 3D Review Pins & Revision Diffing**.
+**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **UFC 4-023-03 Progressive Collapse & Alternate Load Path Analysis**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**, **Automated Tributary Gravity ($1.2D + 1.6L$) & ASCE 7-16 Lateral Load Propagation**, **Real-Time Multi-Engineer Cloud Collaboration**, and an **Omnipresent Rich Hover `(i)` Engineering Encyclopedia & `⌘K` Command Palette**.
+
+---
+
+## ⚡ Key v4.4-APEX Advancements & Guided Usability
+
+### 1. Progressive Collapse & Alternate Load Path Studio (`UFC 4-023-03` & `GSA APM`)
+- **Sudden Notional Column Removal**: Evaluates structural survivability under extreme event combination $\Omega_{LD}(1.2 D + 0.5 L)$ with configurable Dynamic Increase Factor $\Omega_{LD} \in [1.2, 2.5]$ (default $2.0$).
+- **Exact 12-DOF Damaged Stiffness Solve**: Solves $\mathbf{K}_{\text{damaged}} \mathbf{u} = \Omega_{LD} \mathbf{F}_{\text{ALP}}$ to compute double-span Vierendeel/catenary deflection $\Delta_{\text{cat}}$, plastic chord rotation $\theta = \Delta_{\text{cat}} / L_{\text{bay}}$ vs. UFC 4-023-03 Table 4-1 acceptance limits, and redistributed $\text{DCR}_{\text{ALP}}$.
+- **Automated Vulnerability Ranking & 1-Click 3D Simulation**: Sweeps all perimeter, corner, and interior columns to rank disproportionate collapse vulnerability and applies notional column loss directly into the 3D WebGL viewport (with full `Cmd/Ctrl + Z` restoration).
+
+### 2. Universal Spotlight Command Palette (`⌘K` / `Ctrl+K`) & Interactive Encyclopedia
+- **Instant Fuzzy Search**: Press `⌘K` / `Ctrl+K` or click the `QUICK CMD (⌘K)` header pill to search across all 30+ solvers, AI engines, CAD/BIM tools, code clauses, and building templates.
+- **Omnipresent Rich Hover `(i)` Buttons (`InfoTooltip` v2)**: Every header capsule, side-menu tool row, modal studio card, telemetry pod, and inspector control includes a glowing cyan `(i)` button that displays instant hover guidance with governing code references (`AISC 360-16`, `ACI 318-19`, `ASCE 7-16`, `UFC 4-023-03`) and usage tips.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐

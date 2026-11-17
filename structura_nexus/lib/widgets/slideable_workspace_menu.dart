@@ -35,6 +35,7 @@ class SlideableWorkspaceMenu extends StatefulWidget {
   final VoidCallback? onOpenBuildingTemplates;
   final VoidCallback? onOpenMacAiInspector;
   final VoidCallback? onAutoPropagateLoads;
+  final VoidCallback? onOpenProgressiveCollapse;
   final ValueChanged<String>? onPresetSelected;
   final VoidCallback? onSolveTriggered;
 
@@ -85,6 +86,7 @@ class SlideableWorkspaceMenu extends StatefulWidget {
     this.onOpenBuildingTemplates,
     this.onOpenMacAiInspector,
     this.onAutoPropagateLoads,
+    this.onOpenProgressiveCollapse,
     this.onPresetSelected,
     this.onSolveTriggered,
   });
@@ -101,6 +103,8 @@ class WorkspaceToolItem {
   final String category;
   final VoidCallback? onTap;
   final String? badge;
+  final String? infoText;
+  final String? codeRef;
 
   const WorkspaceToolItem({
     required this.label,
@@ -110,6 +114,8 @@ class WorkspaceToolItem {
     required this.category,
     required this.onTap,
     this.badge,
+    this.infoText,
+    this.codeRef,
   });
 }
 
@@ -442,6 +448,18 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
       badge: 'LIVE 3D',
     ),
     _ToolDef(
+      label: 'Progressive Collapse (ALP)',
+      subtitle: 'UFC 4-023-03 Column Loss & Catenary Bridging',
+      icon: Icons.warning_amber_rounded,
+      color: const Color(0xFFEF4444),
+      category: 'ANALYSIS',
+      onTap: widget.onOpenProgressiveCollapse ?? widget.onOpenLateralStability,
+      badge: 'UFC 4-023',
+      codeRef: 'UFC 4-023-03 & GSA',
+      infoText:
+          'Simulates sudden notional removal of ground/perimeter columns under Ω_LD = 2.0 dynamic amplification and verifies catenary bridging & chord rotation limits.',
+    ),
+    _ToolDef(
       label: 'Auto-Propagate Tributary Loads',
       subtitle: '1.2D+1.6L Gravity & ASCE 7-16 Wind/Seismic',
       icon: Icons.sync_alt_rounded,
@@ -449,8 +467,93 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
       category: 'LOADS',
       onTap: widget.onAutoPropagateLoads ?? widget.onOpenLateralStability,
       badge: 'AUTO',
+      codeRef: 'ASCE 7-16 §2.3 & §27',
+      infoText:
+          'Detects floor diaphragms by Y-elevation, calculates orthogonal tributary areas A_trib, and assigns factored gravity (1.2D+1.6L) and directional wind/seismic shears.',
     ),
   ];
+  }
+
+  static String _resolveToolCodeRef(_ToolDef tool) {
+    if (tool.codeRef != null && tool.codeRef!.isNotEmpty) return tool.codeRef!;
+    final l = tool.label.toLowerCase();
+    if (l.contains('concrete')) return 'ACI 318-19 & ACI 224R';
+    if (l.contains('connection') || l.contains('auto-sizer') || l.contains('w14') || l.contains('w18')) {
+      return 'AISC 360-16 LRFD';
+    }
+    if (l.contains('wind') || l.contains('seismic') || l.contains('modal') || l.contains('lateral') || l.contains('tributary')) {
+      return 'ASCE 7-16';
+    }
+    if (l.contains('pushover')) return 'ATC-40 / FEMA 356';
+    if (l.contains('foundation')) return 'ACI 318-19 §22.6';
+    if (l.contains('composite')) return 'AISC Design Guide 11';
+    if (l.contains('carbon')) return 'SE 2050 LCA';
+    if (l.contains('progressive') || l.contains('collapse')) return 'UFC 4-023-03';
+    if (l.contains('pe ') || l.contains('packet')) return 'HMAC-SHA256 PE Seal';
+    return tool.badge ?? tool.category;
+  }
+
+  static String _resolveToolInfo(_ToolDef tool) {
+    if (tool.infoText != null && tool.infoText!.isNotEmpty) return tool.infoText!;
+    final l = tool.label.toLowerCase();
+    if (l.contains('building templates')) {
+      return 'Browse and load 12 pre-engineered 3D structures (high-rise towers, hospitals, bridges, space canopies) with full boundary conditions and loads.';
+    }
+    if (l.contains('mac-trained ai')) {
+      return 'Inspect all 10 Apple Silicon MPS-trained neural surrogates running in-browser at <0.2 ms latency via SIMD Float32 execution.';
+    }
+    if (l.contains('add 3d joint')) {
+      return 'Insert a structural node at exact (X, Y, Z) coordinates in meters with custom support restraints.';
+    }
+    if (l.contains('draw member')) {
+      return 'Connect any two 3D joints with an AISC 360-16 structural steel or ACI 318-19 concrete profile.';
+    }
+    if (l.contains('extrude story')) {
+      return 'Duplicates the highest floor level upward by +3.6m, automatically generating vertical columns, floor beams, and tributary loads.';
+    }
+    if (l.contains('extend bay (+x')) {
+      return 'Appends a 6.0m structural bay along the +X lateral axis and automatically updates floor diaphragm tributary areas.';
+    }
+    if (l.contains('extend bay (+z')) {
+      return 'Appends a 6.0m structural bay along the +Z depth axis and automatically updates floor diaphragm tributary areas.';
+    }
+    if (l.contains('x-bracing')) {
+      return 'Inserts diagonal concentric X-bracing struts across exterior bays to increase lateral drift stiffness and critical buckling factor α_cr.';
+    }
+    if (l.contains('subdivide')) {
+      return 'Splits the selected structural member at its exact 3D midpoint, inserting an intermediate node for refined finite element meshing.';
+    }
+    if (l.contains('parametric')) {
+      return 'Synthesizes a custom multi-story, multi-bay 3D space frame from parametric bay dimensions and story counts.';
+    }
+    if (l.contains('cad studio')) {
+      return 'Opens the interactive 2D/3D CAD drafting studio with grid snapping, layer management, and DXF export.';
+    }
+    if (l.contains('fixed base')) {
+      return 'Restrains all 6 degrees of freedom [Ux, Uy, Uz, Rx, Ry, Rz] = [1,1,1,1,1,1] at selected or base joints, resisting both forces and bending moments.';
+    }
+    if (l.contains('pinned base')) {
+      return 'Restrains 3 translational DOFs [1,1,1,0,0,0] while allowing free rotational hinge behavior at the support.';
+    }
+    if (l.contains('roller')) {
+      return 'Restrains vertical translation Uy [0,1,0,0,0,0] while permitting horizontal thermal/lateral movement and rotation.';
+    }
+    if (l.contains('auto-sizer')) {
+      return 'Iteratively selects the lightest AISC 360-16 wide-flange section for each member while keeping Demand-to-Capacity Ratio (DCR) ≤ 1.0.';
+    }
+    if (l.contains('autonomous 4-agent')) {
+      return 'Launches the multi-agent engineering swarm (Architect, FEA Analyst, Code Auditor, Self-Healer) to autonomously optimize and certify the frame.';
+    }
+    if (l.contains('floor gravity')) {
+      return 'Applies downward factored gravity forces (-50 kN) to roof and floor joints and triggers an immediate 12-DOF stiffness solve.';
+    }
+    if (l.contains('lateral wind')) {
+      return 'Applies horizontal windward lateral shear forces (+25 kN) to elevation joints to evaluate story drift and overturning.';
+    }
+    if (l.contains('bmd/sfd')) {
+      return 'Cycles 3D WebGL extruded Bending Moment Diagrams (BMD) and Shear Force Diagrams (SFD) plotted directly along member axes.';
+    }
+    return '${tool.subtitle}. Click to launch tool or apply directly to the active 3D structural model.';
   }
 
   @override
@@ -1167,7 +1270,7 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                 // Tool Badge
                 if (tool.badge != null)
                   Container(
-                    margin: const EdgeInsets.only(left: 6),
+                    margin: const EdgeInsets.only(left: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                     decoration: BoxDecoration(
                       color: tool.color.withValues(alpha: 0.16),
@@ -1186,6 +1289,16 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                       ),
                     ),
                   ),
+
+                const SizedBox(width: 2),
+                // Hover (i) Engineering Info Tooltip Button
+                InfoTooltip(
+                  title: tool.label,
+                  codeRef: _resolveToolCodeRef(tool),
+                  message: _resolveToolInfo(tool),
+                  size: 13.5,
+                  iconColor: tool.color,
+                ),
               ],
             ),
           ),
@@ -1234,13 +1347,16 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
                       children: const [
                         Icon(Icons.bolt_rounded, size: 14, color: Colors.black),
                         SizedBox(width: 4),
-                        Text(
-                          'FEA SOLVE',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
+                        Flexible(
+                          child: Text(
+                            'FEA SOLVE',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.6,
+                            ),
                           ),
                         ),
                       ],

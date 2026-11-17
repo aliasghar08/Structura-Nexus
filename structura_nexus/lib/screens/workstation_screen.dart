@@ -52,6 +52,9 @@ import '../widgets/slideable_workspace_menu.dart';
 import '../widgets/generative_topology_dialog.dart';
 import '../widgets/shop_drawing_audit_dialog.dart';
 import '../widgets/collaboration_review_dialog.dart';
+import '../widgets/progressive_collapse_dialog.dart';
+import '../widgets/command_palette_dialog.dart';
+import '../widgets/info_tooltip.dart';
 import '../widgets/voice_copilot_pill.dart';
 import '../services/voice_copilot_service.dart';
 import '../services/workspace_storage.dart';
@@ -136,6 +139,12 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         ? HardwareKeyboard.instance.isMetaPressed
         : HardwareKeyboard.instance.isControlPressed;
     final isShift = HardwareKeyboard.instance.isShiftPressed;
+
+    // Cmd/Ctrl + K: Open Universal Command Palette & Encyclopedia
+    if (isModifier && event.logicalKey == LogicalKeyboardKey.keyK) {
+      _openCommandPalette();
+      return KeyEventResult.handled;
+    }
 
     // Cmd/Ctrl + Z: Undo
     if (isModifier && !isShift && event.logicalKey == LogicalKeyboardKey.keyZ) {
@@ -1556,6 +1565,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       },
     );
 
+    void onOpenProgressiveCollapse() => _openProgressiveCollapse();
+
+    void onOpenCommandPalette() => _openCommandPalette();
+
     double maxDcr = 0.0;
     int passCount = 0;
     int failCount = 0;
@@ -1730,6 +1743,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenGenerativeTopology: onOpenGenerativeTopology,
               onOpenShopDrawingAudit: onOpenShopDrawingAudit,
               onOpenCollaborationReview: onOpenCollaborationReview,
+              onOpenProgressiveCollapse: onOpenProgressiveCollapse,
+              onOpenCommandPalette: onOpenCommandPalette,
               onUndo: _undo,
               onRedo: _redo,
               canUndo: _undoStack.isNotEmpty,
@@ -1853,6 +1868,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               });
             },
             customCategories: const ['ALL', 'DRAW & MODEL', 'ASSIGN & RESTRAIN', 'LOADS', 'CANVAS'],
+            onOpenProgressiveCollapse: _openProgressiveCollapse,
             customTools: [
               // 1. DRAW & MODEL
               WorkspaceToolItem(
@@ -1953,6 +1969,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 category: 'DRAW & MODEL',
                 badge: 'CAD',
                 onTap: onOpenCadStudio,
+              ),
+              WorkspaceToolItem(
+                label: 'Quick Command Palette (⌘K)',
+                subtitle: 'Search all 30+ tools, codes & encyclopedia',
+                icon: Icons.bolt_rounded,
+                color: const Color(0xFF00F0FF),
+                category: 'DRAW & MODEL',
+                badge: '⌘K',
+                codeRef: 'Shortcut: ⌘K / Ctrl+K',
+                infoText:
+                    'Opens the Spotlight-style Command Palette & Interactive Engineering Encyclopedia to search any solver, code reference, or modeling tool.',
+                onTap: _openCommandPalette,
               ),
 
               // 2. ASSIGN & RESTRAIN
@@ -2074,6 +2102,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   }
                   _commitModelMutation('Cleared all applied loads.');
                 },
+              ),
+              WorkspaceToolItem(
+                label: 'Progressive Collapse (UFC 4-023-03)',
+                subtitle: 'Notional column removal & catenary bridging',
+                icon: Icons.warning_amber_rounded,
+                color: const Color(0xFFEF4444),
+                category: 'LOADS',
+                badge: 'ALP',
+                codeRef: 'UFC 4-023-03 & GSA',
+                infoText:
+                    'Evaluates structural survivability under sudden column loss with Ω_LD = 2.0 dynamic amplification, ranking column vulnerability and catenary chord rotations.',
+                onTap: _openProgressiveCollapse,
               ),
 
               // 4. CANVAS
@@ -2203,6 +2243,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                           "INSPECTOR",
                           style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.bold),
                         ),
+                        SizedBox(width: 4),
+                        InfoTooltip(
+                          title: 'Selection Inspector Handle',
+                          codeRef: 'Slideable Panel',
+                          message: 'Click to expand the 12-DOF Selection Inspector, or drag vertically to reposition.',
+                          size: 13,
+                        ),
                       ],
                     ),
                   ),
@@ -2217,4 +2264,220 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     ),
   );
 }
+
+  void _openProgressiveCollapse() {
+    _requireAuth(
+      featureName: 'Progressive Collapse & Alternate Load Path Studio',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => ProgressiveCollapseDialog(
+            model: _model,
+            onCommitDamagedModel: (damaged) {
+              _saveUndoState();
+              setState(() {
+                _model = damaged;
+              });
+              _commitModelMutation(
+                'Applied UFC 4-023-03 notional column removal to 3D viewport (Press Ctrl/Cmd+Z to restore column)',
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _openCommandPalette() {
+    showDialog(
+      context: context,
+      builder: (ctx) => CommandPaletteDialog(
+        actions: [
+          CommandPaletteAction(
+            title: 'Progressive Collapse & Alternate Path Studio',
+            subtitle: 'Sudden notional column removal, catenary bridging & vulnerability ranking',
+            category: 'ANALYSIS',
+            codeRef: 'UFC 4-023-03 & GSA',
+            infoDescription:
+                'Removes perimeter, corner, or interior columns under Ω_LD = 2.0 dynamic amplification and solves the damaged 12-DOF stiffness matrix [K_damaged] for double-span catenary deflection and plastic chord rotation.',
+            icon: Icons.warning_amber_rounded,
+            color: const Color(0xFFEF4444),
+            shortcut: 'ALP',
+            onTrigger: _openProgressiveCollapse,
+          ),
+          CommandPaletteAction(
+            title: 'Autonomous 4-Agent Engineering Swarm',
+            subtitle: 'Architect ↔ FEA Analyst ↔ Code Auditor ↔ Self-Healer',
+            category: 'AI & GEN',
+            codeRef: 'AISC 360-16 / ASCE 7-16',
+            infoDescription:
+                'Coordinates four specialized AI agents to synthesize, analyze, audit, and self-heal overstressed structural members until max DCR ≤ 1.0.',
+            icon: Icons.hub_rounded,
+            color: const Color(0xFF00F0FF),
+            onTrigger: () => AutonomousSwarmDialog.show(
+              context,
+              model: _model,
+              onStructureModified: () {
+                _saveUndoState();
+                _commitModelMutation('Applied Swarm-Healed AISC 360-16 Topology to 3D Frame');
+              },
+            ),
+          ),
+          CommandPaletteAction(
+            title: '3D Topology Synthesizer (Neural SIMP & Marching Struts)',
+            subtitle: 'Continuous density field optimization & 3D diagrid exoskeletons',
+            category: 'AI & GEN',
+            codeRef: 'Neural SIMP • 18–30% Savings',
+            infoDescription:
+                'Optimizes structural compliance C = F^T u(ρ) subject to target volume fraction V_target and extracts triangulated 3D diagrid exoskeletons.',
+            icon: Icons.architecture_rounded,
+            color: const Color(0xFF10B981),
+            onTrigger: () => showDialog(
+              context: context,
+              builder: (_) => GenerativeTopologyDialog(
+                currentModel: _model,
+                onCommitModel: (synthesized) {
+                  _saveUndoState();
+                  _importBuildingModel(synthesized);
+                },
+              ),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'WebGPU 60 FPS Pareto Frontier Explorer',
+            subtitle: 'Evaluate 256 structural variations in < 10 ms via WGSL shaders',
+            category: 'AI & GEN',
+            codeRef: 'WebGPU B=256 Compute',
+            infoDescription:
+                'Interactive tri-objective Pareto trade-off explorer balancing Steel Mass (kg), Peak Drift (mm), and Embodied Carbon (kg CO2e).',
+            icon: Icons.scatter_plot_rounded,
+            color: const Color(0xFF38BDF8),
+            onTrigger: () => ParetoFrontierDock.show(
+              context,
+              model: _model,
+              onCommit: (optimized) {
+                _saveUndoState();
+                _model = optimized;
+                _commitModelMutation('Committed Pareto Optimal Design to 3D Viewport');
+              },
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'Shop-Drawing & Site Connection Visual QA',
+            subtitle: 'ConnectionNet-AI multimodal fabrication & bolt/weld compliance audit',
+            category: 'AI & GEN',
+            codeRef: 'AISC 360-16 Ch. J & ACI 318 Ch. 25',
+            infoDescription:
+                'Audits bolted moment end-plates, baseplates, and rebar cages for minimum edge distances, bolt spacing, and seismic hook bends.',
+            icon: Icons.assignment_turned_in_rounded,
+            color: const Color(0xFFF59E0B),
+            onTrigger: () => showDialog(
+              context: context,
+              builder: (_) => const ShopDrawingAuditDialog(),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'Real-Time Multi-Engineer Cloud Collaboration & Diff',
+            subtitle: 'Shareable review links, 3D joint comment pins & DCR revision diffing',
+            category: 'CAD & BIM',
+            codeRef: 'Cloud Firestore Live',
+            infoDescription:
+                'Generates Co-Engineer or Viewer/Commenter links, compares structural revisions (added/modified/removed members), and renders 3D review pins.',
+            icon: Icons.people_alt_rounded,
+            color: const Color(0xFF00F0FF),
+            onTrigger: () => CollaborationReviewDialog.show(
+              context,
+              model: _model,
+              onStructureModified: () => setState(() => _triggerSolve()),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'Concrete Studio (P-M Interaction & ACI 224R Crack Widths)',
+            subtitle: 'Biaxial fiber P-M envelope & Gergely-Lutz surface crack control',
+            category: 'ANALYSIS',
+            codeRef: 'ACI 318-19 & ACI 224R-01',
+            infoDescription:
+                'Computes reinforced concrete axial-flexural P-M capacity and checks surface crack width wk across 4 exposure classes.',
+            icon: Icons.view_in_ar_rounded,
+            color: const Color(0xFF00F0FF),
+            onTrigger: () => showDialog(
+              context: context,
+              builder: (_) => const ConcretePmDialog(),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'PE Calculation Packet & Cryptographic Seal Verifier',
+            subtitle: 'Stamped engineering dossier with HMAC-SHA256 tamper-evident audit',
+            category: 'CAD & BIM',
+            codeRef: 'HMAC-SHA256 PE Seal',
+            infoDescription:
+                'Generates an official calculation packet and verifies cryptographic HMAC-SHA256 digital signatures against municipal plan-check tampering.',
+            icon: Icons.verified_user_rounded,
+            color: const Color(0xFF10B981),
+            onTrigger: () => PePacketDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () => setState(() => _triggerSolve()),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'Lateral Stability, P-Delta & 12×12 [Kg] Buckling Engine',
+            subtitle: 'ASCE 7-16 wind/seismic loads, α_cr buckling & B2 sway amplification',
+            category: 'ANALYSIS',
+            codeRef: 'ASCE 7-16 & AISC App. 8',
+            infoDescription:
+                'Evaluates second-order P-Delta stability, geometric stiffness [Kg] critical buckling multiplier α_cr, and directional wind/seismic shears.',
+            icon: Icons.sync_alt_rounded,
+            color: const Color(0xFFE11D48),
+            onTrigger: () => LateralStabilityDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () => setState(() => _triggerSolve()),
+            ),
+          ),
+          CommandPaletteAction(
+            title: 'AISC 360-16 Section Auto-Sizer',
+            subtitle: 'Automatically size all members for minimum steel weight (DCR ≤ 1.0)',
+            category: 'MODELING',
+            codeRef: 'AISC 360-16 LRFD',
+            infoDescription:
+                'Iterates over all frame members and upgrades/downsizes W-shapes so every element satisfies governing axial-flexural interaction.',
+            icon: Icons.auto_fix_high_rounded,
+            color: const Color(0xFF10B981),
+            onTrigger: _optimizeSections,
+          ),
+          CommandPaletteAction(
+            title: 'Extrude Story (+1 Floor Level & Tributary Loads)',
+            subtitle: 'Duplicate highest floor upward (+3.6m) with 1.2D+1.6L gravity loads',
+            category: 'MODELING',
+            codeRef: 'ASCE 7-16 Diaphragm',
+            infoDescription:
+                'Adds a complete new story level above the current roof and propagates factored gravity and wind loads automatically.',
+            icon: Icons.domain_add_rounded,
+            color: const Color(0xFF10B981),
+            onTrigger: _extrudeStory,
+          ),
+          CommandPaletteAction(
+            title: 'Browse 12 Pre-Engineered Building Templates',
+            subtitle: 'High-rise towers, hospitals, bridges, warehouses & space canopies',
+            category: 'TEMPLATES',
+            codeRef: '12 Certified Models',
+            infoDescription:
+                'Opens the Building Templates library to preview and load complete 3D structural systems into the workstation.',
+            icon: Icons.apartment_rounded,
+            color: const Color(0xFF38BDF8),
+            onTrigger: () => showDialog(
+              context: context,
+              builder: (_) => BuildingTemplatesDialog(
+                currentModel: _model,
+                onModelSelected: _importBuildingModel,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

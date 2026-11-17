@@ -179,6 +179,13 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
                           ),
                         ),
                       ),
+                      const InfoTooltip(
+                        title: 'Real-Time 12-DOF Selection Inspector',
+                        codeRef: 'AISC 360-16 & ACI 318-19',
+                        message:
+                            'Click any joint or member in the 3D viewport (or Shift+Click / drag-marquee for Batch Mode) to edit coordinates, 6-DOF Dirichlet restraints, nodal loads, member end releases, and cracked stiffness modifiers.',
+                      ),
+                      const SizedBox(width: 4),
                       IconButton(
                         onPressed: widget.onClose,
                         icon: const Icon(Icons.close_rounded, size: 18, color: Colors.white70),
@@ -353,14 +360,29 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
   }
 
   Widget _headerText(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: Color(0xFF00F0FF),
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.8,
-      ),
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF00F0FF),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        InfoTooltip(
+          title: title,
+          codeRef: 'Batch Multi-Entity Operation',
+          message:
+              'Applies this structural property simultaneously across all selected joints or members and pushes an atomic undo snapshot (Ctrl/Cmd+Z).',
+          size: 13,
+        ),
+      ],
     );
   }
 

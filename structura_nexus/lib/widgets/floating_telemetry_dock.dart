@@ -238,14 +238,29 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      "ASCE 7-16 LOAD COMBINATIONS",
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.8,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            "ASCE 7-16 LOAD COMBINATIONS",
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const InfoTooltip(
+                          title: 'LRFD Factored Load Combinations',
+                          codeRef: 'ASCE 7-16 §2.3.1',
+                          message:
+                              'Switches active factored load combination across the 3D frame:\n• 1.4D: Dead load only\n• 1.2D+1.6L: Gravity Dead + Live\n• 1.2D+1.0W+0.5L: Directional Wind Sway\n• 1.2D+1.0E+0.2S: Seismic ELF Lateral.',
+                          size: 12.5,
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -279,11 +294,21 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: _metricSnippet("BASE SHEAR", "${widget.baseShearKn.toStringAsFixed(1)} kN"),
+                          child: _metricSnippet(
+                            "BASE SHEAR",
+                            "${widget.baseShearKn.toStringAsFixed(1)} kN",
+                            tooltip:
+                                "Total horizontal reaction ΣVx + ΣVz at base supports resisting wind and seismic lateral forces (ASCE 7-16 §12.8).",
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _metricSnippet("DRIFT RATIO", "${(widget.driftRatio * 100).toStringAsFixed(3)}%"),
+                          child: _metricSnippet(
+                            "DRIFT RATIO",
+                            "${(widget.driftRatio * 100).toStringAsFixed(3)}%",
+                            tooltip:
+                                "Peak inter-story lateral drift ratio Δ/h. ASCE 7-16 Table 12.12-1 typically limits drift to 0.25% (H/400) for wind and 2.0% for seismic.",
+                          ),
                         ),
                       ],
                     ),
@@ -366,7 +391,12 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                          child: _metricSnippet("B2 SWAY AMP", widget.b2Amp.toStringAsFixed(2)),
+                          child: _metricSnippet(
+                            "B2 SWAY AMP",
+                            widget.b2Amp.toStringAsFixed(2),
+                            tooltip:
+                                "Second-order P-Δ sway moment amplification factor B2 = 1 / (1 - 1/α_cr) per AISC 360-16 Appendix 8.",
+                          ),
                         ),
                       ],
                     ),
