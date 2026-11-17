@@ -16,6 +16,7 @@ import '../services/structural_api_service.dart';
 import '../services/embedded_fea_solver.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/building_generator_service.dart';
+import '../services/tributary_load_propagator.dart';
 import 'auth_screen.dart';
 import '../widgets/workstation_drawer.dart';
 import '../widgets/structural_3d_viewport.dart';
@@ -50,6 +51,7 @@ import '../widgets/autonomous_swarm_dialog.dart';
 import '../widgets/slideable_workspace_menu.dart';
 import '../widgets/generative_topology_dialog.dart';
 import '../widgets/shop_drawing_audit_dialog.dart';
+import '../widgets/collaboration_review_dialog.dart';
 import '../widgets/voice_copilot_pill.dart';
 import '../services/voice_copilot_service.dart';
 import '../services/workspace_storage.dart';
@@ -78,6 +80,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool? _isInspectorOpen;
   double? _inspectorTopOffset;
   bool _isNlthaActive = false;
+  bool _autoPropagateLoads = true;
   int _modelRevision = 0;
   StreamSubscription<dynamic>? _authSubscription;
 
@@ -814,7 +817,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    _commitModelMutation('Generated Story Level ${(newY / storyH).round()} at Y=${newY.toStringAsFixed(1)}m (+${topNodes.length} columns & beams)', refitCamera: true);
+    String loadMsg = '';
+    if (_autoPropagateLoads) {
+      final summary = TributaryLoadPropagator.propagate(model: _model);
+      loadMsg = ' • Auto-Propagated Tributary: ${summary.totalFloorAreaM2.toStringAsFixed(0)}m² (Grav: ${summary.totalFactoredGravityLoadKn.toStringAsFixed(0)}kN, Wind V: ${summary.totalWindBaseShearKn.toStringAsFixed(0)}kN)';
+    }
+
+    _commitModelMutation('Generated Story Level ${(newY / storyH).round()} at Y=${newY.toStringAsFixed(1)}m (+${topNodes.length} columns & beams)$loadMsg', refitCamera: true);
   }
 
   void _extendBayX() {
@@ -867,7 +876,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    _commitModelMutation('Extended Frame: Added +6m Bay along X-axis (X=${newX.toStringAsFixed(1)}m)', refitCamera: true);
+    String loadMsgX = '';
+    if (_autoPropagateLoads) {
+      final summary = TributaryLoadPropagator.propagate(model: _model);
+      loadMsgX = ' • Auto-Propagated Tributary: ${summary.totalFloorAreaM2.toStringAsFixed(0)}m²';
+    }
+
+    _commitModelMutation('Extended Frame: Added +6m Bay along X-axis (X=${newX.toStringAsFixed(1)}m)$loadMsgX', refitCamera: true);
   }
 
   void _extendBayZ() {
@@ -920,7 +935,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       }
     }
 
-    _commitModelMutation('Extended Frame: Added +6m Bay along Z-axis (Z=${newZ.toStringAsFixed(1)}m)', refitCamera: true);
+    String loadMsgZ = '';
+    if (_autoPropagateLoads) {
+      final summary = TributaryLoadPropagator.propagate(model: _model);
+      loadMsgZ = ' • Auto-Propagated Tributary: ${summary.totalFloorAreaM2.toStringAsFixed(0)}m²';
+    }
+
+    _commitModelMutation('Extended Frame: Added +6m Bay along Z-axis (Z=${newZ.toStringAsFixed(1)}m)$loadMsgZ', refitCamera: true);
   }
 
   void _addXBracing() {
@@ -1524,6 +1545,17 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       },
     );
 
+    void onOpenCollaborationReview() => _requireAuth(
+      featureName: 'Real-Time Cloud Collaboration & Revision Diffing',
+      onAuthenticated: () {
+        CollaborationReviewDialog.show(
+          context,
+          model: _model,
+          onStructureModified: () => setState(() => _triggerSolve()),
+        );
+      },
+    );
+
     double maxDcr = 0.0;
     int passCount = 0;
     int failCount = 0;
@@ -1697,6 +1729,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenParetoExplorer: onOpenParetoExplorer,
               onOpenGenerativeTopology: onOpenGenerativeTopology,
               onOpenShopDrawingAudit: onOpenShopDrawingAudit,
+              onOpenCollaborationReview: onOpenCollaborationReview,
               onUndo: _undo,
               onRedo: _redo,
               canUndo: _undoStack.isNotEmpty,
@@ -1807,6 +1840,18 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             badgeText: 'DRAWING',
             initialTop: 76.0,
             initialExpanded: !isCompact,
+            onAutoPropagateLoads: () {
+              setState(() {
+                _autoPropagateLoads = !_autoPropagateLoads;
+                if (_autoPropagateLoads) {
+                  _saveUndoState();
+                  final summary = TributaryLoadPropagator.propagate(model: _model);
+                  _commitModelMutation('Auto-Propagated Tributary Loads across ${summary.storyCount} stories (${summary.totalFloorAreaM2.toStringAsFixed(0)} m²)');
+                } else {
+                  _showToolSnackBar('Auto-propagation paused. Manual nodal loads active.');
+                }
+              });
+            },
             customCategories: const ['ALL', 'DRAW & MODEL', 'ASSIGN & RESTRAIN', 'LOADS', 'CANVAS'],
             customTools: [
               // 1. DRAW & MODEL
@@ -1976,6 +2021,28 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               ),
 
               // 3. LOADS
+              WorkspaceToolItem(
+                label: 'Auto-Propagate Floor & Wind Loads',
+                subtitle: _autoPropagateLoads
+                    ? '1.2D+1.6L (9.6 kPa) • ASCE 7-16 (45 m/s) [ACTIVE]'
+                    : 'Tributary propagation paused [INACTIVE]',
+                icon: Icons.sync_alt_rounded,
+                color: _autoPropagateLoads ? const Color(0xFF10B981) : Colors.white38,
+                category: 'LOADS',
+                badge: _autoPropagateLoads ? 'AUTO ON' : 'PAUSED',
+                onTap: () {
+                  setState(() {
+                    _autoPropagateLoads = !_autoPropagateLoads;
+                    if (_autoPropagateLoads) {
+                      _saveUndoState();
+                      final summary = TributaryLoadPropagator.propagate(model: _model);
+                      _commitModelMutation('Auto-Propagated Tributary Loads across ${summary.storyCount} stories (${summary.totalFloorAreaM2.toStringAsFixed(0)} m²)');
+                    } else {
+                      _showToolSnackBar('Auto-propagation paused. Manual nodal loads active.');
+                    }
+                  });
+                },
+              ),
               WorkspaceToolItem(
                 label: 'Apply Floor Gravity Load',
                 subtitle: 'Apply -50 kN downward load on roof/joint',

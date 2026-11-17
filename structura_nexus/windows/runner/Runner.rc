@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.dartnexuslab" "\0"
-            VALUE "FileDescription", "structura_nexus" "\0"
+            VALUE "FileDescription", "Structura Nexus — Autonomous AI Structural Workstation" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "structura_nexus" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.dartnexuslab. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Ali Asghar • Dart Nexus Lab. All rights reserved." "\0"
             VALUE "OriginalFilename", "structura_nexus.exe" "\0"
-            VALUE "ProductName", "structura_nexus" "\0"
+            VALUE "ProductName", "Structura Nexus" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

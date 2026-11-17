@@ -35,6 +35,7 @@
       this.sfdGroup = new THREE.Group();     // SFD ribbons
       this.loadsGroup = new THREE.Group();   // 3D Force vector arrows
       this.releasesGroup = new THREE.Group(); // Release hinges & cracked glyphs
+      this.reviewPinsGroup = new THREE.Group(); // 3D Pinned Engineering Review Comments
       this.releaseGlyphs = [];
 
       // Viewport flags & state
@@ -242,6 +243,7 @@
       this.scene.add(this.sfdGroup);
       this.scene.add(this.loadsGroup);
       this.scene.add(this.releasesGroup);
+      this.scene.add(this.reviewPinsGroup);
 
       // 7. Event Listeners (Window Resize & Interactive Node Dragging)
       window.addEventListener("resize", () => this.onResize());
@@ -823,6 +825,52 @@
       this.releasesGroup.add(sleeveMesh);
     }
 
+    createReviewPinGlyph(x, y, z, text, author, isResolved = false) {
+      const pinGroup = new THREE.Group();
+      const pinColor = isResolved ? 0x10b981 : 0xf59e0b;
+
+      // Vertical stem
+      const stemHeight = 0.45;
+      const stemGeo = new THREE.CylinderGeometry(0.015, 0.005, stemHeight, 8);
+      const stemMat = new THREE.MeshBasicMaterial({ color: pinColor });
+      const stemMesh = new THREE.Mesh(stemGeo, stemMat);
+      stemMesh.position.set(0, stemHeight / 2, 0);
+      pinGroup.add(stemMesh);
+
+      // Pin beacon head with rim glow
+      const headGeo = new THREE.SphereGeometry(0.09, 16, 16);
+      const headMat = new THREE.MeshStandardMaterial({
+        color: pinColor,
+        emissive: pinColor,
+        emissiveIntensity: 0.6,
+        roughness: 0.2,
+        metalness: 0.8,
+      });
+      const headMesh = new THREE.Mesh(headGeo, headMat);
+      headMesh.position.set(0, stemHeight + 0.08, 0);
+      pinGroup.add(headMesh);
+
+      pinGroup.position.set(x, y, z);
+      return pinGroup;
+    }
+
+    setReviewPins(pins) {
+      this._disposeGroup(this.reviewPinsGroup);
+      if (!Array.isArray(pins)) return;
+      for (const p of pins) {
+        if (!p || !Array.isArray(p.coords) || p.coords.length < 3) continue;
+        const glyph = this.createReviewPinGlyph(
+          p.coords[0],
+          p.coords[1],
+          p.coords[2],
+          p.text || '',
+          p.author || '',
+          !!p.isResolved
+        );
+        this.reviewPinsGroup.add(glyph);
+      }
+    }
+
     loadModel(model, forceRefit = false) {
       if (!model) return;
       this.currentModel = model;
@@ -840,6 +888,7 @@
       this._disposeGroup(this.sfdGroup);
       this._disposeGroup(this.loadsGroup);
       this._disposeGroup(this.releasesGroup);
+      this._disposeGroup(this.reviewPinsGroup);
 
       this.nodeMeshes = [];
       this.memberMeshes = [];
@@ -1423,6 +1472,12 @@
     }
     const viewer = new StructuraThreeViewer(cId);
     window.__structuraViewerInstances[cId] = viewer;
+    window.__currentThreeViewport = viewer;
     return viewer;
+  };
+  window.setStructuralReviewPins = function (pins) {
+    if (window.__currentThreeViewport) {
+      window.__currentThreeViewport.setReviewPins(pins);
+    }
   };
 })();

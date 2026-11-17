@@ -373,3 +373,81 @@ class ASCE7SeismicEngine:
             storey_forces=sorted(storey_forces, key=lambda s: s.elevation_m),
             updated_nodes=nodes,
         )
+
+
+class ASCE7TributaryGravityEngine:
+    """
+    Automated tributary area computation and factored gravity load distribution
+    (1.2D + 1.6L) across horizontal diaphragm floor joints.
+    """
+
+    @classmethod
+    def propagate_tributary_loads(
+        cls,
+        payload: StructuralGraphPayload,
+        dead_load_kpa: float = 4.8,
+        live_load_kpa: float = 2.4,
+        preserve_manual: bool = True,
+    ) -> Dict[str, Any]:
+        nodes = [n.model_copy(deep=True) for n in payload.nodes]
+        if not nodes:
+            return {"story_count": 0, "total_area_m2": 0.0, "total_gravity_kn": 0.0, "updated_nodes": []}
+
+        # Group by floor elevations (y > 0.1)
+        floor_groups: Dict[float, List[NodeModel]] = {}
+        for n in nodes:
+            y_round = round(n.coords[1], 1)
+            floor_groups.setdefault(y_round, []).append(n)
+
+        elevated_floors = sorted([y for y in floor_groups.keys() if y > 0.1])
+        factored_density_n_m2 = (1.2 * dead_load_kpa + 1.6 * live_load_kpa) * 1000.0
+
+        grand_total_area = 0.0
+        grand_total_gravity_n = 0.0
+
+        for y in elevated_floors:
+            floor_nodes = floor_groups[y]
+            xs = sorted(list({round(n.coords[0], 2) for n in floor_nodes}))
+            zs = sorted(list({round(n.coords[2], 2) for n in floor_nodes}))
+
+            for n in floor_nodes:
+                if preserve_manual and n.load_source == "MANUAL":
+                    continue
+
+                nx = round(n.coords[0], 2)
+                nz = round(n.coords[2], 2)
+
+                span_x = 4.0
+                if len(xs) > 1 and nx in xs:
+                    xi = xs.index(nx)
+                    left = (nx - xs[xi - 1]) if xi > 0 else (xs[1] - xs[0])
+                    right = (xs[xi + 1] - nx) if xi < len(xs) - 1 else (xs[-1] - xs[-2])
+                    span_x = 0.5 * (right if xi == 0 else (left if xi == len(xs) - 1 else left + right))
+
+                span_z = 4.0
+                if len(zs) > 1 and nz in zs:
+                    zi = zs.index(nz)
+                    back = (nz - zs[zi - 1]) if zi > 0 else (zs[1] - zs[0])
+                    front = (zs[zi + 1] - nz) if zi < len(zs) - 1 else (zs[-1] - zs[-2])
+                    span_z = 0.5 * (front if zi == 0 else (back if zi == len(zs) - 1 else back + front))
+
+                trib_area = max(span_x * span_z, 1.0)
+                n.tributary_area_m2 = round(trib_area, 2)
+                n.load_source = "TRIBUTARY_AUTO"
+
+                gravity_n = -trib_area * factored_density_n_m2
+                grand_total_area += trib_area
+                grand_total_gravity_n += abs(gravity_n)
+
+                while len(n.loads) < 6:
+                    n.loads.append(0.0)
+                n.loads[1] = round(gravity_n, 2)
+
+        return {
+            "story_count": len(elevated_floors),
+            "total_area_m2": round(grand_total_area, 2),
+            "total_gravity_kn": round(grand_total_gravity_n / 1000.0, 2),
+            "floor_elevations": elevated_floors,
+            "updated_nodes": nodes,
+        }
+

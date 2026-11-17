@@ -12,6 +12,8 @@ class NodeModel(BaseModel):
         default=[0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
         description="[Fx, Fy, Fz, Mx, My, Mz] forces in N, moments in N*m"
     )
+    load_source: Optional[str] = Field(default=None, description="TRIBUTARY_AUTO, MANUAL, etc.")
+    tributary_area_m2: Optional[float] = Field(default=None, description="Tributary floor area in m2")
 
 class MemberModel(BaseModel):
     id: str

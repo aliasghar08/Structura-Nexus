@@ -1,0 +1,90 @@
+name: Structura Nexus Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v4.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    name: Build macOS Apple Silicon & Intel Universal Release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: |
+          cd structura_nexus
+          flutter pub get
+
+      - name: Run Static Analysis & Tests
+        run: |
+          cd structura_nexus
+          flutter analyze
+          flutter test
+
+      - name: Build macOS Application
+        run: |
+          cd structura_nexus
+          flutter build macos --release
+
+      - name: Package Distributable Disk Image (.dmg)
+        run: |
+          mkdir -p dist
+          APP_PATH="structura_nexus/build/macos/Build/Products/Release/structura_nexus.app"
+          if [ -d "$APP_PATH" ]; then
+            hdiutil create -volname "Structura Nexus v4.3" -srcfolder "$APP_PATH" -ov -format UDZO "dist/Structura-Nexus-v4.3-macOS.dmg"
+          fi
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Structura-Nexus-macOS
+          path: dist/*.dmg
+
+  build-windows:
+    name: Build Windows x64 Desktop Release
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: |
+          cd structura_nexus
+          flutter pub get
+
+      - name: Build Windows Application
+        run: |
+          cd structura_nexus
+          flutter build windows --release
+
+      - name: Package Windows Zip Archive
+        shell: pwsh
+        run: |
+          mkdir -p dist
+          Compress-Archive -Path structura_nexus/build/windows/x64/runner/Release/* -DestinationPath dist/Structura-Nexus-v4.3-Windows-x64.zip
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Structura-Nexus-Windows
+          path: dist/*.zip
+

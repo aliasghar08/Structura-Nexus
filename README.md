@@ -1,7 +1,8 @@
 # Structura Nexus
 
 > **Autonomous Frontier AI Workstation for Structural, Civil & Mechanical Engineering**  
-> **System Architecture**: `v4.2.1-FRONTIER` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
+> **System Architecture**: `v4.3.0-FRONTIER` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
+> **Platform Support**: Native Apple Silicon macOS (`arm64`), Windows (`x64`), Linux & WebGPU PWA (`https://structura-nexus.web.app`)  
 > **Hardware Acceleration**: WebGPU Parallel WGSL Compute • Apple Silicon MPS • WebGL Three.js 3D GPU • Pure Dart SIMD Runtime  
 > **Live Production Web Application**: [https://structura-nexus.web.app](https://structura-nexus.web.app)  
 > **GCP Cloud Run Neural Microservice**: [https://structura-nexus-api-413099324256.us-central1.run.app](https://structura-nexus-api-413099324256.us-central1.run.app)  
@@ -12,21 +13,21 @@
 
 ## 🏗️ Executive Overview
 
-**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, and **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**.
+**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**, **Automated Tributary Gravity ($1.2D + 1.6L$) & ASCE 7-16 Lateral Load Propagation**, **Native Apple Silicon macOS & Windows Desktop Packaging**, and **Real-Time Multi-Engineer Cloud Collaboration with 3D Review Pins & Revision Diffing**.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                             STRUCTURA NEXUS v4.2.1 FRONTIER                            │
-│                    Unified Computational Structural & Civil Engineering                │
+│                             STRUCTURA NEXUS v4.3.0 FRONTIER                            │
+│           Autonomous AI Structural Mechanics & Multi-Engineer Cloud Collaboration      │
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
          ┌─────────────────────────────────┼─────────────────────────────────┐
          ▼                                 ▼                                 ▼
 ┌──────────────────┐             ┌──────────────────┐             ┌──────────────────┐
-│ Generative 3D    │             │ Shop-Drawing &   │             │ Gemini Live      │
-│ Topology (SIMP)  │             │ Site QA Auditor  │             │ Spatial Voice    │
-│ Marching Struts  │             │ ConnectionNet-AI │             │ Bidirectional WS │
-│ 18–30% Mass Red. │             │ AISC J / ACI 25  │             │ 3D Viewport Glow │
+│ Generative 3D    │             │ Real-Time Cloud  │             │ Automated ASCE 7 │
+│ Topology (SIMP)  │             │ Collaboration    │             │ & Tributary Load │
+│ Marching Struts  │             │ Multi-Engineer   │             │ Gravity + Wind   │
+│ 18–30% Mass Red. │             │ 3D Review Pins   │             │ Diaphragm Prop.  │
 └────────┬─────────┘             └────────┬─────────┘             └────────┬─────────┘
          │                                │                                │
          └────────────────────────────────┼────────────────────────────────┘
@@ -37,8 +38,8 @@
      │ 12-DOF Deterministic    │                     │ WebGPU Parallel Batch   │
      │ DSM Solver (0.0000% Err)│                     │ Surrogate (B=256, WGSL) │
      │ Timoshenko / Hibbeler   │                     │ 60 FPS Pareto HUD       │
-     │ Static Condensation Rel.│                     │ Hard Dirichlet Masking  │
-     │ ACI 318 Cracked (I_eff) │                     │                         │
+     │ Static Condensation Rel.│                     │ Native macOS & Windows  │
+     │ ACI 318 Cracked (I_eff) │                     │ Packaging (.s2k, .ifc)  │
      └────────────┬────────────┘                     └────────────┬────────────┘
                   │                                               │
                   └───────────────────────┬───────────────────────┘
@@ -54,7 +55,28 @@
 
 ---
 
-## 🚀 Key v4.2 & v4.2.1 Frontier Milestones
+## 🚀 Key v4.3 Frontier Milestones
+
+### 1. Automated Tributary Gravity & ASCE 7-16 Lateral Load Propagation
+- **Story Diaphragm Auto-Detection**: Detects horizontal floor diaphragms grouped by elevation coordinates $Y$.
+- **Factored Gravity Floor Loads**: Automatically computes orthogonal tributary spans ($w_x, w_z$) and tributary areas ($A_{\text{trib}}$) for corner, edge, and interior nodes, assigning factored gravity loads $F_y = -A_{\text{trib}} \cdot (1.2 D + 1.6 L)$ upon **Extrude Story (`+1 Level`)** and **Extend Bay (`+X` / `+Z`)**.
+- **ASCE 7-16 Directional Lateral Wind & Seismic**: Calculates velocity pressure $q_z = 0.613 K_z K_{zt} K_d V^2$, windward/leeward pressure coefficients ($C_p$), and Equivalent Lateral Force (ELF) seismic base shear distributed vertically across floor levels.
+- **Undo/Redo & HUD Controls**: Full `Cmd/Ctrl + Z` undo snapshot stack support and live toggle under `LOADS` tab in `SlideableWorkspaceMenu`.
+
+### 2. Native Apple Silicon macOS (`arm64`) & Windows (`x64`) Packaging
+- **OS File Associations**: Registers file-type associations for `.s2k` (SAP2000), `.ifc` (BIM), `.dxf` (CAD), and `.structura.json` in macOS `Info.plist` and Windows `Runner.rc`.
+- **Conditional Native Desktop File I/O (`DesktopFileService`)**: Clean cross-platform service routing to native disk I/O with automatic DMCA/author watermarking headers on desktop, and graceful Web Blob downloads on browser.
+- **GitHub Actions Desktop Release Pipeline**: `.github/workflows/desktop_release.yml` automating release builds and `.dmg` / `.zip` artifact publishing.
+
+### 3. Real-Time Multi-Engineer Cloud Firestore Collaboration & Revision Diffing
+- **Cloud Firestore Security Rules**: Granular role-based security (`shared_sessions/{sessionId}`) distinguishing between `CO_ENGINEER` (full read/write access) and `VIEWER_COMMENTER` (read-only with review comment privileges).
+- **Interactive Revision Diff Engine (`StructuralDiffEngine`)**: Computes exact deltas between structural revisions: added members, removed members, and modified members with Demand-to-Capacity Ratio ($\Delta\text{DCR}$) tracking.
+- **3D Spatial Review Pins**: Interactive glowing pin glyphs with status halos rendered directly at joint coordinates in Three.js (`window.setStructuralReviewPins`).
+- **visionOS `CollaborationReviewDialog`**: High-contrast 3-tab glass modal (`SHARE & PRESENCE`, `REVISION DIFF`, `PINNED 3D COMMENTS`) launched via the `SHARE & REVIEW` specular pill in `FloatingWorkstationHeader`.
+
+---
+
+## 🏛️ Previous v4.2 & v4.2.1 Core Milestones
 
 ### 1. Civil Structural Integrity: Member End Releases & Cracked Stiffness ($I_{\text{eff}}$)
 - **Static Condensation of End Releases**: Releases member end moments ($M_y, M_z$) and torsion ($T$) via element stiffness matrix condensation $\mathbf{k}_{\text{cond}} = \mathbf{k}_{aa} - \mathbf{k}_{ab}\mathbf{k}_{bb}^{-1}\mathbf{k}_{ba}$, guaranteeing strictly $0.0000\text{ N}\cdot\text{m}$ moment at hinged ends.

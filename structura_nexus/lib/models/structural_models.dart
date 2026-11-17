@@ -182,6 +182,8 @@ class StructuralNode {
   // Calculated results
   List<double> displacements; // [ux, uy, uz, rx, ry, rz]
   List<double> reactions; // [Rx, Ry, Rz, Rmx, Rmy, Rmz]
+  String? loadSource; // e.g. 'TRIBUTARY_AUTO', 'MANUAL'
+  double? tributaryAreaM2;
 
   StructuralNode({
     required this.id,
@@ -197,6 +199,8 @@ class StructuralNode {
     double? fzN,
     List<double>? displacements,
     List<double>? reactions,
+    this.loadSource,
+    this.tributaryAreaM2,
   })  : coords = coords ?? Vector3(x ?? 0.0, y ?? 0.0, z ?? 0.0),
         restraint = restraint ?? (isRestrained != null ? isRestrained.map((r) => r ? 1 : 0).toList() : [0, 0, 0, 0, 0, 0]),
         loads = loads ?? [fxN ?? 0.0, fyN ?? 0.0, fzN ?? 0.0, 0.0, 0.0, 0.0],
@@ -270,6 +274,8 @@ class StructuralNode {
     double? fzN,
     List<double>? displacements,
     List<double>? reactions,
+    String? loadSource,
+    double? tributaryAreaM2,
   }) {
     final newCoords = coords ?? (x != null || y != null || z != null ? Vector3(x ?? this.x, y ?? this.y, z ?? this.z) : this.coords.clone());
     final newRestraint = restraint ?? (isRestrained != null ? isRestrained.map((r) => r ? 1 : 0).toList() : List<int>.from(this.restraint));
@@ -285,6 +291,8 @@ class StructuralNode {
       loads: newLoads,
       displacements: displacements ?? List<double>.from(this.displacements),
       reactions: reactions ?? List<double>.from(this.reactions),
+      loadSource: loadSource ?? this.loadSource,
+      tributaryAreaM2: tributaryAreaM2 ?? this.tributaryAreaM2,
     );
   }
 
@@ -294,6 +302,8 @@ class StructuralNode {
         'restraint': restraint,
         'loads': loads,
         'displacements': displacements,
+        if (loadSource != null) 'load_source': loadSource,
+        if (tributaryAreaM2 != null) 'tributary_area_m2': tributaryAreaM2,
       };
 
   factory StructuralNode.fromJson(Map<String, dynamic> json) {
@@ -303,6 +313,8 @@ class StructuralNode {
       coords: Vector3(c[0], c[1], c[2]),
       restraint: (json['restraint'] as List).map((e) => (e as num).toInt()).toList(),
       loads: (json['loads'] as List).map((e) => (e as num).toDouble()).toList(),
+      loadSource: json['load_source'] as String?,
+      tributaryAreaM2: (json['tributary_area_m2'] as num?)?.toDouble(),
     );
   }
 }

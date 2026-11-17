@@ -1,20 +1,160 @@
 rules_version = '2';
+// ============================================================================
+// Structura Nexus v4.3 — Production Cloud Firestore Security Rules
+// Track 3: Real-Time Multi-Engineer Cloud Firestore Collaboration & Revision Diffing
+// Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
+// ============================================================================
+//
+// Assumed Data Models:
+//
+// 1. /users/{userId}
+//    - uid: string (Firebase Auth UID)
+//    - email: string (engineer email)
+//    - displayName: string
+//    - isAnonymous: bool
+//    - lastSeen: timestamp
+//    - updatedAt: timestamp
+//
+// 2. /users/{userId}/projects/{projectId}
+//    - title: string (project / building title)
+//    - description: string
+//    - nodeCount: int
+//    - memberCount: int
+//    - totalWeightKg: float / number
+//    - governingDcr: float / number
+//    - authorUid: string
+//    - authorName: string
+//    - updatedAt: timestamp
+//    - graphData: map (nodes, members, materials, loads, releases, cracked modifiers)
+//
+// 3. /library/{document=**}
+//    - Certified structural templates, Eurocode / AISC benchmarks, and standard libraries.
+//
+// 4. /shared_sessions/{sessionId}
+//    - ownerId: string (UID of session creator / lead PE)
+//    - title: string
+//    - description: string (optional)
+//    - collaborators: map of uid -> { role: 'CO_ENGINEER' | 'VIEWER_COMMENTER', displayName: string, ... }
+//    - graphData: map (current structural revision)
+//    - baselineGraphData: map (baseline revision for differential telemetry & SFD/BMD comparison)
+//    - createdAt: timestamp
+//    - updatedAt: timestamp
+//
+// 5. /shared_sessions/{sessionId}/comments/{commentId}
+//    - id: string
+//    - sessionId: string
+//    - authorId / author_id: string (UID of reviewer)
+//    - authorName: string
+//    - authorEmail: string
+//    - text: string (joint / member review note)
+//    - nodeId: string (optional pinned 3D joint)
+//    - memberId: string (optional pinned 3D beam/column)
+//    - coords: list of float [x, y, z] (optional spatial pin)
+//    - isResolved / is_resolved: bool
+//    - timestamp: timestamp / string
+//
+// 6. /shared_sessions/{sessionId}/presence/{presenceId}
+//    - userId / user_id: string
+//    - displayName / display_name: string
+//    - role: string ('CO_ENGINEER' | 'VIEWER_COMMENTER')
+//    - colorHex / color_hex: string
+//    - selectedEntityId / selected_entity_id: string (optional)
+//    - lastActive / last_active: timestamp / string
+// ============================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // --------------------------------------------------------------------------
+    // Helper Functions
+    // --------------------------------------------------------------------------
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getSessionData(sessionId) {
+      return get(/databases/$(database)/documents/shared_sessions/$(sessionId)).data;
+    }
+
+    // --------------------------------------------------------------------------
+    // User Profiles & Private Project Models
+    // --------------------------------------------------------------------------
     // User profiles: authenticated users can access their own profile
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
       // Project models: users have full CRUD access to their own structural projects
       match /projects/{projectId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isOwner(userId);
       }
     }
 
-    // Shared public structural library & benchmarks
+    // --------------------------------------------------------------------------
+    // Shared Public Structural Library & Certified Benchmarks
+    // --------------------------------------------------------------------------
     match /library/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAuthenticated();
+    }
+
+    // --------------------------------------------------------------------------
+    // Real-Time Multi-Engineer Cloud Collaboration & Revision Diffing (Track 3)
+    // --------------------------------------------------------------------------
+    match /shared_sessions/{sessionId} {
+      // Shareable links work for authenticated and guest/anonymous reviewer engineers
+      allow read: if true;
+
+      // Session creation requires authenticated engineer
+      allow create: if isAuthenticated();
+
+      // Updates allowed if user is session owner or an authorized CO_ENGINEER collaborator
+      allow update: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid ||
+        (
+          ('collaborators' in resource.data) &&
+          (request.auth.uid in resource.data.collaborators) &&
+          resource.data.collaborators[request.auth.uid].role == 'CO_ENGINEER'
+        )
+      );
+
+      // Session deletion restricted to the session owner
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+
+      // ------------------------------------------------------------------------
+      // Pinned 3D Joint & Member Review Comments
+      // ------------------------------------------------------------------------
+      match /comments/{commentId} {
+        // Comments are readable by all session viewers
+        allow read: if true;
+
+        // Both VIEWER_COMMENTER and CO_ENGINEER can add 3D joint review comments
+        allow create: if isAuthenticated();
+
+        // Update & delete allowed by comment author or session owner
+        allow update, delete: if isAuthenticated() && (
+          (
+            ('authorId' in resource.data && resource.data.authorId == request.auth.uid) ||
+            ('author_id' in resource.data && resource.data.author_id == request.auth.uid) ||
+            resource.data.authorId == request.auth.uid
+          ) ||
+          getSessionData(sessionId).ownerId == request.auth.uid
+        );
+      }
+
+      // ------------------------------------------------------------------------
+      // Real-Time Collaborator Presence & Spatial Cursors
+      // ------------------------------------------------------------------------
+      match /presence/{presenceId} {
+        // Presence is readable by anyone viewing the shared session
+        allow read: if true;
+
+        // Authenticated collaborators broadcast their active 3D presence / cursor
+        allow write: if isAuthenticated();
+      }
     }
   }
 }

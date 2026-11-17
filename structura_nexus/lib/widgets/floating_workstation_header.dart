@@ -53,6 +53,7 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenParetoExplorer;
   final VoidCallback? onOpenGenerativeTopology;
   final VoidCallback? onOpenShopDrawingAudit;
+  final VoidCallback? onOpenCollaborationReview;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
   final bool canUndo;
@@ -99,6 +100,7 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenParetoExplorer,
     this.onOpenGenerativeTopology,
     this.onOpenShopDrawingAudit,
+    this.onOpenCollaborationReview,
     this.onUndo,
     this.onRedo,
     this.canUndo = false,
@@ -451,6 +453,34 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         ]),
                       ),
                       const SizedBox(width: 8),
+
+                      if (widget.onOpenCollaborationReview != null) ...[
+                        _HoverableSpecularPill(
+                          label: "SHARE & REVIEW",
+                          icon: Icons.people_alt_rounded,
+                          onTap: widget.onOpenCollaborationReview,
+                          trailingBadge: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF00F0FF).withValues(alpha: 0.5),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: const Text(
+                              "LIVE",
+                              style: TextStyle(
+                                color: Color(0xFF00F0FF),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
 
                       // 4. Benchmark Presets Dropdown
                       _buildPresetDropdown(),

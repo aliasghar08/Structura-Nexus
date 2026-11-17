@@ -34,6 +34,7 @@ class SlideableWorkspaceMenu extends StatefulWidget {
   final VoidCallback? onOpenNltha;
   final VoidCallback? onOpenBuildingTemplates;
   final VoidCallback? onOpenMacAiInspector;
+  final VoidCallback? onAutoPropagateLoads;
   final ValueChanged<String>? onPresetSelected;
   final VoidCallback? onSolveTriggered;
 
@@ -83,6 +84,7 @@ class SlideableWorkspaceMenu extends StatefulWidget {
     this.onOpenNltha,
     this.onOpenBuildingTemplates,
     this.onOpenMacAiInspector,
+    this.onAutoPropagateLoads,
     this.onPresetSelected,
     this.onSolveTriggered,
   });
@@ -438,6 +440,15 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
       category: 'ANALYSIS',
       onTap: widget.onOpenEnvironmentalStimulator,
       badge: 'LIVE 3D',
+    ),
+    _ToolDef(
+      label: 'Auto-Propagate Tributary Loads',
+      subtitle: '1.2D+1.6L Gravity & ASCE 7-16 Wind/Seismic',
+      icon: Icons.sync_alt_rounded,
+      color: const Color(0xFF10B981),
+      category: 'LOADS',
+      onTap: widget.onAutoPropagateLoads ?? widget.onOpenLateralStability,
+      badge: 'AUTO',
     ),
   ];
   }
