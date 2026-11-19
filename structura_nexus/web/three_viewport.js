@@ -36,6 +36,8 @@
       this.loadsGroup = new THREE.Group();   // 3D Force vector arrows
       this.releasesGroup = new THREE.Group(); // Release hinges & cracked glyphs
       this.reviewPinsGroup = new THREE.Group(); // 3D Pinned Engineering Review Comments
+      this.connectionsGroup = new THREE.Group(); // v4.5 3D AISC Chapter J Steel Connections & Baseplates
+      this.movingTruckGroup = new THREE.Group(); // v4.5 AASHTO HL-93 3D Moving Truck & Axle Vectors
       this.releaseGlyphs = [];
 
       // Viewport flags & state
@@ -244,6 +246,8 @@
       this.scene.add(this.loadsGroup);
       this.scene.add(this.releasesGroup);
       this.scene.add(this.reviewPinsGroup);
+      this.scene.add(this.connectionsGroup);
+      this.scene.add(this.movingTruckGroup);
 
       // 7. Event Listeners (Window Resize & Interactive Node Dragging)
       window.addEventListener("resize", () => this.onResize());
@@ -1442,6 +1446,196 @@
       if (this.controls) this.controls.update();
     }
 
+    /**
+     * v4.5 Track 2.2: Synthesize 3D AISC 360-16 Chapter J Steel Connection Assembly
+     * Renders extruded shear tabs, extended moment end-plates, chamfered gusset plates,
+     * baseplates, and 3D hex-head A325/A490 bolts color-coded by utilization DCR.
+     */
+    synthesizeConnectionAssembly(config) {
+      if (!config) return;
+      const data = typeof config === "string" ? JSON.parse(config) : config;
+      this._disposeGroup(this.connectionsGroup);
+
+      const coords = data.joint_coords_m || [0.0, 0.0, 0.0];
+      const jx = coords[0] || 0.0;
+      const jy = coords[1] || 0.0;
+      const jz = coords[2] || 0.0;
+      const scale = Math.max(1.2, (this.geomScale || 1.0) * 1.35);
+
+      const assembly = new THREE.Group();
+      assembly.position.set(jx, jy, jz);
+
+      const cType = (data.connection_type || "SHEAR_TAB").toUpperCase();
+      const dims = data.plate_dimensions_m || [0.22, 0.34, 0.015];
+      const pw = Math.max(0.18, (dims[0] || 0.22) * scale);
+      const ph = Math.max(0.24, (dims[1] || 0.34) * scale);
+      const pt = Math.max(0.03, (dims[2] || 0.015) * scale * 2.0);
+
+      const plateMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        metalness: 0.85,
+        roughness: 0.22,
+        emissive: 0x00f0ff,
+        emissiveIntensity: 0.22,
+      });
+
+      if (cType === "GUSSET_PLATE") {
+        // Chamfered triangular/polygonal braced-frame gusset plate
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        shape.lineTo(pw * 1.2, 0);
+        shape.lineTo(pw * 1.2, ph * 0.45);
+        shape.lineTo(pw * 0.45, ph * 1.2);
+        shape.lineTo(0, ph * 1.2);
+        shape.closePath();
+        const extrudeGeo = new THREE.ExtrudeGeometry(shape, {
+          depth: pt,
+          bevelEnabled: true,
+          bevelThickness: 0.008,
+          bevelSize: 0.008,
+          bevelSegments: 2,
+        });
+        const gussetMesh = new THREE.Mesh(extrudeGeo, plateMat);
+        gussetMesh.position.set(0, 0, -0.5 * pt);
+        assembly.add(gussetMesh);
+      } else if (cType === "BASEPLATE") {
+        // Column baseplate + underlying concrete pedestal block
+        const bpGeo = new THREE.BoxGeometry(pw * 1.25, pt, ph * 1.25);
+        const bpMesh = new THREE.Mesh(bpGeo, plateMat);
+        bpMesh.position.set(0, 0.5 * pt, 0);
+        assembly.add(bpMesh);
+
+        const pedGeo = new THREE.BoxGeometry(pw * 1.65, 0.25 * scale, ph * 1.65);
+        const pedMat = new THREE.MeshStandardMaterial({
+          color: 0x334155,
+          roughness: 0.75,
+          metalness: 0.15,
+        });
+        const pedMesh = new THREE.Mesh(pedGeo, pedMat);
+        pedMesh.position.set(0, -0.125 * scale, 0);
+        assembly.add(pedMesh);
+      } else {
+        // Shear Tab or Extended Moment End-Plate
+        const plateGeo = new THREE.BoxGeometry(pt, ph, pw);
+        const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+        assembly.add(plateMesh);
+      }
+
+      // 3D Hex-Head Bolt & Nut Cylinders (6 radial segments = hexagon)
+      const bolts = data.bolts_3d || [];
+      bolts.forEach((b) => {
+        const dcr = b.utilization_dcr ?? 0.45;
+        let boltColor = 0x10b981; // Emerald PASS
+        if (dcr > 1.0) boltColor = 0xef4444; // Crimson OVERSTRESSED
+        else if (dcr >= 0.8) boltColor = 0xf59e0b; // Amber WARN
+        else boltColor = 0x00f0ff; // Cyan Nominal
+
+        const bRad = Math.max(0.024 * scale, (b.diameter_m || 0.022) * scale * 1.1);
+        const bLen = pt * 2.1;
+        const hexGeo = new THREE.CylinderGeometry(bRad, bRad, bLen, 6);
+        if (cType !== "BASEPLATE") {
+          hexGeo.rotateZ(Math.PI / 2);
+        }
+        const hexMat = new THREE.MeshStandardMaterial({
+          color: boltColor,
+          metalness: 0.9,
+          roughness: 0.15,
+          emissive: boltColor,
+          emissiveIntensity: 0.55,
+        });
+        const boltMesh = new THREE.Mesh(hexGeo, hexMat);
+        boltMesh.position.set(
+          (b.local_x_m || 0.0) * scale,
+          (b.local_y_m || 0.0) * scale,
+          (b.local_z_m || 0.0) * scale
+        );
+        assembly.add(boltMesh);
+      });
+
+      this.connectionsGroup.add(assembly);
+    }
+
+    clearConnections() {
+      this._disposeGroup(this.connectionsGroup);
+    }
+
+    /**
+     * v4.5 Track 3.2: AASHTO LRFD HL-93 Moving-Load 3D Truck Mesh & Live Axle Vectors
+     */
+    updateMovingLoadTruck(truckPayload) {
+      if (!truckPayload) return;
+      const data = typeof truckPayload === "string" ? JSON.parse(truckPayload) : truckPayload;
+      this._disposeGroup(this.movingTruckGroup);
+
+      const leadX = data.lead_x_m ?? 6.0;
+      const deckY = data.deck_y_m ?? 0.0;
+      const deckZ = data.deck_z_m ?? 0.0;
+      const scale = Math.max(1.0, this.geomScale || 1.0);
+
+      const truckGroup = new THREE.Group();
+
+      // Translucent Cyan HL-93 Tractor Cab & Trailer Silhouette
+      const hullMat = new THREE.MeshStandardMaterial({
+        color: 0x00f0ff,
+        transparent: true,
+        opacity: 0.42,
+        emissive: 0x00f0ff,
+        emissiveIntensity: 0.45,
+        roughness: 0.2,
+      });
+
+      const cabGeo = new THREE.BoxGeometry(1.8 * scale, 1.4 * scale, 1.6 * scale);
+      const cabMesh = new THREE.Mesh(cabGeo, hullMat);
+      cabMesh.position.set(leadX, deckY + 1.0 * scale, deckZ);
+      truckGroup.add(cabMesh);
+
+      const trailerGeo = new THREE.BoxGeometry(4.8 * scale, 1.1 * scale, 1.6 * scale);
+      const trailerMesh = new THREE.Mesh(trailerGeo, hullMat.clone());
+      trailerMesh.position.set(leadX - 3.4 * scale, deckY + 0.85 * scale, deckZ);
+      truckGroup.add(trailerMesh);
+
+      // Downward Axle Load Vector Arrows (35 kN, 145 kN, 145 kN)
+      const axles = data.axles || [];
+      axles.forEach((ax) => {
+        const axX = ax.x ?? leadX;
+        const loadKn = ax.load_kn ?? 145.0;
+        const arrowGroup = this.createForceArrow(
+          axX,
+          deckY,
+          deckZ,
+          0.0,
+          -loadKn * 1000.0,
+          0.0,
+          scale * 1.15
+        );
+        if (arrowGroup) {
+          this.movingTruckGroup.add(arrowGroup);
+        }
+      });
+
+      this.movingTruckGroup.add(truckGroup);
+
+      // Live Member DCR Stress Heatmap Update
+      const dcrs = data.member_dcrs;
+      if (dcrs && this.memberData) {
+        this.memberData.forEach((m) => {
+          const dcr = dcrs[m.id];
+          if (dcr !== undefined && m.mesh && m.mesh.material) {
+            let col = 0x10b981;
+            if (dcr > 1.0) col = 0xef4444;
+            else if (dcr >= 0.85) col = 0xf59e0b;
+            else if (dcr >= 0.45) col = 0x38bdf8;
+            m.mesh.material.color.setHex(col);
+            m.mesh.material.emissive.setHex(col);
+          }
+        });
+      }
+    }
+
+    clearMovingLoadTruck() {
+      this._disposeGroup(this.movingTruckGroup);
+    }
+
     dispose() {
       if (this.animId) cancelAnimationFrame(this.animId);
       this._disposeGroup(this.structureGroup);
@@ -1449,6 +1643,10 @@
       this._disposeGroup(this.diagramGroup);
       this._disposeGroup(this.sfdGroup);
       this._disposeGroup(this.loadsGroup);
+      this._disposeGroup(this.releasesGroup);
+      this._disposeGroup(this.reviewPinsGroup);
+      this._disposeGroup(this.connectionsGroup);
+      this._disposeGroup(this.movingTruckGroup);
       if (this.renderer && this.renderer.domElement) {
         this.renderer.domElement.remove();
       }
@@ -1478,6 +1676,26 @@
   window.setStructuralReviewPins = function (pins) {
     if (window.__currentThreeViewport) {
       window.__currentThreeViewport.setReviewPins(pins);
+    }
+  };
+  window.render3DConnectionAssembly = function (configJson) {
+    if (window.__currentThreeViewport) {
+      window.__currentThreeViewport.synthesizeConnectionAssembly(configJson);
+    }
+  };
+  window.clear3DConnectionAssemblies = function () {
+    if (window.__currentThreeViewport) {
+      window.__currentThreeViewport.clearConnections();
+    }
+  };
+  window.updateMovingLoadTruck = function (truckJson) {
+    if (window.__currentThreeViewport) {
+      window.__currentThreeViewport.updateMovingLoadTruck(truckJson);
+    }
+  };
+  window.clearMovingLoadTruck = function () {
+    if (window.__currentThreeViewport) {
+      window.__currentThreeViewport.clearMovingLoadTruck();
     }
   };
 })();

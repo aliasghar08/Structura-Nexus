@@ -84,3 +84,10 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     );
   }
 }
+
+class ThreeJsViewportBridge {
+  static void render3DConnectionAssembly(String configJson) {}
+  static void clear3DConnectionAssemblies() {}
+  static void updateMovingLoadTruck(String truckJson) {}
+  static void clearMovingLoadTruck() {}
+}

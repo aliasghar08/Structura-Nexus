@@ -395,7 +395,7 @@ class _CommandPaletteDialogState extends State<CommandPaletteDialog> {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'STRUCTURA NEXUS v4.4-APEX',
+                    'STRUCTURA NEXUS v4.5-APEX',
                     style: TextStyle(
                       color: Color(0xFF00F0FF),
                       fontSize: 10,

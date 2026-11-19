@@ -1203,3 +1203,71 @@ async def websocket_voice_copilot(websocket: WebSocket):
         logger.error(f"Voice Co-Pilot WebSocket error: {str(e)}")
         await websocket.send_text(json.dumps({"status": "ERROR", "message": str(e)}))
 
+
+# -------------------------------------------------------------
+# v4.5 FRONTIER ENDPOINTS: Progressive Collapse Retrofit, AISC Connections & AASHTO HL-93
+# -------------------------------------------------------------
+from backend.app.solvers.progressive_collapse_retrofit import (
+    ProgressiveCollapseRetrofitEngine,
+    ProgressiveCollapseRetrofitReport,
+)
+from backend.app.code_check.aisc_connections import (
+    AISC360ConnectionSynthesizer,
+    ConnectionDetailRequest,
+    ConnectionDetailResponse,
+)
+from backend.app.solvers.aashto_moving_load import (
+    AASHTOHL93MovingLoadSolver,
+    AASHTOMovingLoadRequest,
+    AASHTOMovingLoadResponse,
+)
+
+
+class ProgressiveCollapseRetrofitRequest(BaseModel):
+    graph: StructuralGraphPayload
+    removed_member_id: Optional[str] = None
+    dynamic_amplification_factor: float = 2.0
+    theta_allow_rad: float = 0.035
+
+
+@app.post("/api/v1/solve/progressive-collapse-retrofit", response_model=ProgressiveCollapseRetrofitReport)
+def run_progressive_collapse_retrofit(request: ProgressiveCollapseRetrofitRequest):
+    """
+    Automated UFC 4-023-03 §3-1 Catenary Tie-Force sizing and §3-2 double-span Alternate Load Path retrofit.
+    """
+    try:
+        return ProgressiveCollapseRetrofitEngine.auto_retrofit(
+            payload=request.graph,
+            removed_member_id=request.removed_member_id,
+            dynamic_amplification_factor=request.dynamic_amplification_factor,
+            theta_allow_rad=request.theta_allow_rad,
+        )
+    except Exception as e:
+        logger.error(f"Progressive collapse retrofit error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/design/connection-detail", response_model=ConnectionDetailResponse)
+def evaluate_connection_detail(request: ConnectionDetailRequest):
+    """
+    Deterministic AISC 360-16 Chapter J limit-state evaluator & 3D bolt/plate assembly synthesizer.
+    """
+    try:
+        return AISC360ConnectionSynthesizer.evaluate(request)
+    except Exception as e:
+        logger.error(f"AISC connection synthesizer error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/solve/aashto-moving-load", response_model=AASHTOMovingLoadResponse)
+def solve_aashto_moving_load(request: AASHTOMovingLoadRequest):
+    """
+    AASHTO LRFD HL-93 Moving-Load & Influence-Line Bridge Envelope Solver.
+    """
+    try:
+        return AASHTOHL93MovingLoadSolver.solve_envelopes(request)
+    except Exception as e:
+        logger.error(f"AASHTO HL-93 moving load solver error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+

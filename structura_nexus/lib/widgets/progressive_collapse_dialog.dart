@@ -13,11 +13,13 @@ import 'info_tooltip.dart';
 class ProgressiveCollapseDialog extends StatefulWidget {
   final StructuralModel model;
   final ValueChanged<StructuralModel>? onCommitDamagedModel;
+  final ValueChanged<StructuralModel>? onApplyRetrofitModel;
 
   const ProgressiveCollapseDialog({
     super.key,
     required this.model,
     this.onCommitDamagedModel,
+    this.onApplyRetrofitModel,
   });
 
   @override
@@ -28,6 +30,7 @@ class _ProgressiveCollapseDialogState extends State<ProgressiveCollapseDialog> {
   double _dif = 2.0; // UFC 4-023-03 Dynamic Increase Factor Omega_LD
   late List<ColumnRemovalScenarioResult> _sweepResults;
   ColumnRemovalScenarioResult? _selectedScenario;
+  ProgressiveCollapseRetrofitResult? _retrofitResult;
 
   @override
   void initState() {
@@ -51,6 +54,17 @@ class _ProgressiveCollapseDialogState extends State<ProgressiveCollapseDialog> {
         _selectedScenario = _sweepResults.first;
       }
     }
+    _retrofitResult = null;
+  }
+
+  void _triggerAutoRetrofit() {
+    if (_selectedScenario == null) return;
+    setState(() {
+      _retrofitResult = ProgressiveCollapseEngine.autoRetrofitScenario(
+        baselineModel: widget.model,
+        scenario: _selectedScenario!,
+      );
+    });
   }
 
   Color _statusColor(String status) {
@@ -457,6 +471,7 @@ class _ProgressiveCollapseDialogState extends State<ProgressiveCollapseDialog> {
                                 ),
                                 const SizedBox(height: 10),
                                 Expanded(
+                                  flex: 4,
                                   child: Container(
                                     width: double.infinity,
                                     decoration: BoxDecoration(
@@ -469,61 +484,151 @@ class _ProgressiveCollapseDialogState extends State<ProgressiveCollapseDialog> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 10),
 
                                 // Forensic Engineering Breakdown
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF141C2B),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: _statusColor(active.status).withValues(alpha: 0.4),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Flexible(
-                                            child: Text(
-                                              'VERDICT: ${active.status}',
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: _statusColor(active.status),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w900,
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Flexible(
-                                            child: Text(
-                                              'Critical Bridging Member: ${active.mostCriticalAdjacentMemberId}',
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                color: Color(0xFF00F0FF),
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '• Baseline Max DCR: ${active.baselineMaxDcr.toStringAsFixed(3)} → Damaged ALP DCR: ${active.damagedMaxDcr.toStringAsFixed(3)} (${active.overloadedAdjacentMembers} members > 1.0)\n'
-                                        '• Bridging Bay Span: ${active.bridgingSpanM.toStringAsFixed(2)} m (2L = ${(active.bridgingSpanM * 2).toStringAsFixed(1)} m double-span catenary)\n'
-                                        '• Recommendation: ${active.status == "COLLAPSE RISK" ? "Add perimeter spandrel tie reinforcement or hat-truss outrigger bracing to arrest catenary drop." : "Structure develops sufficient Vierendeel & catenary tie capacity per UFC 4-023-03."}',
-                                        style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.8),
-                                          fontSize: 10.5,
-                                          height: 1.4,
+                                Expanded(
+                                  flex: 6,
+                                  child: SingleChildScrollView(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF141C2B),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: _statusColor(active.status).withValues(alpha: 0.4),
                                         ),
                                       ),
-                                    ],
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  'VERDICT: ${active.status}',
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: TextStyle(
+                                                    color: _statusColor(active.status),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w900,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  'Critical Bridging Member: ${active.mostCriticalAdjacentMemberId}',
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    color: Color(0xFF00F0FF),
+                                                    fontSize: 10.5,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '• Baseline Max DCR: ${active.baselineMaxDcr.toStringAsFixed(3)} → Damaged ALP DCR: ${active.damagedMaxDcr.toStringAsFixed(3)} (${active.overloadedAdjacentMembers} members > 1.0)\n'
+                                            '• Bridging Bay Span: ${active.bridgingSpanM.toStringAsFixed(2)} m (2L = ${(active.bridgingSpanM * 2).toStringAsFixed(1)} m double-span catenary)\n'
+                                            '• Recommendation: ${active.status == "COLLAPSE RISK" ? "Add perimeter spandrel tie reinforcement or hat-truss outrigger bracing to arrest catenary drop." : "Structure develops sufficient Vierendeel & catenary tie capacity per UFC 4-023-03."}',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(alpha: 0.8),
+                                              fontSize: 10.5,
+                                              height: 1.4,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          // v4.5 Automated Retrofit & Catenary Tie-Force Action Bar
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: ElevatedButton.icon(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: const Color(0xFF00F0FF),
+                                                    foregroundColor: Colors.black,
+                                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+                                                  ),
+                                                  icon: const Icon(Icons.auto_fix_high_rounded, size: 15),
+                                                  label: const Text(
+                                                    'AUTO-RETROFIT & SIZE CATENARY TIES',
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900),
+                                                  ),
+                                                  onPressed: _triggerAutoRetrofit,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              const InfoTooltip(
+                                                title: 'Automated ALP Retrofit & Catenary Tie Optimizer',
+                                                codeRef: 'UFC 4-023-03 §3-1 & Table 4-1',
+                                                message:
+                                                    'Sizes horizontal internal (Ti), peripheral (Tp), and vertical (Tv) catenary continuity ties per UFC 4-023-03 §3-1 and upgrades double-span bridging girders until θ <= θ_allow and DCR_ALP <= 0.95.',
+                                                size: 15,
+                                              ),
+                                            ],
+                                          ),
+                                          if (_retrofitResult != null) ...[
+                                            const SizedBox(height: 10),
+                                            Container(
+                                              padding: const EdgeInsets.all(10),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color: const Color(0xFF10B981).withValues(alpha: 0.55),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                    children: [
+                                                      const Expanded(
+                                                        child: Text(
+                                                          'UFC 4-023-03 RETROFIT & CATENARY TIE SYNTHESIS COMPLETE',
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            color: Color(0xFF10B981),
+                                                            fontSize: 10.5,
+                                                            fontWeight: FontWeight.w900,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Text(
+                                                        '+${_retrofitResult!.addedSteelMassKg.toStringAsFixed(1)} kg Retrofit Steel',
+                                                        style: const TextStyle(
+                                                          color: Color(0xFF00F0FF),
+                                                          fontSize: 10,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    '• Chord Rotation θ: ${(_retrofitResult!.thetaBeforeRad * 100).toStringAsFixed(2)}% rad → ${(_retrofitResult!.thetaAfterRad * 100).toStringAsFixed(2)}% rad (Limit ≤ ${(_retrofitResult!.allowableRotationRad * 100).toStringAsFixed(1)}% rad)\n'
+                                                    '• Required Catenary Tie T_req: ${_retrofitResult!.tieSizing.governingTieDemandKn.toStringAsFixed(1)} kN (Ti=${_retrofitResult!.tieSizing.internalTieReqKn.toStringAsFixed(0)} kN, Tp=${_retrofitResult!.tieSizing.peripheralTieReqKn.toStringAsFixed(0)} kN) → ${_retrofitResult!.tieSizing.recommendedContinuityPlate}\n'
+                                                    '• ALP DCR: ${_retrofitResult!.dcrBefore.toStringAsFixed(2)} → ${_retrofitResult!.dcrAfter.toStringAsFixed(2)} • Robustness: ${_retrofitResult!.robustnessBefore.toStringAsFixed(1)} → ${_retrofitResult!.robustnessAfter.toStringAsFixed(1)}/100',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      height: 1.35,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -561,19 +666,40 @@ class _ProgressiveCollapseDialogState extends State<ProgressiveCollapseDialog> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: const Text('CLOSE', style: TextStyle(color: Colors.white70)),
                     ),
+                    if (_retrofitResult != null) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF10B981),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.shield_rounded, size: 15),
+                        label: const Text(
+                          'APPLY RETROFIT TO 3D FRAME',
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900),
+                        ),
+                        onPressed: () {
+                          final cb = widget.onApplyRetrofitModel ?? widget.onCommitDamagedModel;
+                          cb?.call(_retrofitResult!.retrofittedModel);
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
                     const SizedBox(width: 10),
                     if (active != null && widget.onCommitDamagedModel != null)
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFEF4444),
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                         icon: const Icon(Icons.bolt_rounded, size: 16),
                         label: Text(
                           'SIMULATE ${active.removedMemberId} LOSS IN 3D VIEWPORT',
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                          style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900),
                         ),
                         onPressed: () {
                           widget.onCommitDamagedModel!(active.damagedModel);

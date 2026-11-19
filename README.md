@@ -1,7 +1,7 @@
 # Structura Nexus
 
 > **Autonomous Frontier AI Workstation for Structural, Civil & Mechanical Engineering**  
-> **System Architecture**: `v4.4.0-APEX` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `UFC 4-023-03` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
+> **System Architecture**: `v4.5.0-APEX` • **Governing Standards**: `AISC 360-16` • `ACI 318-19` • `ACI 224R-01` • `ASCE 7-16` • `UFC 4-023-03` • `AASHTO LRFD HL-93` • `IBC 2024` • `ATC-40` • `FEMA 356` • `SE 2050`  
 > **Platform Support**: Native Apple Silicon macOS (`arm64`), Windows (`x64`), Linux & WebGPU PWA (`https://structura-nexus.web.app`)  
 > **Hardware Acceleration**: WebGPU Parallel WGSL Compute • Apple Silicon MPS • WebGL Three.js 3D GPU • Pure Dart SIMD Runtime  
 > **Live Production Web Application**: [https://structura-nexus.web.app](https://structura-nexus.web.app)  
@@ -13,11 +13,23 @@
 
 ## 🏗️ Executive Overview
 
-**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **UFC 4-023-03 Progressive Collapse & Alternate Load Path Analysis**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**, **Automated Tributary Gravity ($1.2D + 1.6L$) & ASCE 7-16 Lateral Load Propagation**, **Real-Time Multi-Engineer Cloud Collaboration**, and an **Omnipresent Rich Hover `(i)` Engineering Encyclopedia & `⌘K` Command Palette**.
+**Structura Nexus** is an autonomous frontier engineering workstation that unifies deterministic matrix structural mechanics (**12-DOF Direct Stiffness Matrix Solver with 0.0000% benchmark error**), **10 Apple Silicon MPS-trained PyTorch neural surrogates**, client-side **WebGPU parallel compute shaders** evaluating 256 candidate structures simultaneously, **Generative 3D Topology Optimization (Neural SIMP & Marching Struts)**, **UFC 4-023-03 Progressive Collapse Retrofitting & Catenary Tie-Force Optimization**, **AISC 360-16 Chapter J 3D Connection & Baseplate Synthesis**, **AASHTO LRFD HL-93 Moving-Load Bridge Envelope Scrubbing**, **Shop-Drawing Visual QA (`ConnectionNet-AI`)**, **Gemini Live Spatial Voice Control**, **Civil Engineering Integrity Hardening (End Releases, ACI 318-19 $I_{\text{eff}}$, ACI 224R-01 Crack Widths, and Cryptographic HMAC-SHA256 PE Seal Verification)**, **Automated Tributary Gravity ($1.2D + 1.6L$) & ASCE 7-16 Lateral Load Propagation**, **Real-Time Multi-Engineer Cloud Collaboration**, and an **Omnipresent Rich Hover `(i)` Engineering Encyclopedia & `⌘K` Command Palette**.
 
 ---
 
-## ⚡ Key v4.4-APEX Advancements & Guided Usability
+## ⚡ Key v4.5-APEX Frontier Milestones
+
+### 1. Automated Progressive Collapse Retrofitting & Catenary Tie-Force Optimizer (`UFC 4-023-03` §3-1)
+- **Horizontal & Peripheral Catenary Tie-Force Sizing**: Automatically calculates required internal ($T_i$), peripheral ($T_p$), and vertical column ($T_v$) tie strengths from tributary floor load $w_F = 1.2 D + 0.5 L$ and bay spans $L_1, L_2$, sizing high-strength `A572 Gr. 50` continuity tie plates.
+- **Automated Double-Span Girder & Hat-Truss Retrofit**: Iteratively upgrades bridging girders, adjacent columns, and adds Vierendeel/hat-truss transfer ties, re-solving the 12-DOF damaged stiffness matrix until plastic chord rotation $\theta \le \theta_{\text{allow}}$, $\text{DCR}_{\text{ALP}} \le 0.95$, and Robustness Index $\ge 85/100$.
+
+### 2. Interactive AISC 360-16 Chapter J 3D Connection & Baseplate Synthesizer
+- **Deterministic Chapter J Limit-State Engine**: Evaluates **Single-Plate Bolted Shear Tabs** (§J3.6 bolt shear, §J3.10 bearing/tear-out, §J4.2 shear yielding/rupture, §J4.3 block shear), **Extended 4-Bolt / 8-Bolt Moment End-Plates** (AISC DG 4/16 prying, plate yield line $t_{p,\min}$, §J2.4 flange welds, §J10 column web continuity), **Braced-Frame Gusset Plates** (Whitmore $30^\circ$ dispersion width $L_w$, Thornton buckling $KL/r$), and **Column Baseplates & Anchor Rods** (AISC DG 1 concrete bearing $0.85 f'_c A_1 \sqrt{A_2/A_1}$, cantilever bending, anchor breakout).
+- **3D WebGL Connection Assembly Synthesis**: Renders extruded steel plates and 3D hex-head `A325`/`A490` bolt cylinders color-coded by utilization DCR directly at selected joints in `three_viewport.js`, paired with a 2D dimensioned shop-detail blueprint in `ConnectionDetailDialog`.
+
+### 3. AASHTO LRFD HL-93 Moving-Load Bridge Envelope Scrubber
+- **40-Step 12-DOF DSM Moving-Load & Influence-Line Solver**: Steps the **AASHTO HL-93 Design Truck** ($35\text{ kN} + 145\text{ kN} + 145\text{ kN}$ axles, $1 + IM = 1.33$) or **Design Tandem** ($2 \times 110\text{ kN}$) superimposed with the $9.3\text{ kN/m}$ **Design Lane Load** across deck nodes in $N_{\text{steps}} = 40$ increments.
+- **60 FPS 3D Truck Mesh & Live Influence Lines $\eta(x)$**: Floating `BridgeMovingLoadDock` timeline scrubber with Play/Pause animation, live influence-line chart, member-by-member $P/V/M$ envelopes, AASHTO §6.6 fatigue stress range $\Delta f$ verification, and a 3D translucent cyan HL-93 truck silhouette with downward axle vectors moving across the bridge deck in real time.
 
 ### 1. Progressive Collapse & Alternate Load Path Studio (`UFC 4-023-03` & `GSA APM`)
 - **Sudden Notional Column Removal**: Evaluates structural survivability under extreme event combination $\Omega_{LD}(1.2 D + 0.5 L)$ with configurable Dynamic Increase Factor $\Omega_{LD} \in [1.2, 2.5]$ (default $2.0$).

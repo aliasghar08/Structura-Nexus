@@ -53,6 +53,8 @@ import '../widgets/generative_topology_dialog.dart';
 import '../widgets/shop_drawing_audit_dialog.dart';
 import '../widgets/collaboration_review_dialog.dart';
 import '../widgets/progressive_collapse_dialog.dart';
+import '../widgets/connection_detail_dialog.dart';
+import '../widgets/bridge_moving_load_dock.dart';
 import '../widgets/command_palette_dialog.dart';
 import '../widgets/info_tooltip.dart';
 import '../widgets/voice_copilot_pill.dart';
@@ -1744,6 +1746,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenShopDrawingAudit: onOpenShopDrawingAudit,
               onOpenCollaborationReview: onOpenCollaborationReview,
               onOpenProgressiveCollapse: onOpenProgressiveCollapse,
+              onOpenConnectionDetailer: _openConnectionDetailer,
+              onOpenBridgeMovingLoad: _openBridgeMovingLoad,
               onOpenCommandPalette: onOpenCommandPalette,
               onUndo: _undo,
               onRedo: _redo,
@@ -2212,6 +2216,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   onBatchApplyLoads: _batchApplyLoads,
                   onBatchDelete: _deleteSelectedElements,
                   onDeselectAll: _deselectAll,
+                  onDetailJointConnection: _openConnectionDetailer,
                   onModelChanged: () {
                     _commitModelMutation('Updated structural properties');
                   },
@@ -2282,6 +2287,57 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                 'Applied UFC 4-023-03 notional column removal to 3D viewport (Press Ctrl/Cmd+Z to restore column)',
               );
             },
+            onApplyRetrofitModel: (retrofitted) {
+              _saveUndoState();
+              setState(() {
+                _model = retrofitted;
+              });
+              _commitModelMutation(
+                'Applied UFC 4-023-03 catenary tie & double-span girder retrofit to 3D frame',
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _openConnectionDetailer() {
+    _requireAuth(
+      featureName: 'AISC 360-16 Chapter J 3D Connection Synthesizer',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => ConnectionDetailDialog(
+            model: _model,
+            initialJointId: _selectedNodeId,
+          ),
+        );
+      },
+    );
+  }
+
+  void _openBridgeMovingLoad() {
+    _requireAuth(
+      featureName: 'AASHTO LRFD HL-93 Moving-Load Bridge Scrubber',
+      onAuthenticated: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => BridgeMovingLoadDock(
+            model: _model,
+            selectedMemberId: _selectedMemberId,
+            onStepScrubbed: (stepState) {
+              setState(() {
+                for (final entry in stepState.nodeDisplacements.entries) {
+                  final n = _model.getNode(entry.key);
+                  if (n != null && entry.value.length >= 3) {
+                    n.dispX = entry.value[0];
+                    n.dispY = entry.value[1];
+                    n.dispZ = entry.value[2];
+                  }
+                }
+              });
+            },
           ),
         );
       },
@@ -2294,16 +2350,40 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       builder: (ctx) => CommandPaletteDialog(
         actions: [
           CommandPaletteAction(
-            title: 'Progressive Collapse & Alternate Path Studio',
-            subtitle: 'Sudden notional column removal, catenary bridging & vulnerability ranking',
+            title: 'Progressive Collapse & Catenary Tie Retrofit Studio',
+            subtitle: 'Sudden notional column removal, catenary tie sizing & auto-retrofit',
             category: 'ANALYSIS',
             codeRef: 'UFC 4-023-03 & GSA',
             infoDescription:
-                'Removes perimeter, corner, or interior columns under Ω_LD = 2.0 dynamic amplification and solves the damaged 12-DOF stiffness matrix [K_damaged] for double-span catenary deflection and plastic chord rotation.',
+                'Removes perimeter, corner, or interior columns under Ω_LD = 2.0 dynamic amplification, sizes catenary continuity ties (Ti, Tp, Tv), and auto-retrofits double-span girders.',
             icon: Icons.warning_amber_rounded,
             color: const Color(0xFFEF4444),
             shortcut: 'ALP',
             onTrigger: _openProgressiveCollapse,
+          ),
+          CommandPaletteAction(
+            title: 'AISC 360-16 Chapter J 3D Connection & Baseplate Synthesizer',
+            subtitle: 'Shear tabs, moment end-plates, Whitmore 30° gussets & 3D hex bolts',
+            category: 'ANALYSIS',
+            codeRef: 'AISC 360-16 Ch. J & DG 1/4',
+            infoDescription:
+                'Evaluates bolt shear, bearing/tear-out, block shear (§J4.3), end-plate yield lines, Whitmore 30° dispersion, Thornton buckling, and renders 3D hex-bolt assemblies in Three.js.',
+            icon: Icons.hardware_rounded,
+            color: const Color(0xFF00F0FF),
+            shortcut: '3D CONN',
+            onTrigger: _openConnectionDetailer,
+          ),
+          CommandPaletteAction(
+            title: 'AASHTO LRFD HL-93 Moving-Load Bridge Envelope Scrubber',
+            subtitle: '40-step 12-DOF DSM axle train, 60 FPS 3D truck & influence lines η(x)',
+            category: 'ANALYSIS',
+            codeRef: 'AASHTO LRFD §3.6.1.2',
+            infoDescription:
+                'Steps the HL-93 Design Truck (35 kN + 145 kN + 145 kN, 1+IM = 1.33) + 9.3 kN/m lane load across the span, extracting P/V/M envelopes, influence lines, and fatigue stress ranges.',
+            icon: Icons.local_shipping_rounded,
+            color: const Color(0xFF38BDF8),
+            shortcut: 'HL-93',
+            onTrigger: _openBridgeMovingLoad,
           ),
           CommandPaletteAction(
             title: 'Autonomous 4-Agent Engineering Swarm',

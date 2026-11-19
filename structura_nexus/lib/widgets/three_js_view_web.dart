@@ -311,3 +311,41 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
     return const HtmlElementView(viewType: _viewType);
   }
 }
+
+@JS('render3DConnectionAssembly')
+external void _render3DConnectionAssembly(JSString configJson);
+
+@JS('clear3DConnectionAssemblies')
+external void _clear3DConnectionAssemblies();
+
+@JS('updateMovingLoadTruck')
+external void _updateMovingLoadTruck(JSString truckJson);
+
+@JS('clearMovingLoadTruck')
+external void _clearMovingLoadTruck();
+
+class ThreeJsViewportBridge {
+  static void render3DConnectionAssembly(String configJson) {
+    try {
+      _render3DConnectionAssembly(configJson.toJS);
+    } catch (_) {}
+  }
+
+  static void clear3DConnectionAssemblies() {
+    try {
+      _clear3DConnectionAssemblies();
+    } catch (_) {}
+  }
+
+  static void updateMovingLoadTruck(String truckJson) {
+    try {
+      _updateMovingLoadTruck(truckJson.toJS);
+    } catch (_) {}
+  }
+
+  static void clearMovingLoadTruck() {
+    try {
+      _clearMovingLoadTruck();
+    } catch (_) {}
+  }
+}

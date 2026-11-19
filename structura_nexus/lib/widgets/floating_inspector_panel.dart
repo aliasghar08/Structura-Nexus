@@ -25,6 +25,7 @@ class FloatingInspectorPanel extends StatefulWidget {
   final void Function(double fx, double fy, double fz)? onBatchApplyLoads;
   final VoidCallback? onBatchDelete;
   final VoidCallback? onDeselectAll;
+  final VoidCallback? onDetailJointConnection;
 
   /// Panel width. Defaults to 330 (desktop side card); pass `double.infinity`
   /// for full-width phone bottom sheets.
@@ -46,6 +47,7 @@ class FloatingInspectorPanel extends StatefulWidget {
     this.onBatchApplyLoads,
     this.onBatchDelete,
     this.onDeselectAll,
+    this.onDetailJointConnection,
     this.width = 330,
   });
 
@@ -748,6 +750,26 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           _dataRow("Reaction Rx", "${((node.reactions.isNotEmpty ? node.reactions[0] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
           _dataRow("Reaction Ry", "${((node.reactions.length > 1 ? node.reactions[1] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
           _dataRow("Reaction Rz", "${((node.reactions.length > 2 ? node.reactions[2] : 0.0) / 1000.0).toStringAsFixed(2)} kN"),
+        ],
+        if (widget.onDetailJointConnection != null) ...[
+          GlassPod.divider(),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: widget.onDetailJointConnection,
+              icon: const Icon(Icons.hardware_rounded, size: 15, color: Color(0xFF00F0FF)),
+              label: const Text(
+                'Detail Joint Connection (AISC Ch. J)',
+                style: TextStyle(color: Color(0xFF00F0FF), fontSize: 10.5, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5)),
+                backgroundColor: const Color(0xFF00F0FF).withValues(alpha: 0.08),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
         ],
       ],
     );

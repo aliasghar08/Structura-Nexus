@@ -56,6 +56,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenShopDrawingAudit;
   final VoidCallback? onOpenCollaborationReview;
   final VoidCallback? onOpenProgressiveCollapse;
+  final VoidCallback? onOpenConnectionDetailer;
+  final VoidCallback? onOpenBridgeMovingLoad;
   final VoidCallback? onOpenCommandPalette;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
@@ -105,6 +107,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenShopDrawingAudit,
     this.onOpenCollaborationReview,
     this.onOpenProgressiveCollapse,
+    this.onOpenConnectionDetailer,
+    this.onOpenBridgeMovingLoad,
     this.onOpenCommandPalette,
     this.onUndo,
     this.onRedo,
@@ -259,14 +263,14 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text(
-                                        "v4.4.0-APEX",
+                                        "v4.5.0-APEX",
                                         style: TextStyle(color: Color(0xFF58A6FF), fontSize: 8.5, fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                     const SizedBox(width: 2),
                                     const InfoTooltip(
-                                      title: 'Structura Nexus v4.4-APEX',
-                                      codeRef: 'AISC 360-16 • ACI 318-19 • ASCE 7-16 • UFC 4-023-03',
+                                      title: 'Structura Nexus v4.5-APEX',
+                                      codeRef: 'AISC 360-16 • ACI 318-19 • ASCE 7-16 • UFC 4-023-03 • AASHTO HL-93',
                                       message:
                                           'Autonomous Frontier Structural & Civil Engineering Workstation combining an exact 12-DOF Direct Stiffness Matrix (DSM) solver (0.0000% benchmark error) with 10 Apple Silicon MPS neural surrogates and WebGPU batch optimization.',
                                       size: 13,
@@ -506,6 +510,22 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                               infoText:
                                   'Simulates sudden notional column loss under Ω_LD = 2.0 dynamic amplification, evaluating double-span catenary bridging and vulnerability rankings.',
                               onTap: () => widget.onOpenProgressiveCollapse?.call(),
+                            ),
+                          if (widget.onOpenConnectionDetailer != null)
+                            _MenuAction(
+                              label: "AISC 360-16 3D Connection Synthesizer",
+                              icon: Icons.hardware_rounded,
+                              infoText:
+                                  'Evaluates bolted shear tabs, extended moment end-plates, Whitmore 30° gussets, and column baseplates, synthesizing 3D hex-bolt assemblies in Three.js.',
+                              onTap: () => widget.onOpenConnectionDetailer?.call(),
+                            ),
+                          if (widget.onOpenBridgeMovingLoad != null)
+                            _MenuAction(
+                              label: "AASHTO HL-93 Moving Load",
+                              icon: Icons.local_shipping_rounded,
+                              infoText:
+                                  'Steps the AASHTO HL-93 Design Truck (325 kN) + 9.3 kN/m lane load across the bridge deck in 40 DSM steps with 60 FPS scrubbing and influence lines η(x).',
+                              onTap: () => widget.onOpenBridgeMovingLoad?.call(),
                             ),
                           _MenuAction(
                             label: "Dynamic Time History (NLTHA) Player",
