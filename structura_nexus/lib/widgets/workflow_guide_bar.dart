@@ -62,6 +62,7 @@ class _WorkflowGuideBarState extends State<WorkflowGuideBar> {
   late int _selectedStep;
   bool _guideMeExpanded = true;
   bool _isDismissed = false;
+  bool _expandedOnCompact = false;
 
   @override
   void initState() {
@@ -167,6 +168,66 @@ class _WorkflowGuideBarState extends State<WorkflowGuideBar> {
 
     final steps = _buildSteps();
     final activeStepDef = steps[(_selectedStep - 1).clamp(0, steps.length - 1)];
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isCompactViewport = screenWidth < 1100;
+
+    if (isCompactViewport && !_expandedOnCompact) {
+      final cleanStepTitle = activeStepDef.title.replaceFirst(RegExp(r'^Step \d+:\s*'), '');
+      return Align(
+        alignment: Alignment.topCenter,
+        child: MouseRegion(
+          onEnter: (_) => WorkspacePreferences.freezeOrbit(true),
+          onExit: (_) => WorkspacePreferences.freezeOrbit(false),
+          child: GlassPod(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            borderRadius: 16,
+            onTap: () => setState(() => _expandedOnCompact = true),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.route_rounded, size: 14, color: Color(0xFF00F0FF)),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Step ${activeStepDef.stepNumber}/4: $cleanStepTitle • Guide Me',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: activeStepDef.onPrimaryAction,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00F0FF),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      activeStepDef.primaryActionLabel,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.expand_more_rounded, size: 15, color: Color(0xFF00F0FF)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return MouseRegion(
       onEnter: (_) => WorkspacePreferences.freezeOrbit(true),
@@ -289,7 +350,15 @@ class _WorkflowGuideBarState extends State<WorkflowGuideBar> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
                       tooltip: 'Minimize Workflow Guide',
-                      onPressed: () => setState(() => _isDismissed = true),
+                      onPressed: () {
+                        setState(() {
+                          if (isCompactViewport && _expandedOnCompact) {
+                            _expandedOnCompact = false;
+                          } else {
+                            _isDismissed = true;
+                          }
+                        });
+                      },
                     ),
                   ],
                 ),

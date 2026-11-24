@@ -167,6 +167,14 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   }
 
   @override
+  void didUpdateWidget(covariant SlideableWorkspaceMenu oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((widget.initialTop - oldWidget.initialTop).abs() > 0.5) {
+      _topOffset = widget.initialTop;
+    }
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _toolsScrollController.dispose();

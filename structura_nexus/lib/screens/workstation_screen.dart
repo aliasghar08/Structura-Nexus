@@ -58,6 +58,7 @@ import '../widgets/bridge_moving_load_dock.dart';
 import '../widgets/command_palette_dialog.dart';
 import '../widgets/workflow_guide_bar.dart';
 import '../widgets/capabilities_overview_dialog.dart';
+import '../widgets/next_step_prompt_banner.dart';
 import '../widgets/info_tooltip.dart';
 import '../widgets/voice_copilot_pill.dart';
 import '../services/voice_copilot_service.dart';
@@ -90,6 +91,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool _autoPropagateLoads = true;
   int _modelRevision = 0;
   int _activeWorkflowStep = 1;
+  NextStepPromptData? _activeNextStepPrompt;
+  Timer? _nextStepPromptTimer;
   StreamSubscription<dynamic>? _authSubscription;
 
   void _saveUndoState() {
@@ -426,13 +429,29 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
   @override
   void dispose() {
+    _nextStepPromptTimer?.cancel();
     _authSubscription?.cancel();
     _surrogateStreamer.dispose();
     _apiService.dispose();
     super.dispose();
   }
 
-  void _triggerSolve() {
+  void _showNextStepPrompt(NextStepPromptData prompt) {
+    _nextStepPromptTimer?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _activeNextStepPrompt = prompt;
+    });
+    _nextStepPromptTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted) {
+        setState(() {
+          _activeNextStepPrompt = null;
+        });
+      }
+    });
+  }
+
+  void _triggerSolve({bool showPrompt = false}) {
     setState(() {
       _modelRevision++;
       try {
@@ -447,6 +466,28 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             : 'EXACT_SOLVE',
       );
     });
+    if (showPrompt) {
+      _showNextStepPrompt(
+        NextStepPromptData(
+          message: 'Equilibrium verified (0.0000% residual). Next: Generate Stamped PE Packet →',
+          actionLabel: 'EXPORT PE PACKET',
+          icon: Icons.verified_user_rounded,
+          accentColor: const Color(0xFF10B981),
+          onAction: () {
+            setState(() {
+              _activeNextStepPrompt = null;
+              _activeWorkflowStep = 4;
+            });
+            PePacketDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () => setState(() => _triggerSolve()),
+            );
+          },
+        ),
+      );
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewportKey.currentState?.reloadModel();
     });
@@ -478,6 +519,26 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
     _commitModelMutation(
       'AISC 360-16 Auto-Sizer optimized $modifiedCount members (Max DCR: ${_model.governingDcr.toStringAsFixed(3)})',
+    );
+    _showNextStepPrompt(
+      NextStepPromptData(
+        message: 'Equilibrium verified (0.0000% residual). Next: Generate Stamped PE Packet →',
+        actionLabel: 'EXPORT PE PACKET',
+        icon: Icons.verified_user_rounded,
+        accentColor: const Color(0xFF10B981),
+        onAction: () {
+          setState(() {
+            _activeNextStepPrompt = null;
+            _activeWorkflowStep = 4;
+          });
+          PePacketDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          );
+        },
+      ),
     );
     _apiService.triggerRemoteOptimization(_model);
   }
@@ -515,19 +576,39 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
   }
 
-  void _importBuildingModel(StructuralModel newModel) {
+  void _importBuildingModel(StructuralModel newModel, {int? advanceToStep}) {
     _saveUndoState();
     setState(() {
       _model = newModel;
       _modelRevision++;
       _selectedNodeId = null;
       _selectedMemberId = null;
+      if (advanceToStep != null) {
+        _activeWorkflowStep = advanceToStep;
+      }
     });
     _triggerSolve();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _viewportKey.currentState?.reloadModel(refitCamera: true);
     });
+
+    _showNextStepPrompt(
+      NextStepPromptData(
+        message:
+            'Model loaded (${newModel.nodes.length} joints, ${newModel.members.length} members). Next: Apply ASCE 7-16 Loads or Run 12-DOF FEA →',
+        actionLabel: 'RUN FEA SOLVE',
+        icon: Icons.play_circle_fill_rounded,
+        accentColor: const Color(0xFF00F0FF),
+        onAction: () {
+          setState(() {
+            _activeNextStepPrompt = null;
+            _activeWorkflowStep = 3;
+          });
+          _triggerSolve(showPrompt: true);
+        },
+      ),
+    );
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -838,6 +919,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
 
     _commitModelMutation('Generated Story Level ${(newY / storyH).round()} at Y=${newY.toStringAsFixed(1)}m (+${topNodes.length} columns & beams)$loadMsg', refitCamera: true);
+    _showGeometryUpdatedPrompt();
   }
 
   void _extendBayX() {
@@ -897,6 +979,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
 
     _commitModelMutation('Extended Frame: Added +6m Bay along X-axis (X=${newX.toStringAsFixed(1)}m)$loadMsgX', refitCamera: true);
+    _showGeometryUpdatedPrompt();
   }
 
   void _extendBayZ() {
@@ -956,6 +1039,26 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     }
 
     _commitModelMutation('Extended Frame: Added +6m Bay along Z-axis (Z=${newZ.toStringAsFixed(1)}m)$loadMsgZ', refitCamera: true);
+    _showGeometryUpdatedPrompt();
+  }
+
+  void _showGeometryUpdatedPrompt() {
+    _showNextStepPrompt(
+      NextStepPromptData(
+        message: 'Geometry updated with tributary loads. Next: Check AISC 360-16 DCR & P-Δ Stability →',
+        actionLabel: 'INSPECT DCR',
+        icon: Icons.analytics_rounded,
+        accentColor: const Color(0xFFF59E0B),
+        onAction: () {
+          setState(() {
+            _activeNextStepPrompt = null;
+            _activeWorkflowStep = 3;
+            _model.displayMode = DisplayMode.aiscCompliance;
+          });
+          _triggerSolve(showPrompt: true);
+        },
+      ),
+    );
   }
 
   void _addXBracing() {
@@ -1114,9 +1217,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   bayDepthZ: 6.0,
                   storyHeight: 3.6,
                 );
-                _model = synthesized;
-                _selectedNodeId = null;
-                _selectedMemberId = null;
+                _importBuildingModel(synthesized, advanceToStep: 2);
                 _commitModelMutation('Synthesized $stories-Story, ${baysX}x$baysZ Bay Frame (${_model.nodes.length} joints, ${_model.members.length} members)', refitCamera: true);
               },
               child: const Text('Synthesize', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1593,10 +1694,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final isOverallPass = failCount == 0;
     final screenSize = MediaQuery.sizeOf(context);
     final isCompact = screenSize.width < 700 || screenSize.height < 500;
+    final isTabletBand = !isCompact && screenSize.width < 1100 && screenSize.height >= 700;
     final showInspector = _isInspectorOpen ?? !isCompact;
-    final defaultInspectorTop = MediaQuery.paddingOf(context).top + (isCompact ? 68.0 : 70.0);
+    final defaultInspectorTop = MediaQuery.paddingOf(context).top +
+        (isTabletBand ? 148.0 : (isCompact ? 68.0 : 70.0));
     final maxInspectorTop = (screenSize.height - 240.0).clamp(70.0, 1000.0);
-    final effectiveInspectorTop = (_inspectorTopOffset ?? defaultInspectorTop).clamp(60.0, maxInspectorTop);
+    final effectiveInspectorTop = (_inspectorTopOffset ?? defaultInspectorTop)
+        .clamp(isTabletBand ? 148.0 : 60.0, maxInspectorTop);
     final inspectorBottomOffset = MediaQuery.paddingOf(context).bottom + (isCompact ? 200.0 : 225.0);
 
     return Focus(
@@ -1772,7 +1876,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onModeChanged: (mode) => setState(() => _model.displayMode = mode),
               onDeformationScaleChanged: (scale) => setState(() => _model.deformationScale = scale),
               onPresetSelected: (presetKey) => _loadPreset(presetKey),
-              onSolveTriggered: _triggerSolve,
+              onSolveTriggered: () => _triggerSolve(showPrompt: true),
               onOpenAuth: () {
                 if (_isUserLoggedIn) {
                   showDialog(
@@ -1795,11 +1899,11 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           ),
 
           // 2.5 Layer 1.5: Step-by-Step Workflow Guide Bar (Top-Center Canvas Corridor, Zero Overlap)
-          if (screenSize.width >= 1024)
+          if (!isCompact)
             Positioned(
               top: MediaQuery.paddingOf(context).top + 104,
-              left: 336,
-              right: showInspector ? 364 : 160,
+              left: isTabletBand ? 16 : 336,
+              right: isTabletBand ? 16 : (showInspector ? 364 : 160),
               child: Align(
                 alignment: Alignment.topCenter,
                 child: WorkflowGuideBar(
@@ -1825,7 +1929,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                     setState(() {
                       _activeWorkflowStep = 4;
                     });
-                    _triggerSolve();
+                    _triggerSolve(showPrompt: true);
                     _showToolSnackBar(
                       'Step 3 Complete: 12-DOF DSM Solved (Max DCR = ${maxDcr.toStringAsFixed(3)}) → Next: Export Stamped PE Packet or Run AI Auto-Sizer',
                     );
@@ -1887,6 +1991,21 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             ),
           ),
 
+          // Layer 2.2: Contextual Post-Action Next-Step Action Pill (Above Telemetry Dock)
+          if (_activeNextStepPrompt != null)
+            Positioned(
+              bottom: MediaQuery.paddingOf(context).bottom + (isCompact ? 205.0 : 196.0),
+              left: isCompact ? 12 : (isTabletBand ? 24 : 336),
+              right: isCompact ? 12 : (isTabletBand ? 24 : (showInspector ? 364 : 160)),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: NextStepPromptBanner(
+                  prompt: _activeNextStepPrompt!,
+                  onDismiss: () => setState(() => _activeNextStepPrompt = null),
+                ),
+              ),
+            ),
+
           // Layer 2.5: v4.2 Gemini Live Spatial Voice Co-Pilot Floating Pill
           Positioned(
             bottom: MediaQuery.paddingOf(context).bottom + 72,
@@ -1903,7 +2022,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             title: 'WORKSPACE TOOLS',
             subtitle: '3D Drawing, Building & Modeling Tools',
             badgeText: 'DRAWING',
-            initialTop: 76.0,
+            initialTop: isTabletBand ? 148.0 : 76.0,
             initialExpanded: !isCompact,
             onAutoPropagateLoads: () {
               setState(() {
@@ -2220,7 +2339,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               ),
             ],
             onPresetSelected: (presetKey) => _loadPreset(presetKey),
-            onSolveTriggered: _triggerSolve,
+            onSolveTriggered: () => _triggerSolve(showPrompt: true),
           ),
 
           // 5. Layer 4: Floating Right Inspector Card (Slideable, Remembers Position, Open-in-place)
@@ -2395,38 +2514,85 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
       context: context,
       builder: (_) => CapabilitiesOverviewDialog(
         onTrySteelFrameDesign: () {
-          setState(() => _activeWorkflowStep = 2);
-          _loadPreset('high_rise_10s');
+          // 1. Multi-Story Steel Frame Design (AISC 360-16): 10-Story Commercial Office Tower (220 joints, 590 members)
+          final tower = BuildingGeneratorService.generateCommercialHighRiseTower();
+          _importBuildingModel(tower, advanceToStep: 3);
         },
         onTryConcreteAndFooting: () {
-          setState(() => _activeWorkflowStep = 4);
+          // 2. Reinforced Concrete & Footing Design (ACI 318-19): 4-Story Concrete Moment Frame with 0.35/0.70 Ig modifiers
+          final rcFrame = BuildingGeneratorService.generateParametricBuilding(
+            numStories: 4,
+            baysX: 2,
+            baysZ: 2,
+            bayWidthX: 6.0,
+            bayDepthZ: 6.0,
+            storyHeight: 3.6,
+          );
+          rcFrame.sessionId = '4-Story ACI 318-19 Concrete Moment Frame';
+          for (final m in rcFrame.members) {
+            final nI = rcFrame.getNode(m.iNodeId);
+            final nJ = rcFrame.getNode(m.jNodeId);
+            final isCol = (nI != null && nJ != null) &&
+                ((nI.coords.y - nJ.coords.y).abs() > (nI.coords.x - nJ.coords.x).abs());
+            m.crackedSectionFactor = isCol ? 0.70 : 0.35;
+          }
+          _importBuildingModel(rcFrame, advanceToStep: 4);
           showDialog(
             context: context,
             builder: (_) => const ConcretePmDialog(),
           );
         },
         onTrySeismicAndCollapse: () {
-          setState(() => _activeWorkflowStep = 3);
-          _openProgressiveCollapse();
+          // 3. Seismic Time-History & Progressive Collapse: 8-Story Dual Core Hospital Complex + El Centro 1940 NLTHA
+          final hospital = BuildingGeneratorService.generateHospitalComplex();
+          _importBuildingModel(hospital, advanceToStep: 3);
+          setState(() {
+            _isNlthaActive = true;
+          });
         },
         onTryBridgeMovingLoads: () {
-          setState(() => _activeWorkflowStep = 2);
-          _loadPreset('pratt_truss_bridge');
-          _openBridgeMovingLoad();
+          // 4. Bridge Moving-Load Envelope (AASHTO LRFD HL-93): 36m Pratt Highway Truss Bridge + BridgeMovingLoadDock
+          final bridge = BuildingGeneratorService.generatePrattHighwayBridge();
+          _importBuildingModel(bridge, advanceToStep: 2);
+          showDialog(
+            context: context,
+            builder: (ctx) => BridgeMovingLoadDock(
+              model: _model,
+              selectedMemberId: _selectedMemberId,
+              onStepScrubbed: (stepState) {
+                setState(() {
+                  for (final entry in stepState.nodeDisplacements.entries) {
+                    final n = _model.getNode(entry.key);
+                    if (n != null && entry.value.length >= 3) {
+                      n.dispX = entry.value[0];
+                      n.dispY = entry.value[1];
+                      n.dispZ = entry.value[2];
+                    }
+                  }
+                });
+              },
+            ),
+          );
         },
         onTryAiOptimization: () {
-          setState(() => _activeWorkflowStep = 4);
-          AutonomousSwarmDialog.show(
+          // 5. AI Tonnage & Embodied Carbon Optimization: Industrial Logistics Clear-Span Warehouse (36m span) + ParetoFrontierDock
+          final warehouse = BuildingGeneratorService.generateIndustrialWarehouse();
+          _importBuildingModel(warehouse, advanceToStep: 4);
+          ParetoFrontierDock.show(
             context,
             model: _model,
-            onStructureModified: () {
+            onCommit: (optimized) {
               _saveUndoState();
-              _commitModelMutation('Applied Swarm-Healed AISC 360-16 Topology to 3D Frame');
+              _model = optimized;
+              _commitModelMutation('Committed Pareto Optimal Design to 3D Viewport');
+              _triggerSolve(showPrompt: true);
             },
           );
         },
         onTryPeAndBimDeliverables: () {
-          setState(() => _activeWorkflowStep = 4);
+          // 6. PE Calculation Packets & openBIM Exchange: 4-Story Educational Campus Frame + PePacketDialog
+          final campus = BuildingGeneratorService.generateEducationalCampus();
+          _importBuildingModel(campus, advanceToStep: 4);
           PePacketDialog.show(
             context,
             model: _model,

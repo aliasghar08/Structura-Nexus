@@ -48,7 +48,7 @@ class _BridgeMovingLoadDockState extends State<BridgeMovingLoadDock> {
     super.initState();
     _targetMemberId = widget.selectedMemberId ??
         (widget.model.members.isNotEmpty ? widget.model.members.first.id : 'M1');
-    _solveEnvelopes();
+    _solveEnvelopes(fromInit: true);
   }
 
   @override
@@ -58,7 +58,7 @@ class _BridgeMovingLoadDockState extends State<BridgeMovingLoadDock> {
     super.dispose();
   }
 
-  void _solveEnvelopes() {
+  void _solveEnvelopes({bool fromInit = false}) {
     _envelopeResult = BridgeMovingLoadSolver.solveEnvelopes(
       model: widget.model,
       vehicleType: _vehicleType,
@@ -66,7 +66,13 @@ class _BridgeMovingLoadDockState extends State<BridgeMovingLoadDock> {
       targetInfluenceMemberId: _targetMemberId,
     );
     _activeStepIndex = (_envelopeResult.numSteps ~/ 2).clamp(0, _envelopeResult.numSteps - 1);
-    _broadcastActiveStep();
+    if (fromInit) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _broadcastActiveStep();
+      });
+    } else {
+      _broadcastActiveStep();
+    }
   }
 
   void _broadcastActiveStep() {
