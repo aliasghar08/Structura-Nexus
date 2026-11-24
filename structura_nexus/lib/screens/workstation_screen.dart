@@ -2391,6 +2391,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   onBatchDelete: _deleteSelectedElements,
                   onDeselectAll: _deselectAll,
                   onDetailJointConnection: _openConnectionDetailer,
+                  onOpenConcreteStudio: () => _openStudioByKey('concrete_studio'),
                   onModelChanged: () {
                     _commitModelMutation('Updated structural properties');
                   },

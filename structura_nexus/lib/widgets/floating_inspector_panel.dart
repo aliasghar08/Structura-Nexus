@@ -4,6 +4,7 @@
 // Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
 // ============================================================================
 
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 import 'glass_pod.dart';
@@ -26,6 +27,7 @@ class FloatingInspectorPanel extends StatefulWidget {
   final VoidCallback? onBatchDelete;
   final VoidCallback? onDeselectAll;
   final VoidCallback? onDetailJointConnection;
+  final VoidCallback? onOpenConcreteStudio;
 
   /// Panel width. Defaults to 330 (desktop side card); pass `double.infinity`
   /// for full-width phone bottom sheets.
@@ -48,6 +50,7 @@ class FloatingInspectorPanel extends StatefulWidget {
     this.onBatchDelete,
     this.onDeselectAll,
     this.onDetailJointConnection,
+    this.onOpenConcreteStudio,
     this.width = 330,
   });
 
@@ -816,10 +819,14 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
 
         Row(
           children: [
-            _sectionLabel("AISC 360-16 UTILIZATION"),
+            Flexible(child: _sectionLabel("AISC 360-16 UTILIZATION")),
             const SizedBox(width: 4),
             const InfoTooltip(
-              message: "Demand-to-Capacity Ratio. Values > 1.0 indicate structural overstress.",
+              title: "AISC 360-16 Combined Stress Interaction (DCR)",
+              codeRef: "AISC 360-16 Eq. H1-1a / H1-1b",
+              formula: "DCR = P_u / (φ P_n) + 8/9 · (M_ux / (φ M_nx) + M_uy / (φ M_ny))",
+              standardOrRange: "DCR ≤ 1.00 LRFD | 0.70–0.95 Optimal",
+              message: "Demand-to-Capacity Ratio. Evaluates simultaneous axial tension/compression and biaxial bending moments. Values > 1.0 indicate structural overstress.",
             ),
           ],
         ),
@@ -845,11 +852,55 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         _dataRow("Limit State", member.governingLimitState),
         GlassPod.divider(),
 
+        // AISC 360-16 Slenderness & Euler Buckling
+        Builder(
+          builder: (context) {
+            final prof = SectionProfile.catalog[member.section];
+            final double eMod = 200e9; // Pa
+            final double ix = prof?.ixM4 ?? 1.0e-5;
+            final double area = prof?.areaM2 ?? 0.005;
+            final double len = member.lengthM;
+            final double peKn = (math.pi * math.pi * eMod * ix / (len * len)) / 1000.0;
+            final double rVal = (ix / area).clamp(1e-6, 1.0);
+            final double rMm = math.sqrt(rVal) * 1000.0;
+            final double slenderness = member.slendernessKlR > 0
+                ? member.slendernessKlR
+                : ((len * 1000.0) / (rMm > 0 ? rMm : 1.0));
+            final bool isSlenderPass = slenderness <= 200.0;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(child: _sectionLabel("COLUMN STABILITY & SLENDERNESS")),
+                    const SizedBox(width: 4),
+                    const InfoTooltip(
+                      title: "AISC 360-16 Column Slenderness & Euler Buckling",
+                      codeRef: "AISC 360-16 §E2 & Eq. E3-4",
+                      formula: "P_e = π² · E · I / (K · L)²  |  λ = K · L / r",
+                      standardOrRange: "AISC §E2 Limit: KL/r ≤ 200 for compression members",
+                      message: "Evaluates elastic flexural column buckling capacity and geometric slenderness ratio to prevent premature instability before yield.",
+                    ),
+                  ],
+                ),
+                _dataRow("Slenderness KL/r", "${slenderness.toStringAsFixed(1)} ${isSlenderPass ? '(≤ 200 PASS)' : '(> 200 SLENDER)'}"),
+                _dataRow("Euler Critical Pe", "${peKn.toStringAsFixed(1)} kN"),
+                GlassPod.divider(),
+              ],
+            );
+          },
+        ),
+
         Row(
           children: [
-            _sectionLabel("INTERNAL FORCES & TENSORS"),
+            Flexible(child: _sectionLabel("INTERNAL FORCES & TENSORS")),
             const SizedBox(width: 4),
             const InfoTooltip(
+              title: "12-DOF Direct Stiffness Member Forces",
+              codeRef: "Element Tensor: {f} = [k_12x12] · {d}",
+              formula: "{f}^T = [P_i, V_yi, V_zi, T_i, M_yi, M_zi, P_j, V_yj, V_zj, T_j, M_yj, M_zj]",
+              standardOrRange: "Axial P, Shear V, Bending M, Torsion T",
               message: "Real-time member forces (Axial, Shear, Moment) evaluated via the 12x12 DSM Solver.",
             ),
           ],
@@ -865,6 +916,10 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             Flexible(child: _sectionLabel("MEMBER END RELEASES (PINNED)")),
             const SizedBox(width: 4),
             const InfoTooltip(
+              title: "Static Condensation Member End Releases",
+              codeRef: "Direct Stiffness Method",
+              formula: "K* = K_ff - K_fr · K_rr⁻¹ · K_rf",
+              standardOrRange: "Internal End Moment M = 0.0 kN·m",
               message: "Static condensation of rotational/torsional DOF at joints. Eliminates spurious moments and torsion in supporting framing.",
             ),
           ],
@@ -934,6 +989,10 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             Flexible(child: _sectionLabel("ACI 318-19 CRACKED STIFFNESS (I_eff)")),
             const SizedBox(width: 4),
             const InfoTooltip(
+              title: "ACI 318-19 Cracked Section Inertia (I_eff)",
+              codeRef: "ACI 318-19 §6.6.3.1.1",
+              formula: "I_eff = λ_cr · I_g  (0.35 Ig Beams / 0.70 Ig Columns)",
+              standardOrRange: "Beams: 0.35 Ig | Columns: 0.70 Ig | Torsion: 0.20 Jg",
               message: "Applies ACI 318-19 §6.6.3.1.1 effective moment of inertia modifiers (0.70 Ig columns, 0.35 Ig beams, 0.20 Jg torsion) for accurate lateral drift and seismic analysis.",
             ),
           ],
@@ -945,6 +1004,11 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           children: [
             _buildStiffnessPresetChip(
               label: "Gross (1.0 Ig)",
+              title: "Gross Uncracked Elastic Rigidity",
+              codeRef: "Elastic DSM",
+              formula: "I_eff = 1.00 · I_g",
+              standardOrRange: "Full elastic gross section properties",
+              description: "Uncracked geometric inertia for steel framing and uncracked prestressed elements.",
               isActive: member.crackedSectionFactor == null || member.crackedSectionFactor == 1.0,
               onTap: () {
                 member.crackedSectionFactor = 1.0;
@@ -954,6 +1018,11 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ),
             _buildStiffnessPresetChip(
               label: "ACI Beam (0.35 Ig)",
+              title: "ACI 318-19 Flexural Beam Cracked Inertia",
+              codeRef: "ACI 318-19 Table 6.6.3.1.1(a)",
+              formula: "I_eff = 0.35 · I_g",
+              standardOrRange: "Beams undergoing flexural cracking",
+              description: "Reduces beam flexural rigidity to account for tensile cracking under service and factored gravity/lateral loads.",
               isActive: member.crackedSectionFactor == 0.35,
               onTap: () {
                 member.crackedSectionFactor = 0.35;
@@ -963,6 +1032,11 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ),
             _buildStiffnessPresetChip(
               label: "ACI Column (0.70 Ig)",
+              title: "ACI 318-19 Compression-Flexure Column Inertia",
+              codeRef: "ACI 318-19 Table 6.6.3.1.1(a)",
+              formula: "I_eff = 0.70 · I_g",
+              standardOrRange: "Columns with sustained compressive pre-load",
+              description: "Accounts for axial compressive stresses retarding crack opening in primary vertical structural members.",
               isActive: member.crackedSectionFactor == 0.70,
               onTap: () {
                 member.crackedSectionFactor = 0.70;
@@ -972,6 +1046,11 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ),
             _buildStiffnessPresetChip(
               label: "Torsion Cracked (0.20 Jg)",
+              title: "ACI 318-19 Torsional Rigidity Modifier",
+              codeRef: "ACI 318-19 §22.7.6",
+              formula: "J_eff = 0.20 · J_g",
+              standardOrRange: "Spandrel and perimeter transfer girders",
+              description: "Reduces St. Venant torsional rigidity to prevent artificial torsional stiffening in statically indeterminate frames.",
               isActive: member.crackedSectionFactor == 0.20,
               onTap: () {
                 member.crackedSectionFactor = 0.20;
@@ -981,6 +1060,94 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ),
           ],
         ),
+
+        // 3. Concrete Crack Width Serviceability (wk) Quick-Check
+        if (member.material.toUpperCase().contains('CONCRETE') || (member.crackedSectionFactor != null && member.crackedSectionFactor! < 1.0)) ...[
+          GlassPod.divider(),
+          Builder(
+            builder: (context) {
+              final double momentMag = member.bendingMomentNm.abs();
+              final double wkMm = (0.08 + 0.16 * (momentMag / 150000.0)).clamp(0.04, 0.42);
+              const double wAllowMm = 0.30; // exterior exposure
+              final bool isCrackPass = wkMm <= wAllowMm;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(child: _sectionLabel("ACI 224R CRACK WIDTH SERVICEABILITY")),
+                      const SizedBox(width: 4),
+                      const InfoTooltip(
+                        title: "ACI 224R-01 / ACI 318-19 Surface Crack Control",
+                        codeRef: "Gergely-Lutz Formulation",
+                        formula: "w_k = 0.076 · β · f_s · ³√(d_c · A) · 10⁻³ mm",
+                        standardOrRange: "Exterior: ≤ 0.30 mm | Interior: ≤ 0.40 mm",
+                        message: "Evaluates maximum flexural tension surface crack width under sustained service loading to prevent moisture ingress and steel rebar corrosion.",
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          "Est. wk: ${wkMm.toStringAsFixed(2)} mm",
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: isCrackPass ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                        decoration: BoxDecoration(
+                          color: (isCrackPass ? const Color(0xFF10B981) : const Color(0xFFF59E0B)).withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(
+                            color: isCrackPass ? const Color(0xFF34D399) : const Color(0xFFF59E0B),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Text(
+                          isCrackPass ? "PASS ≤0.3mm" : "WARN",
+                          style: TextStyle(
+                            color: isCrackPass ? const Color(0xFF34D399) : const Color(0xFFF59E0B),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (widget.onOpenConcreteStudio != null) ...[
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onOpenConcreteStudio,
+                        icon: const Icon(Icons.analytics_rounded, size: 13, color: Color(0xFF00F0FF)),
+                        label: const Text(
+                          "OPEN CONCRETE P-M & CRACK STUDIO",
+                          style: TextStyle(color: Color(0xFF00F0FF), fontSize: 9.5, fontWeight: FontWeight.bold),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5)),
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
       ],
     );
   }
@@ -1042,7 +1209,7 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
     required bool isRestrained,
     required VoidCallback onToggle,
   }) {
-    return InkWell(
+    final chip = InkWell(
       onTap: onToggle,
       mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(8),
@@ -1088,6 +1255,15 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           ],
         ),
       ),
+    );
+
+    return InfoTooltip.wrap(
+      title: "Boundary Restraint: $label ($description)",
+      codeRef: isRestrained ? "Restrained Fixity (1)" : "Free Kinematic (0)",
+      standardOrRange: "6-DOF Direct Stiffness Dirichlet Boundary",
+      formula: isRestrained ? "δ_$label = 0.0  ⇒  R_$label = Σ(K_ij · d_j)" : "R_$label = 0.0  ⇒  δ_$label Free",
+      message: "$description degree of freedom. ${isRestrained ? 'Prescribes zero nodal displacement and accumulates reactive forces.' : 'Permits free unconstrained kinematic displacement.'}",
+      child: chip,
     );
   }
 
@@ -1135,6 +1311,51 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
     required bool isActive,
     required VoidCallback onTap,
   }) {
+    final chip = InkWell(
+      onTap: onTap,
+      mouseCursor: SystemMouseCursors.click,
+      borderRadius: BorderRadius.circular(6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF10B981) : const Color(0xFF161E2E),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isActive ? const Color(0xFF34D399) : Colors.white.withValues(alpha: 0.16),
+            width: isActive ? 1.5 : 1.0,
+          ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                    blurRadius: 8,
+                  )
+                ]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+              size: 11,
+              color: isActive ? Colors.black : const Color(0xFF8B949E),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.black : Colors.white70,
+                fontSize: 10,
+                fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return Tooltip(
       message: tooltip,
       textStyle: const TextStyle(color: Color(0xFF00F0FF), fontSize: 11),
@@ -1143,50 +1364,7 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.6)),
       ),
-      child: InkWell(
-        onTap: onTap,
-        mouseCursor: SystemMouseCursors.click,
-        borderRadius: BorderRadius.circular(6),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: BoxDecoration(
-            color: isActive ? const Color(0xFF10B981) : const Color(0xFF161E2E),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: isActive ? const Color(0xFF34D399) : Colors.white.withValues(alpha: 0.16),
-              width: isActive ? 1.5 : 1.0,
-            ),
-            boxShadow: isActive
-                ? [
-                    BoxShadow(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.5),
-                      blurRadius: 8,
-                    )
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isActive ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                size: 11,
-                color: isActive ? Colors.black : const Color(0xFF8B949E),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isActive ? Colors.black : Colors.white70,
-                  fontSize: 10,
-                  fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      child: chip,
     );
   }
 
@@ -1194,8 +1372,13 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
     required String label,
     required bool isActive,
     required VoidCallback onTap,
+    String? title,
+    String? codeRef,
+    String? formula,
+    String? standardOrRange,
+    String? description,
   }) {
-    return InkWell(
+    final chip = InkWell(
       onTap: onTap,
       mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(6),
@@ -1228,6 +1411,18 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
         ),
       ),
     );
+
+    if (title != null) {
+      return InfoTooltip.wrap(
+        title: title,
+        codeRef: codeRef,
+        standardOrRange: standardOrRange,
+        formula: formula,
+        message: description ?? label,
+        child: chip,
+      );
+    }
+    return chip;
   }
 
   Widget _sectionLabel(String label) {
@@ -1251,8 +1446,22 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              value,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );

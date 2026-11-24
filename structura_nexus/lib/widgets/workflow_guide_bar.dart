@@ -425,7 +425,34 @@ class _WorkflowGuideBarState extends State<WorkflowGuideBar> {
     final isSelected = _selectedStep == step.stepNumber;
     final statusColor = step.isCompleted ? const Color(0xFF10B981) : const Color(0xFF00F0FF);
 
-    return InkWell(
+    String stepStandard;
+    String stepFormula;
+    String stepDesc;
+    switch (step.stepNumber) {
+      case 1:
+        stepStandard = "BIM / FEM Modeling";
+        stepFormula = "Connectivity: {Node_i, Node_j, Cross-Section}";
+        stepDesc = "Model nodes, structural members, cross-sections, and stories. Select from 24 certified templates, import DXF/IFC, or extrude stories.";
+        break;
+      case 2:
+        stepStandard = "ASCE 7-16 & 6-DOF Dirichlet Restraints";
+        stepFormula = "Boundary: u_x, u_y, u_z, θ_x, θ_y, θ_z | Load: F_ext = Σ F_tributary";
+        stepDesc = "Assign nodal boundary supports (Dirichlet conditions) and apply ASCE 7-16 automated tributary gravity and directional lateral loads.";
+        break;
+      case 3:
+        stepStandard = "Direct Stiffness Method & LRFD DCR ≤ 1.00";
+        stepFormula = "[K_global] · {D} = {F}  |  DCR = Pu/φPn + 8/9(Mux/φMnx + Muy/φMny)";
+        stepDesc = "Solves 12x12 Timoshenko Direct Stiffness Matrix with static condensation releases, evaluates member forces, and verifies code compliance.";
+        break;
+      case 4:
+      default:
+        stepStandard = "Cryptographic HMAC-SHA256 & IFC 4.3";
+        stepFormula = "Digest = HMAC_SHA256(Model_Hash, P.E._Secret_Key)";
+        stepDesc = "Generate professional structural calculation reports with cryptographic PE seals, audit certificates, and export to IFC 4.3, DXF, or CSV.";
+        break;
+    }
+
+    final chip = InkWell(
       onTap: () {
         setState(() {
           _selectedStep = step.stepNumber;
@@ -484,6 +511,14 @@ class _WorkflowGuideBarState extends State<WorkflowGuideBar> {
           ],
         ),
       ),
+    );
+
+    return InfoTooltip.wrap(
+      title: "Step ${step.stepNumber}: ${step.title}",
+      codeRef: stepStandard,
+      formula: stepFormula,
+      message: stepDesc,
+      child: chip,
     );
   }
 }

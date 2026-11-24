@@ -271,10 +271,38 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _buildLoadPill("1.4D", "Dead", widget.activeLoadCombination == "1.4D"),
-                        _buildLoadPill("1.2D+1.6L", "Gravity Live", widget.activeLoadCombination == "1.2D+1.6L"),
-                        _buildLoadPill("1.2D+1.0W+0.5L", "Wind Sway", widget.activeLoadCombination.contains("1.0W")),
-                        _buildLoadPill("1.2D+1.0E+0.2S", "Seismic", widget.activeLoadCombination.contains("1.0E")),
+                        _buildLoadPill(
+                          "1.4D",
+                          "Dead",
+                          widget.activeLoadCombination == "1.4D",
+                          codeRef: "ASCE 7-16 §2.3.1-1",
+                          formula: "U = 1.4 D",
+                          description: "Dead load alone. Governs during erection and for structural members with zero live load occupancy.",
+                        ),
+                        _buildLoadPill(
+                          "1.2D+1.6L",
+                          "Gravity Live",
+                          widget.activeLoadCombination == "1.2D+1.6L",
+                          codeRef: "ASCE 7-16 §2.3.1-2",
+                          formula: "U = 1.2 D + 1.6 L + 0.5 (Lr or S or R)",
+                          description: "Maximum factored gravity combination. Governs flexural floor beams and primary gravity column axial loads.",
+                        ),
+                        _buildLoadPill(
+                          "1.2D+1.0W+0.5L",
+                          "Wind Sway",
+                          widget.activeLoadCombination.contains("1.0W"),
+                          codeRef: "ASCE 7-16 §2.3.1-4",
+                          formula: "U = 1.2 D + 1.0 W + 0.5 L + 0.5 (Lr or S or R)",
+                          description: "Directional lateral wind pressure with tributary gravity. Governs lateral story drift and overturning moment.",
+                        ),
+                        _buildLoadPill(
+                          "1.2D+1.0E+0.2S",
+                          "Seismic",
+                          widget.activeLoadCombination.contains("1.0E"),
+                          codeRef: "ASCE 7-16 §2.3.1-5",
+                          formula: "U = (1.2 + 0.2 S_DS) D + ρ Q_E + 0.5 L + 0.2 S",
+                          description: "Equivalent lateral seismic force ELF combination including vertical earthquake acceleration effects.",
+                        ),
                       ],
                     ),
                   ],
@@ -301,6 +329,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: _metricSnippet(
                             "BASE SHEAR",
                             "${widget.baseShearKn.toStringAsFixed(1)} kN",
+                            title: "ASCE 7-16 Seismic & Wind Base Shear (V_b)",
+                            codeRef: "ASCE 7-16 §12.8.1",
+                            formula: "V_b = C_s · W = (S_DS / (R / I_e)) · W",
+                            standardOrRange: "Total Base Reaction ΣR_x + ΣR_z",
                             tooltip:
                                 "Total horizontal reaction ΣVx + ΣVz at base supports resisting wind and seismic lateral forces (ASCE 7-16 §12.8).",
                           ),
@@ -310,6 +342,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: _metricSnippet(
                             "DRIFT RATIO",
                             "${(widget.driftRatio * 100).toStringAsFixed(3)}%",
+                            title: "ASCE 7-16 Inter-Story Drift Ratio (Δ / h)",
+                            codeRef: "ASCE 7-16 Table 12.12-1",
+                            formula: "Δ = C_d · δ_e / I_e  |  Ratio = Δ / h_sx",
+                            standardOrRange: "Seismic: ≤ 2.0% (0.020 h) | Wind: ≤ 0.25% (H/400)",
                             tooltip:
                                 "Peak inter-story lateral drift ratio Δ/h. ASCE 7-16 Table 12.12-1 typically limits drift to 0.25% (H/400) for wind and 2.0% for seismic.",
                           ),
@@ -335,6 +371,16 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        const InfoTooltip(
+                          title: "Neural SIMP Multi-Objective Auto-Sizer",
+                          codeRef: "AISC 360-16 LRFD",
+                          formula: "min Σ(ρ·A_i·L_i)  s.t.  DCR_i ≤ 0.95",
+                          standardOrRange: "AISC W-Shapes & HSS | 0.70–0.95 Zone",
+                          message:
+                              "Iteratively evaluates standard AISC hot-rolled profiles using neural cross-section surrogate networks to minimize structural steel mass and carbon.",
+                          size: 13,
                         ),
                         if (widget.onParetoPressed != null) ...[
                           const SizedBox(width: 6),
@@ -363,6 +409,16 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                               ),
                             ),
                           ),
+                          const SizedBox(width: 4),
+                          const InfoTooltip(
+                            title: "WebGPU Multi-Objective Pareto Frontier",
+                            codeRef: "NSGA-II Non-Dominated Sorting",
+                            formula: "Pareto Front: Mass (kg) vs CO₂e vs Drift (mm)",
+                            standardOrRange: "GPU Parallel Compute Shaders",
+                            message:
+                                "Interactive 3D non-dominated trade-off exploration balancing structural steel mass (kg), embodied carbon footprint (kg CO2e), and lateral story drift (mm).",
+                            size: 13,
+                          ),
                         ],
                       ],
                     ),
@@ -390,6 +446,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: _metricSnippet(
                             "α_cr BUCKLING",
                             widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—",
+                            title: "Elastic Critical Buckling Factor (α_cr)",
+                            codeRef: "AISC 360-16 App. 8",
+                            formula: "det([K_e] + α_cr · [K_g]) = 0",
+                            standardOrRange: "α_cr ≥ 10.0: First-Order Valid | α_cr < 10.0: Second-Order P-Δ Mandatory",
                             tooltip:
                                 "Elastic critical buckling load multiplier det([Ke] + α_cr[Kg]) = 0. Values < 10.0 indicate second-order P-Delta sway sensitivity.",
                           ),
@@ -399,6 +459,10 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: _metricSnippet(
                             "B2 SWAY AMP",
                             widget.b2Amp.toStringAsFixed(2),
+                            title: "Second-Order Sway Amplification (B_2)",
+                            codeRef: "AISC 360-16 Eq. A-8-4",
+                            formula: "B_2 = 1 / (1 - 1 / α_cr)  |  B_2 ≤ 1.50 Limit",
+                            standardOrRange: "AISC Limit: B_2 ≤ 1.50 | Optimal: B_2 ≤ 1.20",
                             tooltip:
                                 "Second-order P-Δ sway moment amplification factor B2 = 1 / (1 - 1/α_cr) per AISC 360-16 Appendix 8.",
                           ),
@@ -432,7 +496,15 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
     );
   }
 
-  Widget _metricSnippet(String label, String val, {String? tooltip}) {
+  Widget _metricSnippet(
+    String label,
+    String val, {
+    String? tooltip,
+    String? title,
+    String? codeRef,
+    String? formula,
+    String? standardOrRange,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -448,7 +520,14 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
             ),
             if (tooltip != null) ...[
               const SizedBox(width: 3),
-              InfoTooltip(message: tooltip, size: 12),
+              InfoTooltip(
+                title: title,
+                codeRef: codeRef,
+                formula: formula,
+                standardOrRange: standardOrRange,
+                message: tooltip,
+                size: 12,
+              ),
             ],
           ],
         ),
@@ -458,8 +537,15 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
     );
   }
 
-  Widget _buildLoadPill(String title, String subtitle, bool isSelected) {
-    return InkWell(
+  Widget _buildLoadPill(
+    String title,
+    String subtitle,
+    bool isSelected, {
+    String? codeRef,
+    String? formula,
+    String? description,
+  }) {
+    final pill = InkWell(
       onTap: () => widget.onCombinationChanged(title),
       mouseCursor: SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(12),
@@ -494,14 +580,25 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
               : null,
         ),
         child: Text(
-          title,
+          "$title  $subtitle",
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
-            fontSize: 10.5,
-            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w500,
+            color: isSelected ? Colors.white : Colors.white60,
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
           ),
         ),
       ),
     );
+
+    if (codeRef != null) {
+      return InfoTooltip.wrap(
+        title: "ASCE 7-16 Combination: $title ($subtitle)",
+        codeRef: codeRef,
+        formula: formula,
+        message: description ?? title,
+        child: pill,
+      );
+    }
+    return pill;
   }
 }
