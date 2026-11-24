@@ -253,12 +253,13 @@ void main() {
     );
 
     testWidgets(
-      '6. Zero overlap and zero RenderFlex overflow across 1920x1080 (Desktop), 1280x800 (Laptop), and 768x1024 (Tablet)',
+      '6. Zero overlap and zero RenderFlex overflow across 1920x1080 (Desktop), 1280x800 (Laptop), 768x1024 & 1024x768 (Tablet)',
       (WidgetTester tester) async {
         for (final size in [
           const Size(1920, 1080),
           const Size(1280, 800),
           const Size(768, 1024),
+          const Size(1024, 768),
         ]) {
           tester.view.physicalSize = size;
           tester.view.devicePixelRatio = 1.0;
