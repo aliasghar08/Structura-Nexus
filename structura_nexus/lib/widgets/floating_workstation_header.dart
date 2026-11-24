@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../models/structural_models.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/workspace_storage.dart';
+import '../services/building_generator_service.dart';
 import 'glass_pod.dart';
 import 'info_tooltip.dart';
 
@@ -1070,85 +1071,130 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
   );
 }
 
-  Widget _buildPresetDropdown() {
-    return GlassPod(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      borderRadius: 18,
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: 'presets',
-          isDense: true,
-          dropdownColor: const Color(0xFF161B22),
-          icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: Colors.white54),
-          items: const [
-            DropdownMenuItem(
-              value: 'presets',
-              enabled: false,
-              child: Text('LOAD BUILDING TEMPLATE', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold)),
+  Widget _buildQuickStepButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        hoverColor: const Color(0xFF00F0FF).withValues(alpha: 0.15),
+        child: Tooltip(
+          message: tooltip,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white12, width: 0.8),
             ),
-            DropdownMenuItem(
-              value: 'open_templates_browser',
-              child: Text('🏢 Browse All Building Templates...', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold)),
-            ),
-            DropdownMenuItem(
-              value: 'high_rise_10s',
-              child: Text('10-Story Commercial Office Tower (X-Braced)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'hospital_8s',
-              child: Text('8-Story Dual Core Hospital Complex (Chevron)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'residential_6s',
-              child: Text('6-Story Residential Steel Frame (AISC 360)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'supertall_20s',
-              child: Text('20-Story Super-Tall Outrigger Tower (72m)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'warehouse_portal',
-              child: Text('Industrial Logistics Clear-Span Warehouse (36m)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'space_grid_canopy',
-              child: Text('Airport Terminal 3D Space Grid Canopy (48m)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'campus_4s',
-              child: Text('4-Story Educational Academic Facility', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'pratt_truss_bridge',
-              child: Text('36m Pratt Highway Truss Bridge (AASHTO)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'transmission_tower',
-              child: Text('28m 3D Lattice Transmission Tower (ASCE 10)', style: TextStyle(color: Colors.white, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'sway',
-              child: Text('3D Multi-Story Sway Frame (ASCE 7 Benchmark)', style: TextStyle(color: Colors.white70, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'truss',
-              child: Text('Warren Bridge Truss (AISC 360 Benchmark)', style: TextStyle(color: Colors.white70, fontSize: 11)),
-            ),
-            DropdownMenuItem(
-              value: 'cantilever',
-              child: Text('Timoshenko Cantilever Girder Benchmark', style: TextStyle(color: Colors.white70, fontSize: 11)),
-            ),
-          ],
-          onChanged: (val) {
-            if (val != null && val != 'presets') {
-              if (val == 'open_templates_browser') {
-                widget.onOpenBuildingTemplates?.call();
-              } else {
-                widget.onPresetSelected(val);
-              }
-            }
-          },
+            child: Icon(icon, size: 13, color: const Color(0xFF00F0FF)),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPresetDropdown() {
+    final templates = BuildingGeneratorService.getCertifiedBuildingTemplates();
+    int activeIndex = templates.indexWhere((t) =>
+        t.id == widget.model.sessionId ||
+        widget.model.sessionId.contains(t.id) ||
+        widget.model.name.contains(t.title));
+    if (activeIndex < 0) activeIndex = 0;
+
+    final currentSample = templates[activeIndex];
+    final nextSample = templates[(activeIndex + 1) % templates.length];
+    final prevSample = templates[(activeIndex - 1 + templates.length) % templates.length];
+
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      borderRadius: 18,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Stepper Previous ◀
+          _buildQuickStepButton(
+            icon: Icons.arrow_back_ios_rounded,
+            tooltip: 'Previous Sample: ${prevSample.title}',
+            onTap: () => widget.onPresetSelected(prevSample.id),
+          ),
+          const SizedBox(width: 4),
+
+          // Central Dropdown Pill
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: 'presets',
+              isDense: true,
+              dropdownColor: const Color(0xFF161F2E),
+              icon: const Icon(Icons.keyboard_arrow_down, size: 15, color: Colors.white54),
+              items: [
+                DropdownMenuItem(
+                  value: 'presets',
+                  enabled: false,
+                  child: Text(
+                    'Sample ${activeIndex + 1}/24: ${currentSample.title}',
+                    style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const DropdownMenuItem(
+                  value: 'open_templates_browser',
+                  child: Text(
+                    '🏢 Browse All 24 Certified Archetypes...',
+                    style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                ...templates.asMap().entries.map((entry) {
+                  final idx = entry.key + 1;
+                  final t = entry.value;
+                  return DropdownMenuItem(
+                    value: t.id,
+                    child: Text(
+                      '$idx. [${t.category}] ${t.title} (${t.codeStandard})',
+                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  );
+                }),
+              ],
+              onChanged: (val) {
+                if (val != null && val != 'presets') {
+                  if (val == 'open_templates_browser') {
+                    widget.onOpenBuildingTemplates?.call();
+                  } else {
+                    widget.onPresetSelected(val);
+                  }
+                }
+              },
+            ),
+          ),
+          const SizedBox(width: 4),
+
+          // Stepper Next ▶
+          _buildQuickStepButton(
+            icon: Icons.arrow_forward_ios_rounded,
+            tooltip: 'Next Sample: ${nextSample.title}',
+            onTap: () => widget.onPresetSelected(nextSample.id),
+          ),
+          const SizedBox(width: 4),
+
+          // InfoTooltip: Sample X / 24 • Next: <Sample Title>
+          InfoTooltip(
+            title: 'Certified Engineering Sample Library',
+            codeRef: 'Sample ${activeIndex + 1} / ${templates.length}',
+            message:
+                'Sample ${activeIndex + 1} / ${templates.length} • Next: ${nextSample.title}\n\n'
+                '• Active Archetype: ${currentSample.title}\n'
+                '• Category: ${currentSample.category} • Standard: ${currentSample.codeStandard}\n'
+                '• Dimensions: ${currentSample.dimensions}\n'
+                '• Framing: ${currentSample.structuralSystem}\n'
+                '• Mesh: ${currentSample.nodeCount} Joints, ${currentSample.memberCount} Members\n\n'
+                'Click ◀ or ▶ to quick-cycle between all 24 certified building, bridge, long-span & seismic archetypes.',
+            size: 13,
+          ),
+        ],
       ),
     );
   }

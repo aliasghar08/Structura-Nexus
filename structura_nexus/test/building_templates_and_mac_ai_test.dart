@@ -171,7 +171,7 @@ Frame=F1 JointI=J1 JointJ=J2 IsCurved=No SectionName=W14X90
       expect(find.byType(TextField), findsOneWidget);
 
       // Verify at least one certified building card exists
-      expect(find.text('10-Story Commercial Office Tower'), findsOneWidget);
+      expect(find.text('2-Story Moment Sway Frame'), findsOneWidget);
     });
 
     testWidgets('MacNeuralInspectorDialog renders Apple Silicon MPS overview and 10 engines', (tester) async {

@@ -189,4 +189,27 @@ class BenchmarkPresets {
       displayMode: DisplayMode.aiscCompliance,
     );
   }
+
+  /// Two-Span Continuous Beam with Midspan Loads (Hibbeler 10th Ed Sec 12.3 / Leet Sec 10.4)
+  static StructuralModel hibbelerLeetContinuousBeam() {
+    return StructuralModel(
+      sessionId: 'hibbeler_leet_beam',
+      loadCombination: '1.0D',
+      nodes: [
+        StructuralNode(id: 'N1', coords: Vector3(0.0, 0.0, 0.0), restraint: [1, 1, 1, 0, 0, 0]),
+        StructuralNode(id: 'N2', coords: Vector3(3.0, 0.0, 0.0), loads: [0.0, -40000.0, 0.0, 0.0, 0.0, 0.0]),
+        StructuralNode(id: 'N3', coords: Vector3(6.0, 0.0, 0.0), restraint: [0, 1, 1, 0, 0, 0]),
+        StructuralNode(id: 'N4', coords: Vector3(9.0, 0.0, 0.0), loads: [0.0, -40000.0, 0.0, 0.0, 0.0, 0.0]),
+        StructuralNode(id: 'N5', coords: Vector3(12.0, 0.0, 0.0), restraint: [0, 1, 1, 0, 0, 0]),
+      ],
+      members: [
+        StructuralMember(id: 'M1', iNodeId: 'N1', jNodeId: 'N2', section: 'W14X48'),
+        StructuralMember(id: 'M2', iNodeId: 'N2', jNodeId: 'N3', section: 'W14X48'),
+        StructuralMember(id: 'M3', iNodeId: 'N3', jNodeId: 'N4', section: 'W14X48'),
+        StructuralMember(id: 'M4', iNodeId: 'N4', jNodeId: 'N5', section: 'W14X48'),
+      ],
+      deformationScale: 30.0,
+      displayMode: DisplayMode.bmdRibbon,
+    );
+  }
 }

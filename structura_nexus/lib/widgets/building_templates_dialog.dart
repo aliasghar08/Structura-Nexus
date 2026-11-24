@@ -12,11 +12,13 @@ import '../services/building_generator_service.dart';
 class BuildingTemplatesDialog extends StatefulWidget {
   final StructuralModel currentModel;
   final Function(StructuralModel newModel) onModelSelected;
+  final void Function(StructuralModel newModel, String studioKey)? onOpenInStudio;
 
   const BuildingTemplatesDialog({
     super.key,
     required this.currentModel,
     required this.onModelSelected,
+    this.onOpenInStudio,
   });
 
   @override
@@ -185,13 +187,24 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
   // ==========================================================================
   Widget _buildCatalogTab() {
     final allTemplates = BuildingGeneratorService.getCertifiedBuildingTemplates();
-    final categories = ['All', 'High-Rise & Towers', 'Commercial & Residential', 'Industrial & Long-Span', 'Infrastructure & Bridges', 'Verification Benchmarks'];
+    const categories = [
+      'All',
+      'Buildings',
+      'Bridges',
+      'Long-Span',
+      'Concrete & Soil',
+      'Seismic & Blast',
+      'Benchmarks',
+    ];
 
     final query = _searchController.text.trim().toLowerCase();
     final filtered = allTemplates.where((t) {
       final matchesCat = _selectedCategory == 'All' || t.category == _selectedCategory;
       final matchesQuery = query.isEmpty ||
           t.title.toLowerCase().contains(query) ||
+          t.codeStandard.toLowerCase().contains(query) ||
+          t.standard.toLowerCase().contains(query) ||
+          t.dimensions.toLowerCase().contains(query) ||
           t.description.toLowerCase().contains(query) ||
           t.structuralSystem.toLowerCase().contains(query);
       return matchesCat && matchesQuery;
@@ -217,7 +230,7 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search, size: 16, color: Colors.white38),
-                    hintText: 'Search templates by name, framing system, or code...',
+                    hintText: 'Search 24 certified archetypes by title, code, dimensions, or description...',
                     hintStyle: const TextStyle(color: Colors.white30, fontSize: 12),
                     filled: true,
                     fillColor: const Color(0xFF161F2E),
@@ -235,14 +248,22 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
                 child: Row(
                   children: categories.map((cat) {
                     final isSel = _selectedCategory == cat;
+                    final count = cat == 'All' ? allTemplates.length : allTemplates.where((t) => t.category == cat).length;
+                    final chipLabel = '$cat ($count)';
                     return Padding(
                       padding: const EdgeInsets.only(right: 6),
-                      child: FilterChip(
+                      child: ChoiceChip(
                         selected: isSel,
-                        label: Text(cat, style: TextStyle(color: isSel ? const Color(0xFF00F0FF) : Colors.white70, fontSize: 11)),
+                        label: Text(
+                          chipLabel,
+                          style: TextStyle(
+                            color: isSel ? const Color(0xFF00F0FF) : Colors.white70,
+                            fontSize: 11,
+                            fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
                         backgroundColor: const Color(0xFF161F2E),
-                        selectedColor: const Color(0xFF00F0FF).withValues(alpha: 0.2),
-                        checkmarkColor: const Color(0xFF00F0FF),
+                        selectedColor: const Color(0xFF00F0FF).withValues(alpha: 0.18),
                         side: BorderSide(color: isSel ? const Color(0xFF00F0FF) : Colors.white12),
                         onSelected: (_) => setState(() => _selectedCategory = cat),
                       ),
@@ -258,19 +279,33 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 14,
-                crossAxisSpacing: 14,
-                mainAxisExtent: 185,
-              ),
-              itemCount: filtered.length,
-              itemBuilder: (ctx, idx) {
-                final t = filtered[idx];
-                return _buildTemplateCard(t);
-              },
-            ),
+            child: filtered.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.search_off_rounded, size: 48, color: Colors.white24),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No certified archetypes matching "$query"',
+                          style: const TextStyle(color: Colors.white60, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )
+                : GridView.builder(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      mainAxisExtent: 205,
+                    ),
+                    itemCount: filtered.length,
+                    itemBuilder: (ctx, idx) {
+                      final t = filtered[idx];
+                      return _buildTemplateCard(t);
+                    },
+                  ),
           ),
         ),
       ],
@@ -279,45 +314,71 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
 
   Widget _buildTemplateCard(BuildingTemplateMeta t) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF161F2E),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              // Category Pill
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.6)),
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(5),
+                  border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.5), width: 0.8),
                 ),
                 child: Text(
-                  t.badge,
-                  style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 10, fontWeight: FontWeight.bold),
+                  t.category.toUpperCase(),
+                  style: const TextStyle(
+                    color: Color(0xFF38BDF8),
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '${t.nodeCount} Joints • ${t.memberCount} Members',
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 5),
+              // Governing Code Badge
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00F0FF).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.4), width: 0.8),
+                  ),
+                  child: Text(
+                    t.badge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 9, fontWeight: FontWeight.bold),
+                  ),
                 ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '${t.nodeCount}J • ${t.memberCount}M',
+                style: const TextStyle(color: Colors.white54, fontSize: 10),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Text(
             t.title,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -330,43 +391,82 @@ class _BuildingTemplatesDialogState extends State<BuildingTemplatesDialog> with 
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(height: 6),
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${t.heightM.toStringAsFixed(1)}m H • ${t.footprintAreaM2.toStringAsFixed(0)} m²',
-                      style: const TextStyle(color: Color(0xFF7EE787), fontSize: 11, fontWeight: FontWeight.bold),
+                      t.dimensions.isNotEmpty
+                          ? t.dimensions
+                          : '${t.heightM.toStringAsFixed(1)}m H • ${t.footprintAreaM2.toStringAsFixed(0)} m²',
+                      style: const TextStyle(color: Color(0xFF7EE787), fontSize: 10.5, fontWeight: FontWeight.bold),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      t.standard,
-                      style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      t.codeStandard,
+                      style: const TextStyle(color: Colors.white38, fontSize: 9),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
+              const SizedBox(width: 4),
+              if (t.recommendedStudio != null && widget.onOpenInStudio != null) ...[
+                Tooltip(
+                  message: 'Open in ${t.recommendedStudio}',
+                  child: OutlinedButton(
+                    onPressed: () {
+                      final model = t.builder();
+                      widget.onModelSelected(model);
+                      Navigator.of(context).pop();
+                      widget.onOpenInStudio!(model, t.recommendedStudio!);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.6)),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
+                      minimumSize: Size.zero,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.launch_rounded, size: 11, color: Color(0xFF00F0FF)),
+                        SizedBox(width: 3),
+                        Text('STUDIO', style: TextStyle(color: Color(0xFF00F0FF), fontSize: 9.5, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+              ],
+              ElevatedButton(
                 onPressed: () {
                   final model = t.builder();
                   _importModelIntoWorkspace(model);
                 },
-                icon: const Icon(Icons.input_rounded, size: 14, color: Color(0xFF0A0F1D)),
-                label: const Text(
-                  'Import',
-                  style: TextStyle(color: Color(0xFF0A0F1D), fontSize: 11, fontWeight: FontWeight.bold),
-                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00F0FF),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   elevation: 2,
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.play_arrow_rounded, size: 13, color: Color(0xFF0A0F1D)),
+                    SizedBox(width: 3),
+                    Text(
+                      'LOAD & SOLVE',
+                      style: TextStyle(color: Color(0xFF0A0F1D), fontSize: 9.5, fontWeight: FontWeight.w900),
+                    ),
+                  ],
                 ),
               ),
             ],

@@ -544,6 +544,14 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   void _loadPreset(String presetKey) {
+    final templates = BuildingGeneratorService.getCertifiedBuildingTemplates();
+    final match = templates.where((t) => t.id == presetKey).firstOrNull;
+    if (match != null) {
+      final newModel = match.builder();
+      _importBuildingModel(newModel);
+      return;
+    }
+
     StructuralModel? newModel;
     if (presetKey == 'high_rise_10s') {
       newModel = BuildingGeneratorService.generateCommercialHighRiseTower();
@@ -1441,6 +1449,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
         builder: (ctx) => BuildingTemplatesDialog(
           currentModel: _model,
           onModelSelected: _importBuildingModel,
+          onOpenInStudio: (model, studioKey) => _openStudioByKey(studioKey),
         ),
       );
     }
@@ -2509,6 +2518,188 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     );
   }
 
+  void _openStudioByKey(String studioKey) {
+    switch (studioKey) {
+      case 'bridge_moving_load':
+        _openBridgeMovingLoad();
+        break;
+      case 'progressive_collapse':
+        _openProgressiveCollapse();
+        break;
+      case 'connection_detailer':
+        _openConnectionDetailer();
+        break;
+      case 'concrete_studio':
+        _requireAuth(
+          featureName: 'Proprietary Concrete Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => ConcretePmDialog(
+                onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+              ),
+            );
+          },
+        );
+        break;
+      case 'steel_connections':
+        _requireAuth(
+          featureName: 'Steel Connection Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => SteelConnectionDialog(
+                onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+              ),
+            );
+          },
+        );
+        break;
+      case 'geotechnical_foundation':
+        _requireAuth(
+          featureName: 'Geotechnical Foundation Studio (ACI 318-19)',
+          onAuthenticated: () => FoundationStudioDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          ),
+        );
+        break;
+      case 'seismic_modal':
+        _requireAuth(
+          featureName: 'Dynamic Modal Vibration Analysis',
+          onAuthenticated: () => SeismicModalDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onActivateVibration: (modeIndex, offsets) {
+              setState(() {
+                _model.activeVibrationMode = modeIndex;
+                _model.modalShapeOffsets = offsets;
+                _model.displayMode = DisplayMode.modalVibration;
+              });
+            },
+          ),
+        );
+        break;
+      case 'wind_cfd':
+        _requireAuth(
+          featureName: 'Wind Tunnel CFD Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => WindCfdDialog(
+                onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+              ),
+            );
+          },
+        );
+        break;
+      case 'pushover_analysis':
+        _requireAuth(
+          featureName: 'Non-Linear Pushover Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => PushoverAnalysisDialog(
+                onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+              ),
+            );
+          },
+        );
+        break;
+      case 'nltha':
+        _requireAuth(
+          featureName: 'Dynamic Non-Linear Time History Analysis (NLTHA)',
+          onAuthenticated: () {
+            setState(() {
+              _isNlthaActive = true;
+            });
+          },
+        );
+        break;
+      case 'generative_topology':
+        showDialog(
+          context: context,
+          builder: (ctx) => GenerativeTopologyDialog(
+            currentModel: _model,
+            onCommitModel: (newModel) {
+              _saveUndoState();
+              setState(() {
+                _model = newModel;
+                _selectedNodeId = null;
+                _selectedMemberId = null;
+                _selectedNodeIds.clear();
+                _selectedMemberIds.clear();
+              });
+              _commitModelMutation('Committed 3D Diagrid Exoskeleton to Viewport');
+              _triggerSolve();
+            },
+          ),
+        );
+        break;
+      case 'generative_bracing':
+        _requireAuth(
+          featureName: '3D Generative Bracing Synthesis',
+          onAuthenticated: () {
+            GenerativeBracingDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () {
+                _saveUndoState();
+                _commitModelMutation('Committed Generative Bracing to Frame');
+                _triggerSolve();
+              },
+            );
+          },
+        );
+        break;
+      case 'pe_packet':
+        _requireAuth(
+          featureName: 'PE Stamped Calculation Packet',
+          onAuthenticated: () => PePacketDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          ),
+        );
+        break;
+      case 'composite_floor':
+        _requireAuth(
+          featureName: 'Composite Floor Studio',
+          onAuthenticated: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => CompositeFloorDialog(
+                onRequireAuth: (feat, cb) => _requireAuth(featureName: feat, onAuthenticated: cb),
+              ),
+            );
+          },
+        );
+        break;
+      case 'lateral_stability':
+        _requireAuth(
+          featureName: 'ASCE 7 Lateral Hazard & Stability Engine',
+          onAuthenticated: () {
+            LateralStabilityDialog.show(
+              context,
+              model: _model,
+              apiService: _apiService,
+              onStructureModified: () {
+                setState(() {
+                  _triggerSolve();
+                });
+              },
+            );
+          },
+        );
+        break;
+    }
+  }
+
   void _openCapabilitiesOverview() {
     showDialog(
       context: context,
@@ -2800,10 +2991,10 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             onTrigger: _extrudeStory,
           ),
           CommandPaletteAction(
-            title: 'Browse 12 Pre-Engineered Building Templates',
-            subtitle: 'High-rise towers, hospitals, bridges, warehouses & space canopies',
+            title: 'Browse 24 Certified Structural Archetypes',
+            subtitle: 'Buildings, bridges, long-span canopies, concrete, seismic & benchmarks',
             category: 'TEMPLATES',
-            codeRef: '12 Certified Models',
+            codeRef: '24 Certified Models',
             infoDescription:
                 'Opens the Building Templates library to preview and load complete 3D structural systems into the workstation.',
             icon: Icons.apartment_rounded,
@@ -2813,6 +3004,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               builder: (_) => BuildingTemplatesDialog(
                 currentModel: _model,
                 onModelSelected: _importBuildingModel,
+                onOpenInStudio: (model, studioKey) => _openStudioByKey(studioKey),
               ),
             ),
           ),
