@@ -1,6 +1,6 @@
 // ============================================================================
 // InfoTooltip — High-Contrast Accessible visionOS Engineering Info Button (i)
-// Instant hover popover with optional Title & Code Reference badge over 3D WebGL
+// Structured Engineering Explanations: Title, Description & Standard/Range
 // Copyright (c) 2026 Ali Asghar <aliasgharinnocent@yahoo.com>. All Rights Reserved.
 // ============================================================================
 
@@ -8,19 +8,31 @@ import 'package:flutter/material.dart';
 
 class InfoTooltip extends StatefulWidget {
   final String message;
+  final String? description;
   final String? title;
   final String? codeRef;
+  final String? standardOrRange;
   final double size;
   final Color? iconColor;
 
   const InfoTooltip({
     super.key,
-    required this.message,
+    this.message = '',
+    this.description,
     this.title,
     this.codeRef,
+    this.standardOrRange,
     this.size = 18.0,
     this.iconColor,
   });
+
+  String get effectiveDescription =>
+      (description != null && description!.isNotEmpty) ? description! : message;
+
+  String? get effectiveStandardOrRange =>
+      (standardOrRange != null && standardOrRange!.isNotEmpty)
+          ? standardOrRange
+          : codeRef;
 
   @override
   State<InfoTooltip> createState() => _InfoTooltipState();
@@ -32,18 +44,20 @@ class _InfoTooltipState extends State<InfoTooltip> {
   @override
   Widget build(BuildContext context) {
     final baseColor = widget.iconColor ?? const Color(0xFF00F0FF);
+    final bodyText = widget.effectiveDescription;
+    final badgeText = widget.effectiveStandardOrRange;
 
-    final RichMessage? richMsg = (widget.title != null || widget.codeRef != null)
+    final RichMessage? richMsg = (widget.title != null || badgeText != null)
         ? RichMessage(
             title: widget.title,
-            codeRef: widget.codeRef,
-            body: widget.message,
+            codeRef: badgeText,
+            body: bodyText,
             accentColor: baseColor,
           )
         : null;
 
     return Tooltip(
-      message: richMsg == null ? widget.message : null,
+      message: richMsg == null ? bodyText : null,
       richMessage: richMsg?.toTextSpan(),
       waitDuration: Duration.zero,
       showDuration: const Duration(seconds: 6),
@@ -169,5 +183,3 @@ class RichMessage {
     );
   }
 }
-
-

@@ -56,6 +56,8 @@ import '../widgets/progressive_collapse_dialog.dart';
 import '../widgets/connection_detail_dialog.dart';
 import '../widgets/bridge_moving_load_dock.dart';
 import '../widgets/command_palette_dialog.dart';
+import '../widgets/workflow_guide_bar.dart';
+import '../widgets/capabilities_overview_dialog.dart';
 import '../widgets/info_tooltip.dart';
 import '../widgets/voice_copilot_pill.dart';
 import '../services/voice_copilot_service.dart';
@@ -87,6 +89,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool _isNlthaActive = false;
   bool _autoPropagateLoads = true;
   int _modelRevision = 0;
+  int _activeWorkflowStep = 1;
   StreamSubscription<dynamic>? _authSubscription;
 
   void _saveUndoState() {
@@ -1749,6 +1752,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               onOpenConnectionDetailer: _openConnectionDetailer,
               onOpenBridgeMovingLoad: _openBridgeMovingLoad,
               onOpenCommandPalette: onOpenCommandPalette,
+              onOpenCapabilitiesOverview: _openCapabilitiesOverview,
+              activeWorkflowStage: _activeWorkflowStep,
               onUndo: _undo,
               onRedo: _redo,
               canUndo: _undoStack.isNotEmpty,
@@ -1788,6 +1793,47 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               },
             ),
           ),
+
+          // 2.5 Layer 1.5: Step-by-Step Workflow Guide Bar (Top-Center Canvas Corridor, Zero Overlap)
+          if (screenSize.width >= 1024)
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 104,
+              left: 336,
+              right: showInspector ? 364 : 160,
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: WorkflowGuideBar(
+                  model: _model,
+                  activeStep: _activeWorkflowStep,
+                  onStepSelected: (step) {
+                    setState(() => _activeWorkflowStep = step);
+                  },
+                  onOpenCapabilitiesOverview: _openCapabilitiesOverview,
+                  onOpenTemplates: onOpenBuildingTemplates,
+                  onApplyLoadsAndSupports: () {
+                    setState(() {
+                      _autoPropagateLoads = true;
+                      _saveUndoState();
+                      final summary = TributaryLoadPropagator.propagate(model: _model);
+                      _activeWorkflowStep = 3;
+                      _commitModelMutation(
+                        'Step 2 Complete: Propagated 1.2D+1.6L & ASCE 7 loads across ${summary.storyCount} stories → Ready for Step 3: Solve & Code Check',
+                      );
+                    });
+                  },
+                  onRunFeaAndOptimize: () {
+                    setState(() {
+                      _activeWorkflowStep = 4;
+                    });
+                    _triggerSolve();
+                    _showToolSnackBar(
+                      'Step 3 Complete: 12-DOF DSM Solved (Max DCR = ${maxDcr.toStringAsFixed(3)}) → Next: Export Stamped PE Packet or Run AI Auto-Sizer',
+                    );
+                  },
+                  onExportPePacket: onOpenPePacket,
+                ),
+              ),
+            ),
 
           // 3. Layer 2: Floating Telemetry Dock (Bottom Island)
           if (_isNlthaActive)
@@ -2341,6 +2387,54 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _openCapabilitiesOverview() {
+    showDialog(
+      context: context,
+      builder: (_) => CapabilitiesOverviewDialog(
+        onTrySteelFrameDesign: () {
+          setState(() => _activeWorkflowStep = 2);
+          _loadPreset('high_rise_10s');
+        },
+        onTryConcreteAndFooting: () {
+          setState(() => _activeWorkflowStep = 4);
+          showDialog(
+            context: context,
+            builder: (_) => const ConcretePmDialog(),
+          );
+        },
+        onTrySeismicAndCollapse: () {
+          setState(() => _activeWorkflowStep = 3);
+          _openProgressiveCollapse();
+        },
+        onTryBridgeMovingLoads: () {
+          setState(() => _activeWorkflowStep = 2);
+          _loadPreset('pratt_truss_bridge');
+          _openBridgeMovingLoad();
+        },
+        onTryAiOptimization: () {
+          setState(() => _activeWorkflowStep = 4);
+          AutonomousSwarmDialog.show(
+            context,
+            model: _model,
+            onStructureModified: () {
+              _saveUndoState();
+              _commitModelMutation('Applied Swarm-Healed AISC 360-16 Topology to 3D Frame');
+            },
+          );
+        },
+        onTryPeAndBimDeliverables: () {
+          setState(() => _activeWorkflowStep = 4);
+          PePacketDialog.show(
+            context,
+            model: _model,
+            apiService: _apiService,
+            onStructureModified: () => setState(() => _triggerSolve()),
+          );
+        },
+      ),
     );
   }
 

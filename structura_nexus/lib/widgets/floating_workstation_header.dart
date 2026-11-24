@@ -59,6 +59,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onOpenConnectionDetailer;
   final VoidCallback? onOpenBridgeMovingLoad;
   final VoidCallback? onOpenCommandPalette;
+  final VoidCallback? onOpenCapabilitiesOverview;
+  final int? activeWorkflowStage;
   final VoidCallback? onUndo;
   final VoidCallback? onRedo;
   final bool canUndo;
@@ -110,6 +112,8 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onOpenConnectionDetailer,
     this.onOpenBridgeMovingLoad,
     this.onOpenCommandPalette,
+    this.onOpenCapabilitiesOverview,
+    this.activeWorkflowStage,
     this.onUndo,
     this.onRedo,
     this.canUndo = false,
@@ -321,24 +325,365 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         const SizedBox(width: 8),
                       ],
 
-                      // 3. Central VisionOS Capsule Navigation Pills
+                      // 2.6 "? WHAT CAN I BUILD?" Capabilities Launcher Pill
+                      if (widget.onOpenCapabilitiesOverview != null) ...[
+                        _HoverableSpecularPill(
+                          label: "WHAT CAN I BUILD?",
+                          icon: Icons.help_outline_rounded,
+                          onTap: widget.onOpenCapabilitiesOverview,
+                          infoTitle: 'Interactive Engineering Capabilities Overview',
+                          infoCode: '6 Civil/Structural Workflows',
+                          infoMessage:
+                              'Explore all 6 core civil & structural engineering workflows (Buildings, Bridges, Seismic NLTHA, Progressive Collapse, Steel/Concrete Design, and Stamped PE Reports) with 1-click "Try Example" launchers.',
+                          trailingBadge: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.55),
+                                width: 0.5,
+                              ),
+                            ),
+                            child: const Text(
+                              "GUIDE",
+                              style: TextStyle(
+                                color: Color(0xFF10B981),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+
+                      // 3. Sequential 5-Stage Civil/Structural Engineering Pipeline
+                      // Stage 1: GEOMETRY
                       _buildCapsulePill(
-                        label: "BUILDINGS",
+                        label: "1. GEOMETRY",
                         icon: Icons.apartment_rounded,
-                        infoTitle: 'Pre-Engineered Building Templates',
-                        infoCode: 'ASCE 7-16 / AISC 360-16',
+                        isActiveStage: widget.activeWorkflowStage == 1,
+                        infoTitle: 'Stage 1: 3D Structural Geometry & Framing',
+                        infoCode: 'Templates • Vision-to-BIM • CAD',
                         infoMessage:
-                            'Load 12 complete 3D structural benchmarks: high-rise commercial towers, hospitals, outrigger supertalls, bridges, and space canopies.',
-                        onTap: () {
-                          if (widget.onOpenBuildingTemplates != null) {
-                            widget.onOpenBuildingTemplates!();
-                          } else {
-                            widget.onOpenLibrary?.call();
-                          }
-                        },
+                            'Define or import your 3D structural frame: choose from 12 certified building/bridge templates, convert a 2D floorplan blueprint to 3D, or draft members in CAD.',
+                        onTap: () => _showModalMenu(context, "STAGE 1: GEOMETRY & 3D FRAMING", [
+                          _MenuAction(
+                            label: "12 Certified Building & Bridge Templates",
+                            subtitle: "Load pre-engineered high-rise towers, hospitals, bridges, and warehouses",
+                            icon: Icons.apartment_rounded,
+                            infoText:
+                                'Load 12 complete 3D structural benchmarks: 10-story office tower, hospital, 20-story outrigger supertall, Pratt bridge, and space canopy.',
+                            onTap: () {
+                              if (widget.onOpenBuildingTemplates != null) {
+                                widget.onOpenBuildingTemplates!();
+                              } else {
+                                widget.onOpenLibrary?.call();
+                              }
+                            },
+                          ),
+                          _MenuAction(
+                            label: "Vision-to-BIM 2D Floorplan Ingestion",
+                            subtitle: "Convert 2D architectural floorplan blueprints into 3D structural framing",
+                            icon: Icons.document_scanner_rounded,
+                            infoText:
+                                'Extracts structural column grids, beam spans, and core walls from 2D architectural floorplan blueprints into a 3D finite element model.',
+                            onTap: () => widget.onOpenVisionToBim?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AI CAD 3D Drafting Studio (.dxf)",
+                            subtitle: "Draw joints, beams, columns, and bracing on an interactive snap grid",
+                            icon: Icons.edit_road_rounded,
+                            infoText:
+                                'Interactive 2D/3D CAD drafting viewport with snap-to-grid, member drawing, and AutoCAD DXF export.',
+                            onTap: () => widget.onOpenCadStudio?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AI Structural Copilot (Gemini Framing Agent)",
+                            subtitle: "Synthesize custom multi-story frames or ask structural mechanics questions",
+                            icon: Icons.psychology_rounded,
+                            infoText:
+                                'Conversational structural engineering assistant capable of explaining failure modes, synthesizing frames, and recommending code-compliant retrofits.',
+                            onTap: () => widget.onOpenCopilot?.call(),
+                          ),
+                          _MenuAction(
+                            label: "AISC Section Catalog & Profile Browser",
+                            subtitle: "Inspect W-shapes, HSS tubes, and RC sections with full geometric properties",
+                            icon: Icons.folder_zip_rounded,
+                            infoText:
+                                'Browse the complete AISC 360-16 steel catalog (A, Ix, Iy, Zx, Zy, J) and assign sections to frame members.',
+                            onTap: () => widget.onOpenLibrary?.call(),
+                          ),
+                        ]),
                       ),
                       const SizedBox(width: 8),
 
+                      // Stage 2: LOADS & SUPPORTS
+                      _buildCapsulePill(
+                        label: "2. LOADS & SUPPORTS",
+                        icon: Icons.compress_rounded,
+                        isActiveStage: widget.activeWorkflowStage == 2,
+                        infoTitle: 'Stage 2: Restraints, Tributary Gravity & ASCE 7 Lateral Loads',
+                        infoCode: 'ASCE 7-16 • AASHTO HL-93 • 6-DOF Supports',
+                        infoMessage:
+                            'Configure boundary conditions (fixed, pinned, roller, member end releases) and apply ASCE 7-16 wind/seismic lateral forces, tributary floor loads, or AASHTO bridge trucks.',
+                        onTap: () => _showModalMenu(context, "STAGE 2: SUPPORTS & ASCE 7 / AASHTO LOADS", [
+                          _MenuAction(
+                            label: "ASCE 7-16 Wind, Seismic & P-Delta Lateral Loads",
+                            subtitle: "Configure wind speed V, seismic Cs, and directional sway combinations",
+                            icon: Icons.sync_alt_rounded,
+                            infoText:
+                                'Computes ASCE 7-16 Ch. 27 directional wind pressures and §12.8 Equivalent Lateral Force (ELF) seismic story shears across floor diaphragms.',
+                            onTap: () => widget.onOpenLateralStability?.call(),
+                          ),
+                          if (widget.onOpenBridgeMovingLoad != null)
+                            _MenuAction(
+                              label: "AASHTO LRFD HL-93 Moving-Load Bridge Truck",
+                              subtitle: "Step the 325 kN design truck + 9.3 kN/m lane load across bridge spans",
+                              icon: Icons.local_shipping_rounded,
+                              infoText:
+                                  'Steps the AASHTO HL-93 Design Truck (35 + 145 + 145 kN, IM=1.33) + 9.3 kN/m lane load across the bridge deck in 40 DSM steps with influence lines η(x).',
+                              onTap: () => widget.onOpenBridgeMovingLoad?.call(),
+                            ),
+                          _MenuAction(
+                            label: "AeroNet Atmospheric Wind Boundary-Layer CFD",
+                            subtitle: "Simulate wind velocity profiles, Cp pressure contours, and vortex shedding",
+                            icon: Icons.air_rounded,
+                            infoText:
+                                'Atmospheric boundary layer velocity profile, Cp pressure contours, and vortex shedding lock-in frequency analysis.',
+                            onTap: () => widget.onOpenWindCfd?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Multi-Hazard Dynamic Environmental Stimulator",
+                            subtitle: "Apply live coupled seismic ground motion, wind gusts, and blast waves",
+                            icon: Icons.cyclone_rounded,
+                            infoText:
+                                'Live 60 FPS 3D simulation of coupled seismic ground motion, vortex-induced wind resonance, and blast wave overpressure.',
+                            onTap: () => widget.onOpenEnvironmentalStimulator?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Geotechnical Foundation Supports & Winkler Springs",
+                            subtitle: "Model elastic soil springs (ks), footing dimensions, and base restraints",
+                            icon: Icons.terrain_rounded,
+                            infoText:
+                                'Soil-Structure Interaction with Winkler subgrade springs (k_s), Terzaghi bearing capacity, and ACI 318-19 §22.6 two-way punching shear.',
+                            onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Stage 3: ANALYSIS
+                      _buildCapsulePill(
+                        label: "3. ANALYSIS",
+                        icon: Icons.analytics_rounded,
+                        isActiveStage: widget.activeWorkflowStage == 3,
+                        infoTitle: 'Stage 3: 12-DOF FEA, Buckling, NLTHA & Progressive Collapse',
+                        infoCode: '12-DOF DSM • Newmark-β • UFC 4-023-03',
+                        infoMessage:
+                            'Execute exact 12-DOF Direct Stiffness Matrix (0.0000% error) analysis, 12×12 [Kg] eigenvalue buckling, Newmark-β seismic time-history, and UFC 4-023-03 column-removal collapse.',
+                        onTap: () => _showModalMenu(context, "STAGE 3: STRUCTURAL & DYNAMIC ANALYSIS ENGINES", [
+                          _MenuAction(
+                            label: "Execute 12-DOF Direct Stiffness Matrix (DSM) Solve",
+                            subtitle: "Compute exact 3D displacements {u}, reactions, and N/V/M forces (0.0000% error)",
+                            icon: Icons.play_circle_fill_rounded,
+                            infoText:
+                                'Assembles and solves the global 12-DOF space-frame stiffness matrix [K]{u}={F} with static condensation for member end releases.',
+                            onTap: widget.onSolveTriggered,
+                          ),
+                          _MenuAction(
+                            label: "Lateral Stability, P-Delta & 12×12 [Kg] Buckling",
+                            subtitle: "Compute elastic critical buckling factor α_cr and AISC App. 8 B2 sway amplifier",
+                            icon: Icons.sync_alt_rounded,
+                            infoText:
+                                'Assembles 12×12 geometric stiffness matrix [Kg] to compute elastic critical buckling load factor α_cr and AISC 360-16 Appendix 8 B2 sway amplification.',
+                            onTap: () => widget.onOpenLateralStability?.call(),
+                          ),
+                          if (widget.onOpenProgressiveCollapse != null)
+                            _MenuAction(
+                              label: "Progressive Collapse & Alternate Path (UFC 4-023-03)",
+                              subtitle: "Simulate sudden column loss (Ω_LD = 2.0) and double-span catenary bridging",
+                              icon: Icons.warning_amber_rounded,
+                              infoText:
+                                  'Simulates sudden notional column loss under Ω_LD = 2.0 dynamic amplification, evaluating double-span catenary bridging and vulnerability rankings.',
+                              onTap: () => widget.onOpenProgressiveCollapse?.call(),
+                            ),
+                          _MenuAction(
+                            label: "Dynamic Time-History (NLTHA) Earthquake Player",
+                            subtitle: "Run Newmark-β step-by-step response under El Centro, Northridge & Kobe records",
+                            icon: Icons.movie_filter_rounded,
+                            infoText:
+                                'Newmark-Beta (γ=0.5, β=0.25) step-by-step non-linear seismic time history integration under El Centro, Northridge, and Kobe ground motions.',
+                            onTap: () => widget.onOpenNltha?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Dynamic Modal Vibration & Eigenmodes (ASCE 7-16)",
+                            subtitle: "Extract natural frequencies ω_n, periods T_n, and 3D mode shape animations",
+                            icon: Icons.waves_rounded,
+                            infoText:
+                                'Solves generalized eigenvalue problem det([K] - ω²[M]) = 0 for natural frequencies, periods, and 3D mode shape animations.',
+                            onTap: () => widget.onOpenSeismicModal?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Non-Linear Static Pushover Curve (ATC-40 / FEMA 356)",
+                            subtitle: "Trace Base Shear V vs. Roof Drift Δ with IO / LS / CP plastic hinge limits",
+                            icon: Icons.trending_up_rounded,
+                            infoText:
+                                'Non-linear static pushover curve (Base Shear V vs. Roof Drift Δ) with FEMA 356 IO / LS / CP plastic hinge performance levels.',
+                            onTap: () => widget.onOpenPushoverAnalysis?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Stage 4: DESIGN & OPTIMIZE
+                      _buildCapsulePill(
+                        label: "4. DESIGN & OPTIMIZE",
+                        icon: Icons.auto_awesome_rounded,
+                        isActiveStage: widget.activeWorkflowStage == 4,
+                        infoTitle: 'Stage 4: Code Checking, Connection Detailing & AI Optimization',
+                        infoCode: 'AISC 360-16 • ACI 318-19 • SIMP • WebGPU Pareto',
+                        infoMessage:
+                            'Verify AISC 360-16 steel DCR, detail 3D bolted connections, check ACI 318-19 concrete P-M & crack widths, or run AI Auto-Sizer, 4-Agent Swarm, and WebGPU Pareto optimization.',
+                        onTap: () => _showModalMenu(context, "STAGE 4: CODE DESIGN, CONNECTIONS & AI OPTIMIZATION", [
+                          _MenuAction(
+                            label: "AISC 360-16 AI Section Auto-Sizer",
+                            subtitle: "Automatically assign minimum-weight W-shapes so every member satisfies DCR ≤ 1.0",
+                            icon: Icons.auto_fix_high_rounded,
+                            infoText:
+                                'Automatically assigns minimum-weight AISC 360-16 W-shapes so every member satisfies Demand-Capacity Ratio DCR ≤ 1.0.',
+                            onTap: () => widget.onOptimize?.call(),
+                          ),
+                          if (widget.onOpenConnectionDetailer != null)
+                            _MenuAction(
+                              label: "AISC 360-16 Ch. J 3D Connection & Baseplate Synthesizer",
+                              subtitle: "Design shear tabs, moment end-plates, Whitmore gussets, and 3D hex bolts",
+                              icon: Icons.hardware_rounded,
+                              infoText:
+                                  'Evaluates bolted shear tabs, extended moment end-plates, Whitmore 30° gussets, and column baseplates, synthesizing 3D hex-bolt assemblies in Three.js.',
+                              onTap: () => widget.onOpenConnectionDetailer?.call(),
+                            ),
+                          _MenuAction(
+                            label: "Concrete Studio (ACI 318-19 P-M & ACI 224R Crack Widths)",
+                            subtitle: "Verify biaxial RC column P-M capacity, I_eff stiffness, and surface crack width w_k",
+                            icon: Icons.view_in_ar_rounded,
+                            infoText:
+                                'Biaxial reinforced concrete column P-M interaction diagram (Whitney stress block) and ACI 224R-01 Gergely-Lutz surface crack width serviceability.',
+                            onTap: () => widget.onOpenConcreteStudio?.call(),
+                          ),
+                          if (widget.onOpenAutonomousSwarm != null)
+                            _MenuAction(
+                              label: "Autonomous 4-Agent Engineering Swarm (Self-Healer)",
+                              subtitle: "Architect ↔ FEA Analyst ↔ Code Auditor ↔ Self-Healer iterative loop",
+                              icon: Icons.hub_rounded,
+                              infoText:
+                                  'Multi-agent collaboration (Architect, FEA Analyst, Code Auditor, Self-Healer) that iteratively resolves overstressed members and drift violations.',
+                              onTap: () => widget.onOpenAutonomousSwarm?.call(),
+                            ),
+                          if (widget.onOpenGenerativeTopology != null)
+                            _MenuAction(
+                              label: "3D Diagrid Topology Synthesizer (Neural SIMP)",
+                              subtitle: "Optimize continuous density field ρ(x,y,z) for 18–30% steel mass reduction",
+                              icon: Icons.architecture_rounded,
+                              infoText:
+                                  'Continuous neural density field ρ(x,y,z) optimization and Marching Struts discretizer generating 3D diagrid exoskeletons with 18–30% steel mass reduction.',
+                              onTap: () => widget.onOpenGenerativeTopology?.call(),
+                            ),
+                          if (widget.onOpenParetoExplorer != null)
+                            _MenuAction(
+                              label: "WebGPU 60 FPS Pareto Frontier Explorer (B=256)",
+                              subtitle: "Trade off Steel Mass (kg), Peak Drift (mm), and Carbon (kg CO2e) in real time",
+                              icon: Icons.scatter_plot_rounded,
+                              infoText:
+                                  'Evaluates 256 structural variations in parallel via WebGPU WGSL shaders, trading off steel mass, roof drift, and embodied carbon in real time.',
+                              onTap: () => widget.onOpenParetoExplorer?.call(),
+                            ),
+                          _MenuAction(
+                            label: "Generative Lateral Bracing Optimizer",
+                            subtitle: "Synthesize X-brace, Chevron, or Diagrid bracing to maximize buckling α_cr",
+                            icon: Icons.grid_4x4_rounded,
+                            infoText:
+                                'Synthesizes optimal lateral bracing topologies (X-brace, Chevron, Diagrid) to maximize elastic critical buckling factor α_cr.',
+                            onTap: () => widget.onOpenGenerativeBracing?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Composite Floor Walking Vibration Check (AISC DG 11)",
+                            subtitle: "Verify human comfort peak acceleration a_p/g and composite shear studs",
+                            icon: Icons.layers_rounded,
+                            infoText:
+                                'AISC Design Guide 11 human walking comfort acceleration check (a_p/g) and shear stud composite beam action.',
+                            onTap: () => widget.onOpenCompositeFloor?.call(),
+                          ),
+                          _MenuAction(
+                            label: "Steel Moment & Shear Connection Calculator",
+                            subtitle: "Check bolt shear, flange weld capacity, and baseplate bearing stress",
+                            icon: Icons.construction_rounded,
+                            infoText:
+                                'Designs bolted end-plate moment connections, shear tabs, and column baseplates for bolt shear, prying, and weld capacity.',
+                            onTap: () => widget.onOpenSteelConnections?.call(),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Stage 5: REPORTS & BIM
+                      _buildCapsulePill(
+                        label: "5. REPORTS & BIM",
+                        icon: Icons.verified_user_rounded,
+                        isActiveStage: widget.activeWorkflowStage == 5,
+                        infoTitle: 'Stage 5: Stamped PE Calculation Packets, BIM Export & QA',
+                        infoCode: 'HMAC-SHA256 PE Seal • IFC 4.3 • SAP2000 .s2k',
+                        infoMessage:
+                            'Export cryptographically sealed PE calculation packets (PDF/LaTeX), CSI SAP2000 (.s2k), openBIM IFC 4.3, AutoCAD (.dxf), SE 2050 carbon audits, and live cloud reviews.',
+                        onTap: () => _showModalMenu(context, "STAGE 5: PE CALCULATION PACKETS, BIM & QA", [
+                          _MenuAction(
+                            label: "Stamped PE Calculation Packet & HMAC-SHA256 Seal Verifier",
+                            subtitle: "Generate step-by-step AISC/ACI equation dossier with tamper-evident seal",
+                            icon: Icons.verified_user_rounded,
+                            infoText:
+                                'Generates a Professional Engineer (PE) calculation dossier with step-by-step AISC/ACI equations and cryptographic HMAC-SHA256 tamper verification.',
+                            onTap: () => widget.onOpenPePacket?.call(),
+                          ),
+                          _MenuAction(
+                            label: "BIM Interoperability & Steel BOM Takeoff (.s2k / IFC 4.3 / .csv)",
+                            subtitle: "Export CSI SAP2000/ETABS (.s2k), openBIM IFC 4.3, and steel tonnage schedules",
+                            icon: Icons.folder_zip_rounded,
+                            infoText:
+                                'Full AISC section catalog browser, bill of materials (BOM) steel tonnage takeoff, and SAP2000 (.s2k) / IFC 4.3 export.',
+                            onTap: () => widget.onOpenLibrary?.call(),
+                          ),
+                          if (widget.onOpenShopDrawingAudit != null)
+                            _MenuAction(
+                              label: "Shop-Drawing & Site Connection Visual QA (ConnectionNet-AI)",
+                              subtitle: "Audit fabrication drawings and site photos for AISC Ch. J & ACI Ch. 25 compliance",
+                              icon: Icons.assignment_turned_in_rounded,
+                              infoText:
+                                  'Multimodal inspection of fabrication shop drawings and site photos against AISC 360-16 Chapter J bolt edge/pitch limits and ACI 318-19 rebar hooks.',
+                              onTap: () => widget.onOpenShopDrawingAudit?.call(),
+                            ),
+                          _MenuAction(
+                            label: "Embodied Carbon Life-Cycle Assessment (SE 2050 LCA)",
+                            subtitle: "Audit cradle-to-gate Global Warming Potential (kg CO2e) & LEED v4.1 credits",
+                            icon: Icons.co2_rounded,
+                            infoText:
+                                'Calculates cradle-to-gate Global Warming Potential (kg CO2e) against SE 2050 structural carbon benchmarks.',
+                            onTap: () => widget.onOpenEmbodiedCarbon?.call(),
+                          ),
+                          if (widget.onOpenCollaborationReview != null)
+                            _MenuAction(
+                              label: "Real-Time Multi-Engineer Cloud Collaboration & Diff",
+                              subtitle: "Share review links, pin 3D comments on joints, and compare revision DCR diffs",
+                              icon: Icons.people_alt_rounded,
+                              infoText:
+                                  'Generate role-based review links (Co-Engineer vs. Viewer), compare model revision DCR diffs, and pin 3D comments directly onto structural joints.',
+                              onTap: () => widget.onOpenCollaborationReview?.call(),
+                            ),
+                        ]),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Apple Silicon MPS Neural Surrogate Inspector Pill
                       _HoverableSpecularPill(
                         label: "MAC-TRAINED AI",
                         icon: Icons.memory_rounded,
@@ -368,263 +713,6 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         ),
                       ),
                       const SizedBox(width: 8),
-
-                      _buildCapsulePill(
-                        label: "AI & GEN",
-                        icon: Icons.auto_awesome_rounded,
-                        infoTitle: 'Autonomous AI & Generative Design Suite',
-                        infoCode: 'SIMP • WebGPU • Gemini',
-                        infoMessage:
-                            'Access 4-Agent Autonomous Swarm, 3D Diagrid Topology Optimization, Shop-Drawing Vision QA, 60 FPS WebGPU Pareto Explorer, and AI Section Auto-Sizer.',
-                        onTap: () => _showModalMenu(context, "AI & GENERATIVE SUITE", [
-                          if (widget.onOpenAutonomousSwarm != null)
-                            _MenuAction(
-                              label: "Autonomous 4-Agent Swarm (v4.0 Self-Healer)",
-                              icon: Icons.hub_rounded,
-                              infoText:
-                                  'Multi-agent collaboration (Architect, FEA Analyst, Code Auditor, Self-Healer) that iteratively resolves overstressed members and drift violations.',
-                              onTap: () => widget.onOpenAutonomousSwarm?.call(),
-                            ),
-                          if (widget.onOpenGenerativeTopology != null)
-                            _MenuAction(
-                              label: "3D Topology Synthesizer (Neural SIMP)",
-                              icon: Icons.architecture_rounded,
-                              infoText:
-                                  'Continuous neural density field ρ(x,y,z) optimization and Marching Struts discretizer generating 3D diagrid exoskeletons with 18–30% steel mass reduction.',
-                              onTap: () => widget.onOpenGenerativeTopology?.call(),
-                            ),
-                          if (widget.onOpenShopDrawingAudit != null)
-                            _MenuAction(
-                              label: "Shop-Drawing & Site QA (ConnectionNet-AI)",
-                              icon: Icons.assignment_turned_in_rounded,
-                              infoText:
-                                  'Multimodal inspection of fabrication shop drawings and site photos against AISC 360-16 Chapter J bolt edge/pitch limits and ACI 318-19 rebar hooks.',
-                              onTap: () => widget.onOpenShopDrawingAudit?.call(),
-                            ),
-                          if (widget.onOpenParetoExplorer != null)
-                            _MenuAction(
-                              label: "Pareto Frontier (60 FPS)",
-                              icon: Icons.scatter_plot_rounded,
-                              infoText:
-                                  'Evaluates 256 structural variations in parallel via WebGPU WGSL shaders, trading off steel mass, roof drift, and embodied carbon in real time.',
-                              onTap: () => widget.onOpenParetoExplorer?.call(),
-                            ),
-                          _MenuAction(
-                            label: "AI Structural Copilot (Gemini Agent)",
-                            icon: Icons.psychology_rounded,
-                            infoText:
-                                'Conversational structural engineering assistant capable of explaining failure modes, synthesizing frames, and recommending code-compliant retrofits.',
-                            onTap: () => widget.onOpenCopilot?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Vision-to-BIM Floorplan Ingestion",
-                            icon: Icons.document_scanner_rounded,
-                            infoText:
-                                'Extracts structural column grids, beam spans, and core walls from 2D architectural floorplan blueprints into a 3D finite element model.',
-                            onTap: () => widget.onOpenVisionToBim?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Generative Bracing (Pareto Optimizer)",
-                            icon: Icons.hub_rounded,
-                            infoText:
-                                'Synthesizes optimal lateral bracing topologies (X-brace, Chevron, Diagrid) to maximize elastic critical buckling factor α_cr.',
-                            onTap: () => widget.onOpenGenerativeBracing?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Multi-Hazard Dynamic Stimulator",
-                            icon: Icons.cyclone_rounded,
-                            infoText:
-                                'Live 60 FPS 3D simulation of coupled seismic ground motion, vortex-induced wind resonance, and blast wave overpressure.',
-                            onTap: () => widget.onOpenEnvironmentalStimulator?.call(),
-                          ),
-                          _MenuAction(
-                            label: "AI Section Auto-Sizer",
-                            icon: Icons.auto_fix_high_rounded,
-                            infoText:
-                                'Automatically assigns minimum-weight AISC 360-16 W-shapes so every member satisfies Demand-Capacity Ratio DCR ≤ 1.0.',
-                            onTap: () => widget.onOptimize?.call(),
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(width: 8),
-
-                      _buildCapsulePill(
-                        label: "CAD & BIM",
-                        icon: Icons.apartment_rounded,
-                        infoTitle: 'CAD Drafting, BIM Interoperability & PE Deliverables',
-                        infoCode: 'IFC 4.3 • DXF • SAP2000 .s2k',
-                        infoMessage:
-                            'Export and import industry-standard BIM/CAD formats, generate HMAC-SHA256 sealed PE calculation packets, and audit SE 2050 embodied carbon.',
-                        onTap: () => _showModalMenu(context, "CAD & BIM INTEROPERABILITY", [
-                          _MenuAction(
-                            label: "Vision-to-BIM 2D Plan Ingestion",
-                            icon: Icons.document_scanner_rounded,
-                            infoText:
-                                'Convert 2D architectural floorplans into 3D structural framing with customizable bay spans and story heights.',
-                            onTap: () => widget.onOpenVisionToBim?.call(),
-                          ),
-                          _MenuAction(
-                            label: "PE Calculation Packet & Digital Seal",
-                            icon: Icons.assignment_turned_in_rounded,
-                            infoText:
-                                'Generates a Professional Engineer (PE) calculation dossier with step-by-step AISC/ACI equations and cryptographic HMAC-SHA256 tamper verification.',
-                            onTap: () => widget.onOpenPePacket?.call(),
-                          ),
-                          _MenuAction(
-                            label: "AI CAD 3D Drafting Studio (.dxf)",
-                            icon: Icons.edit_road_rounded,
-                            infoText:
-                                'Interactive 2D/3D CAD drafting viewport with snap-to-grid, member drawing, and AutoCAD DXF export.',
-                            onTap: () => widget.onOpenCadStudio?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Structural Library & BIM Takeoff (.s2k / IFC 4.3)",
-                            icon: Icons.folder_zip_rounded,
-                            infoText:
-                                'Full AISC section catalog browser, bill of materials (BOM) steel tonnage takeoff, and SAP2000 (.s2k) / IFC 4.3 export.',
-                            onTap: () => widget.onOpenLibrary?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Embodied Carbon LCA (SE 2050)",
-                            icon: Icons.co2_rounded,
-                            infoText:
-                                'Calculates cradle-to-gate Global Warming Potential (kg CO2e) against SE 2050 structural carbon benchmarks.',
-                            onTap: () => widget.onOpenEmbodiedCarbon?.call(),
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(width: 8),
-
-                      _buildCapsulePill(
-                        label: "ANALYSIS",
-                        icon: Icons.analytics_rounded,
-                        infoTitle: 'Structural & Geotechnical Analysis Engines',
-                        infoCode: 'AISC 360 • ACI 318 • ASCE 7 • UFC 4-023',
-                        infoMessage:
-                            'Run Non-Linear Time History (NLTHA), Progressive Collapse (ALP), P-Delta Buckling, Concrete P-M & Crack Control, Steel Connections, and Foundation SSI.',
-                        onTap: () => _showModalMenu(context, "ANALYSIS & DESIGN ENGINES", [
-                          if (widget.onOpenProgressiveCollapse != null)
-                            _MenuAction(
-                              label: "Progressive Collapse & Alternate Path (UFC 4-023-03)",
-                              icon: Icons.warning_amber_rounded,
-                              infoText:
-                                  'Simulates sudden notional column loss under Ω_LD = 2.0 dynamic amplification, evaluating double-span catenary bridging and vulnerability rankings.',
-                              onTap: () => widget.onOpenProgressiveCollapse?.call(),
-                            ),
-                          if (widget.onOpenConnectionDetailer != null)
-                            _MenuAction(
-                              label: "AISC 360-16 3D Connection Synthesizer",
-                              icon: Icons.hardware_rounded,
-                              infoText:
-                                  'Evaluates bolted shear tabs, extended moment end-plates, Whitmore 30° gussets, and column baseplates, synthesizing 3D hex-bolt assemblies in Three.js.',
-                              onTap: () => widget.onOpenConnectionDetailer?.call(),
-                            ),
-                          if (widget.onOpenBridgeMovingLoad != null)
-                            _MenuAction(
-                              label: "AASHTO HL-93 Moving Load",
-                              icon: Icons.local_shipping_rounded,
-                              infoText:
-                                  'Steps the AASHTO HL-93 Design Truck (325 kN) + 9.3 kN/m lane load across the bridge deck in 40 DSM steps with 60 FPS scrubbing and influence lines η(x).',
-                              onTap: () => widget.onOpenBridgeMovingLoad?.call(),
-                            ),
-                          _MenuAction(
-                            label: "Dynamic Time History (NLTHA) Player",
-                            icon: Icons.movie_filter_rounded,
-                            infoText:
-                                'Newmark-Beta (γ=0.5, β=0.25) step-by-step non-linear seismic time history integration under El Centro, Northridge, and Kobe ground motions.',
-                            onTap: () => widget.onOpenNltha?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Foundation SSI (Winkler Springs & ACI 318-19)",
-                            icon: Icons.terrain_rounded,
-                            infoText:
-                                'Soil-Structure Interaction with Winkler subgrade springs (k_s), Terzaghi bearing capacity, and ACI 318-19 §22.6 two-way punching shear.',
-                            onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Lateral Stability & 12x12 [Kg] Buckling",
-                            icon: Icons.sync_alt_rounded,
-                            infoText:
-                                'Assembles 12×12 geometric stiffness matrix [Kg] to compute elastic critical buckling load factor α_cr and AISC 360-16 Appendix 8 B2 sway amplification.',
-                            onTap: () => widget.onOpenLateralStability?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Concrete Studio (ACI 318-19 P-M Envelope)",
-                            icon: Icons.view_in_ar_rounded,
-                            infoText:
-                                'Biaxial reinforced concrete column P-M interaction diagram (Whitney stress block) and ACI 224R-01 Gergely-Lutz surface crack width serviceability.',
-                            onTap: () => widget.onOpenConcreteStudio?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Dynamic Modal Vibration (ASCE 7-16)",
-                            icon: Icons.waves_rounded,
-                            infoText:
-                                'Solves generalized eigenvalue problem det([K] - ω²[M]) = 0 for natural frequencies, periods, and 3D mode shape animations.',
-                            onTap: () => widget.onOpenSeismicModal?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Pushover Capacity Spectrum (ATC-40 PBEE)",
-                            icon: Icons.trending_up_rounded,
-                            infoText:
-                                'Non-linear static pushover curve (Base Shear V vs. Roof Drift Δ) with FEMA 356 IO / LS / CP plastic hinge performance levels.',
-                            onTap: () => widget.onOpenPushoverAnalysis?.call(),
-                          ),
-                          _MenuAction(
-                            label: "AeroNet Wind Boundary Layer CFD",
-                            icon: Icons.air_rounded,
-                            infoText:
-                                'Atmospheric boundary layer velocity profile, Cp pressure contours, and vortex shedding lock-in frequency analysis.',
-                            onTap: () => widget.onOpenWindCfd?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Composite Floor Vibrations (DG 11)",
-                            icon: Icons.layers_rounded,
-                            infoText:
-                                'AISC Design Guide 11 human walking comfort acceleration check (a_p/g) and shear stud composite beam action.',
-                            onTap: () => widget.onOpenCompositeFloor?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Steel Connection Studio (AISC 360)",
-                            icon: Icons.hardware_rounded,
-                            infoText:
-                                'Designs bolted end-plate moment connections, shear tabs, and column baseplates for bolt shear, prying, and weld capacity.',
-                            onTap: () => widget.onOpenSteelConnections?.call(),
-                          ),
-                        ]),
-                      ),
-                      const SizedBox(width: 8),
-
-                      if (widget.onOpenCollaborationReview != null) ...[
-                        _HoverableSpecularPill(
-                          label: "SHARE & REVIEW",
-                          icon: Icons.people_alt_rounded,
-                          onTap: widget.onOpenCollaborationReview,
-                          infoTitle: 'Real-Time Multi-Engineer Cloud Review',
-                          infoCode: 'Firestore Live • 3D Review Pins',
-                          infoMessage:
-                              'Generate role-based review links (Co-Engineer vs. Viewer), compare model revision DCR diffs, and pin 3D comments directly onto structural joints.',
-                          trailingBadge: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF00F0FF).withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: const Color(0xFF00F0FF).withValues(alpha: 0.5),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: const Text(
-                              "LIVE",
-                              style: TextStyle(
-                                color: Color(0xFF00F0FF),
-                                fontSize: 8,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
 
                       // 4. Benchmark Presets Dropdown
                       _buildPresetDropdown(),
@@ -757,6 +845,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
     String? infoTitle,
     String? infoCode,
     String? infoMessage,
+    bool isActiveStage = false,
   }) {
     return _HoverableSpecularPill(
       label: label,
@@ -765,6 +854,16 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
       infoTitle: infoTitle,
       infoCode: infoCode,
       infoMessage: infoMessage,
+      trailingBadge: isActiveStage
+          ? Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Color(0xFF00F0FF),
+                shape: BoxShape.circle,
+              ),
+            )
+          : null,
     );
   }
 
@@ -772,7 +871,11 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(ctx).height * 0.72,
+        ),
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: const Color(0xFF0D1117).withValues(alpha: 0.96),
@@ -804,9 +907,9 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                 const SizedBox(width: 6),
                 InfoTooltip(
                   title: title,
-                  codeRef: 'Structura Nexus Suite',
-                  message:
-                      'Click any module card to launch its interactive studio. Hover the (i) icon on any card for detailed code references and engineering instructions.',
+                  standardOrRange: 'Structura Nexus 5-Stage Pipeline',
+                  description:
+                      'Click any engineering module row to launch its interactive studio. Hover the (i) icon on any tool for governing design codes and technical details.',
                   size: 14,
                 ),
                 const Spacer(),
@@ -817,43 +920,85 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
               ],
             ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: actions.map((act) => InkWell(
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  act.onTap();
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF161B22),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(act.icon, size: 15, color: const Color(0xFF00F0FF)),
-                      const SizedBox(width: 8),
-                      Text(
-                        act.label,
-                        style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w600),
-                      ),
-                      if (act.infoText != null) ...[
-                        const SizedBox(width: 6),
-                        InfoTooltip(
-                          title: act.label,
-                          message: act.infoText!,
-                          size: 14,
+            Flexible(
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: actions
+                      .map(
+                        (act) => InkWell(
+                          onTap: () {
+                            Navigator.of(ctx).pop();
+                            act.onTap();
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            width: 360,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF161B22),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2),
+                                  padding: const EdgeInsets.all(7),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00F0FF).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(act.icon, size: 16, color: const Color(0xFF00F0FF)),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        act.label,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      if (act.subtitle != null) ...[
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          act.subtitle!,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            fontSize: 10,
+                                            height: 1.25,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                                if (act.infoText != null) ...[
+                                  const SizedBox(width: 6),
+                                  InfoTooltip(
+                                    title: act.label,
+                                    description: act.infoText!,
+                                    size: 14,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
-                      ],
-                    ],
-                  ),
+                      )
+                      .toList(),
                 ),
-              )).toList(),
+              ),
             ),
           ],
         ),
@@ -1435,12 +1580,14 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
 
 class _MenuAction {
   final String label;
+  final String? subtitle;
   final IconData icon;
   final VoidCallback onTap;
   final String? infoText;
 
   const _MenuAction({
     required this.label,
+    this.subtitle,
     required this.icon,
     required this.onTap,
     this.infoText,

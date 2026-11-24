@@ -153,7 +153,11 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                               ),
                               const SizedBox(width: 3),
                               const InfoTooltip(
-                                message: "Demand-to-Capacity Ratio. Values > 1.0 indicate structural overstress.",
+                                title: 'Governing Demand-Capacity Ratio (DCR)',
+                                standardOrRange:
+                                    'AISC 360-16 Eq. H1-1a | ≤ 0.70: Under-utilized | 0.70–0.95: Optimal | > 1.00: Overstressed (Fail)',
+                                description:
+                                    'Ratio of factored axial + biaxial bending demand (Pu, Mux, Muy) to LRFD design strength (φPn, φMnx, φMny). Values > 1.00 require section upsizing.',
                                 size: 13,
                               ),
                             ],
@@ -386,7 +390,8 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: _metricSnippet(
                             "α_cr BUCKLING",
                             widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—",
-                            tooltip: "Critical Elastic Buckling Multiplier. Values < 10.0 trigger P-Delta sway amplification.",
+                            tooltip:
+                                "Elastic critical buckling load multiplier det([Ke] + α_cr[Kg]) = 0. Values < 10.0 indicate second-order P-Delta sway sensitivity.",
                           ),
                         ),
                         const SizedBox(width: 8),
