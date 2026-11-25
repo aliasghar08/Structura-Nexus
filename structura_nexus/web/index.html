@@ -29,6 +29,85 @@
   <meta name="apple-mobile-web-app-title" content="Structura Nexus">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
+  <!-- Force Desktop Mode Viewport on Mobile Devices & All Browsers -->
+  <meta id="structura-desktop-viewport" name="viewport" content="width=1280, initial-scale=0.3, minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes">
+
+  <script>
+    // Bulletproof Desktop Mode Viewport Enforcer across all Mobile Browsers & Flutter Web Engine
+    (function() {
+      var DESKTOP_WIDTH = 1280;
+
+      function calculateDesktopScale() {
+        var sw = window.screen.width || window.innerWidth || 390;
+        if (sw < DESKTOP_WIDTH) {
+          return Math.max(0.15, Math.min(1.0, parseFloat((sw / DESKTOP_WIDTH).toFixed(3))));
+        }
+        return 1.0;
+      }
+
+      function getDesktopViewportContent() {
+        var scale = calculateDesktopScale();
+        return 'width=' + DESKTOP_WIDTH + ', initial-scale=' + scale + ', minimum-scale=0.1, maximum-scale=5.0, user-scalable=yes';
+      }
+
+      function enforceDesktopViewport() {
+        var desired = getDesktopViewportContent();
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.name = 'viewport';
+          document.head.appendChild(meta);
+        }
+        if (meta.content !== desired) {
+          meta.content = desired;
+        }
+      }
+
+      // 1. Intercept Flutter Web Engine attempt to overwrite viewport with width=device-width
+      try {
+        var desc = Object.getOwnPropertyDescriptor(HTMLMetaElement.prototype, 'content') || {
+          set: function(val) { this.setAttribute('content', val); },
+          get: function() { return this.getAttribute('content'); }
+        };
+
+        Object.defineProperty(HTMLMetaElement.prototype, 'content', {
+          set: function(val) {
+            if (this.name === 'viewport' || this.getAttribute('name') === 'viewport') {
+              desc.set.call(this, getDesktopViewportContent());
+              return;
+            }
+            desc.set.call(this, val);
+          },
+          get: desc.get,
+          configurable: true
+        });
+      } catch (e) {
+        console.warn('[Structura Nexus] Viewport property override note:', e);
+      }
+
+      // 2. MutationObserver to catch any viewport additions or mutations
+      try {
+        var observer = new MutationObserver(function() {
+          var metas = document.head.querySelectorAll('meta[name="viewport"]');
+          metas.forEach(function(m) {
+            var desired = getDesktopViewportContent();
+            if (m.content !== desired) {
+              m.content = desired;
+            }
+          });
+        });
+        observer.observe(document.head, { childList: true, subtree: true, attributes: true });
+      } catch (e) {}
+
+      // 3. Dynamic adjustment on resize and orientationchange
+      enforceDesktopViewport();
+      window.addEventListener('resize', enforceDesktopViewport);
+      window.addEventListener('orientationchange', function() {
+        setTimeout(enforceDesktopViewport, 120);
+      });
+    })();
+  </script>
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 

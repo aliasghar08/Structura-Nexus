@@ -1705,7 +1705,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
     final isOverallPass = failCount == 0;
     final screenSize = MediaQuery.sizeOf(context);
-    final isCompact = screenSize.width < 700 || screenSize.height < 500;
+    final isCompact = screenSize.width < 700;
     final isTabletBand = !isCompact && screenSize.width < 1100 && screenSize.height >= 700;
     final showInspector = _isInspectorOpen ?? !isCompact;
     final defaultInspectorTop = MediaQuery.paddingOf(context).top +
