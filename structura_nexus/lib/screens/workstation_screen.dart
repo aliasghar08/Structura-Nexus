@@ -330,6 +330,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   }
 
   bool get _isUserLoggedIn {
+    if (WorkspacePreferences.getBool('demo_authenticated', false)) {
+      return true;
+    }
     final user = FirebaseAuthService().currentUser;
     return user != null;
   }

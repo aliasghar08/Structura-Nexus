@@ -1585,7 +1585,8 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
 
   Widget _buildUserProfileButton() {
     final user = FirebaseAuthService().currentUser;
-    final isLoggedIn = user != null;
+    final isDemo = WorkspacePreferences.getBool('demo_authenticated', false);
+    final isLoggedIn = user != null || isDemo;
     final isCompact = MediaQuery.sizeOf(context).width < 700;
 
     return GlassPod(
@@ -1607,9 +1608,11 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
             const SizedBox(width: 6),
             Text(
               isLoggedIn
-                  ? (user.isAnonymous
-                      ? 'Guest Engineer'
-                      : (user.displayName ?? user.email?.split('@').first ?? 'Account'))
+                  ? (isDemo
+                      ? 'Verified PE Engineer'
+                      : (user?.isAnonymous ?? false
+                          ? 'Guest Engineer'
+                          : (user?.displayName ?? user?.email?.split('@').first ?? 'Account')))
                   : 'Cloud / Sign In',
               style: TextStyle(
                 color: isLoggedIn ? const Color(0xFF3FB950) : const Color(0xFF58A6FF),
