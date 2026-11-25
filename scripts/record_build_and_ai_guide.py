@@ -23,6 +23,8 @@ ICLOUD_DIR = Path("/Users/aliasghar08/Library/Mobile Documents/com~apple~CloudDo
 
 OUT_DESKTOP = DESKTOP_DIR / "Structura_Nexus_Build_And_AI_Guide.mp4"
 OUT_ICLOUD = ICLOUD_DIR / "Structura_Nexus_Build_And_AI_Guide.mp4"
+OUT_FASTHOOK_DESKTOP = DESKTOP_DIR / "Structura_Nexus_Build_And_AI_Guide_FastHook.mp4"
+OUT_FASTHOOK_ICLOUD = ICLOUD_DIR / "Structura_Nexus_Build_And_AI_Guide_FastHook.mp4"
 
 TEMP_VIDEO_DIR = Path("/tmp/structura_build_guide_raw_vid")
 PORT = 5059
@@ -553,15 +555,16 @@ def record_showcase():
     cmd = [
         ffmpeg_bin,
         "-y",
+        "-ss", "00:00:07.5",
         "-i", str(latest_webm),
         "-c:v", "libx264",
         "-crf", "17",
-        "-preset", "medium",
+        "-preset", "fast",
         "-pix_fmt", "yuv420p",
         "-r", "60",
         "-movflags", "+faststart",
         "-an",
-        str(OUT_DESKTOP),
+        str(OUT_FASTHOOK_DESKTOP),
     ]
 
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -569,10 +572,13 @@ def record_showcase():
         print("FFmpeg error:", res.stderr.decode("utf-8", errors="ignore"))
         sys.exit(res.returncode)
 
-    # Copy to iCloud Mac Screenshots directory as well
-    shutil.copyfile(str(OUT_DESKTOP), str(OUT_ICLOUD))
+    # Save to both Desktop and iCloud Mac Screenshots
+    shutil.copyfile(str(OUT_FASTHOOK_DESKTOP), str(OUT_FASTHOOK_ICLOUD))
+    # Also keep standard alias for compatibility
+    shutil.copyfile(str(OUT_FASTHOOK_DESKTOP), str(OUT_DESKTOP))
+    shutil.copyfile(str(OUT_FASTHOOK_DESKTOP), str(OUT_ICLOUD))
 
-    print(f"\nSUCCESS! Showcase video successfully written to BOTH destinations:\n1. {OUT_DESKTOP}\n2. {OUT_ICLOUD}")
+    print(f"\nSUCCESS! Fast-hook showcase video successfully written to BOTH destinations:\n1. {OUT_FASTHOOK_DESKTOP}\n2. {OUT_FASTHOOK_ICLOUD}")
 
 
 if __name__ == "__main__":
