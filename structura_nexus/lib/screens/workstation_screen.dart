@@ -1818,6 +1818,49 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   _triggerSolve();
                 });
               },
+              onActionTriggered: (action) {
+                setState(() {
+                  if (action == 'clear') {
+                    _model.nodes.clear();
+                    _model.members.clear();
+                    _selectedNodeId = null;
+                    _selectedMemberId = null;
+                    _commitModelMutation('Cleared canvas for ground-up construction', refitCamera: true);
+                  } else if (action == 'step1_place_joints') {
+                    _model.nodes.clear();
+                    _model.members.clear();
+                    _model.nodes.addAll([
+                      StructuralNode(id: 'N1', coords: Vector3(0.0, 0.0, 0.0), restraint: [1, 1, 1, 1, 1, 1], loads: [0, 0, 0, 0, 0, 0]),
+                      StructuralNode(id: 'N2', coords: Vector3(6.0, 0.0, 0.0), restraint: [1, 1, 1, 1, 1, 1], loads: [0, 0, 0, 0, 0, 0]),
+                      StructuralNode(id: 'N3', coords: Vector3(0.0, 3.6, 0.0), restraint: [0, 0, 0, 0, 0, 0], loads: [0, -35000, 0, 0, 0, 0]),
+                      StructuralNode(id: 'N4', coords: Vector3(6.0, 3.6, 0.0), restraint: [0, 0, 0, 0, 0, 0], loads: [0, -35000, 0, 0, 0, 0]),
+                    ]);
+                    _commitModelMutation('Placed 3D Column Base Joints & Fixed Foundations (y=0)', refitCamera: true);
+                  } else if (action == 'step2_draw_members') {
+                    _model.members.addAll([
+                      StructuralMember(id: 'COL_1', iNodeId: 'N1', jNodeId: 'N3', section: 'W14X90', material: 'A992_STEEL'),
+                      StructuralMember(id: 'COL_2', iNodeId: 'N2', jNodeId: 'N4', section: 'W14X90', material: 'A992_STEEL'),
+                      StructuralMember(id: 'BM_1', iNodeId: 'N3', jNodeId: 'N4', section: 'W18X35', material: 'A992_STEEL'),
+                    ]);
+                    EmbeddedFeaSolver.solve(_model);
+                    _commitModelMutation('Connected AISC Columns (W14X90) and Floor Girder (W18X35)');
+                    _triggerSolve(showPrompt: true);
+                  } else if (action == 'extend_bay_x') {
+                    _extendBayX();
+                  } else if (action == 'extend_bay_z') {
+                    _extendBayZ();
+                  } else if (action == 'extrude_story') {
+                    _extrudeStory();
+                  } else if (action == 'apply_ai_optimization') {
+                    _addXBracing();
+                    _optimizeSections();
+                    _commitModelMutation('Committed AI Guidance: Added Lateral X-Bracing & Optimized Sections (DCR <= 0.95)');
+                  } else if (action == 'toggle_bmd') {
+                    _model.displayMode = (_model.displayMode == DisplayMode.bmdRibbon) ? DisplayMode.geometry : DisplayMode.bmdRibbon;
+                    _triggerSolve();
+                  }
+                });
+              },
             ),
           ),
 

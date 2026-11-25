@@ -14,6 +14,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final void Function(Set<String> nodeIds, Set<String> memberIds)? onMultiSelectChanged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
+  final void Function(String action)? onActionTriggered;
 
   const ThreeJsStructuralViewport({
     super.key,
@@ -29,6 +30,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.onMultiSelectChanged,
     this.onNodeDragged,
     this.onNodeDragEnd,
+    this.onActionTriggered,
   });
 
   @override

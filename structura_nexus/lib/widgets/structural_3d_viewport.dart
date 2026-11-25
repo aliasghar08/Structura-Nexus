@@ -14,6 +14,7 @@ class Structural3DViewport extends StatefulWidget {
   final void Function(Set<String> nodeIds, Set<String> memberIds)? onMultiSelectChanged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
+  final void Function(String action)? onActionTriggered;
 
   final int modelRevision;
 
@@ -28,6 +29,7 @@ class Structural3DViewport extends StatefulWidget {
     this.onMultiSelectChanged,
     this.onNodeDragged,
     this.onNodeDragEnd,
+    this.onActionTriggered,
   });
 
   @override
@@ -216,6 +218,7 @@ class Structural3DViewportState extends State<Structural3DViewport>
                 onNodeDragEnd: (id, x, y, z) {
                   widget.onNodeDragEnd?.call(id, x, y, z);
                 },
+                onActionTriggered: widget.onActionTriggered,
               )
             else
               AnimatedBuilder(

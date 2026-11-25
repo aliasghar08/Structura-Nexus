@@ -48,6 +48,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
   final void Function(Set<String> nodeIds, Set<String> memberIds)? onMultiSelectChanged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragged;
   final void Function(String nodeId, double x, double y, double z)? onNodeDragEnd;
+  final void Function(String action)? onActionTriggered;
 
   const ThreeJsStructuralViewport({
     super.key,
@@ -63,6 +64,7 @@ class ThreeJsStructuralViewport extends StatefulWidget {
     this.onMultiSelectChanged,
     this.onNodeDragged,
     this.onNodeDragEnd,
+    this.onActionTriggered,
   });
 
   @override
@@ -80,6 +82,7 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
   JSFunction? _nodeSelectListener;
   JSFunction? _memberSelectListener;
   JSFunction? _multiSelectListener;
+  JSFunction? _actionListener;
 
   @override
   void initState() {
@@ -180,15 +183,33 @@ class ThreeJsStructuralViewportState extends State<ThreeJsStructuralViewport> {
       }
     }).toJS;
 
+    _actionListener = ((web.Event event) {
+      final customEv = event as web.CustomEvent;
+      if (customEv.detail != null) {
+        try {
+          final str = _jsonStringify(customEv.detail).toDart;
+          final map = jsonDecode(str) as Map<String, dynamic>;
+          final act = map['action'] as String?;
+          if (act != null) {
+            widget.onActionTriggered?.call(act);
+          }
+        } catch (_) {}
+      }
+    }).toJS;
+
     web.window.addEventListener('structura-node-dragged', _dragListener);
     web.window.addEventListener('structura-node-drag-end', _dragEndListener);
     web.window.addEventListener('structura-node-selected', _nodeSelectListener);
     web.window.addEventListener('structura-member-selected', _memberSelectListener);
     web.window.addEventListener('structura-multi-selected', _multiSelectListener);
+    web.window.addEventListener('structura-action', _actionListener);
   }
 
   @override
   void dispose() {
+    if (_actionListener != null) {
+      web.window.removeEventListener('structura-action', _actionListener);
+    }
     if (_dragListener != null) {
       web.window.removeEventListener('structura-node-dragged', _dragListener);
     }
