@@ -250,7 +250,7 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                       children: [
                         Flexible(
                           child: Text(
-                            "ASCE 7-16 LOAD COMBINATIONS",
+                            widget.isEssentialMode ? "LOAD COMBINATION" : "ASCE 7-16 LOAD COMBINATIONS",
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.6),
@@ -326,6 +326,31 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            widget.isEssentialMode ? "GLOBAL DRIFT & AUTO-SIZER" : "DRIFT & STABILITY",
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const InfoTooltip(
+                          title: 'Global Lateral Drift & AISC Auto-Sizer',
+                          codeRef: 'ASCE 7-16 & AISC 360-16',
+                          message:
+                              'Monitors lateral story drift ratios (Δ/h) and executes instant section optimization to satisfy DCR ≤ 0.95.',
+                          size: 12.5,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [

@@ -160,7 +160,7 @@ class _WelcomeQuickstartOverlayState extends State<WelcomeQuickstartOverlay> {
                         childAspectRatio: useTwoCols ? 2.3 : 2.8,
                         children: [
                           _buildActionCard(
-                            title: "Explore 24 Sample Structures",
+                            title: "Browse 24 Sample Structures",
                             subtitle: "Browse certified commercial high-rises, bridges, warehouses & code benchmarks",
                             badge: "24 ARCHETYPES",
                             badgeColor: const Color(0xFF00F0FF),
@@ -171,7 +171,7 @@ class _WelcomeQuickstartOverlayState extends State<WelcomeQuickstartOverlay> {
                             },
                           ),
                           _buildActionCard(
-                            title: "Convert 2D Floorplan to 3D",
+                            title: "Convert 2D Floorplan (PDF/PNG) to 3D",
                             subtitle: "Upload architectural blueprint (PDF/PNG) to auto-synthesize column grids & beams",
                             badge: "VISION-TO-BIM",
                             badgeColor: const Color(0xFF38BDF8),
@@ -182,7 +182,7 @@ class _WelcomeQuickstartOverlayState extends State<WelcomeQuickstartOverlay> {
                             },
                           ),
                           _buildActionCard(
-                            title: "Start Guided Step-by-Step Build",
+                            title: "Build Custom Frame Step-by-Step",
                             subtitle: "Follow interactive 4-stage guide: place joints, draw beams, assign supports & solve",
                             badge: "GUIDE ME",
                             badgeColor: const Color(0xFF10B981),
@@ -193,7 +193,7 @@ class _WelcomeQuickstartOverlayState extends State<WelcomeQuickstartOverlay> {
                             },
                           ),
                           _buildActionCard(
-                            title: "Auto-Optimize Steel & PE Report",
+                            title: "Auto-Optimize Steel & Export PE Packet",
                             subtitle: "Load commercial tower, minimize steel tonnage with AI & preview signed calculation packet",
                             badge: "AISC AUTO-SIZER",
                             badgeColor: const Color(0xFFF59E0B),

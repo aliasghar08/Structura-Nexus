@@ -39,7 +39,7 @@ void main() {
     expect(find.text('HYBRID DUAL'), findsOneWidget);
     expect(find.text('STRUCTURANET-3D (<2ms)'), findsOneWidget);
     expect(find.text('PROPRIETARY DSM'), findsOneWidget);
-    expect(find.text('ASCE 7-16 LOAD COMBINATIONS'), findsOneWidget);
+    expect(find.text('LOAD COMBINATION'), findsOneWidget);
     expect(find.text('AI SECTION AUTO-SIZER'), findsOneWidget);
     expect(find.textContaining('aliasgharinnocent@yahoo.com'), findsOneWidget);
     expect(find.textContaining('DMCA Protected'), findsOneWidget);

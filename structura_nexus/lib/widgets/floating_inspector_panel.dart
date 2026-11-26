@@ -530,7 +530,9 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
               const SizedBox(height: 6),
               _guideBullet(Icons.horizontal_rule_rounded, 'Click a beam/column', 'to swap W-shapes, releases, or cracked factors'),
               const SizedBox(height: 6),
-              _guideBullet(Icons.open_with_rounded, 'Drag any joint', 'in 3D for live physics & instant recalculation'),
+              _guideBullet(Icons.select_all_rounded, 'Shift+Click to batch edit', 'multi-select joints or members for grouped assignments'),
+              const SizedBox(height: 6),
+              _guideBullet(Icons.open_with_rounded, 'Drag any joint in 3D', 'for live physics & instant recalculation'),
               const SizedBox(height: 8),
               const Text(
                 'Tip: Shift+Click or drag-marquee to batch edit multiple entities.',

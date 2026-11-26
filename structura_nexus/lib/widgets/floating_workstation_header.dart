@@ -1207,7 +1207,7 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                   value: 'presets',
                   enabled: false,
                   child: Text(
-                    'Sample ${activeIndex + 1}/24: ${currentSample.title}',
+                    'Sample ${(activeIndex + 1).toString().padLeft(2, '0')}/24: ${currentSample.title}',
                     style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),
