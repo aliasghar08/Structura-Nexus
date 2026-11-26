@@ -58,6 +58,8 @@ import '../widgets/bridge_moving_load_dock.dart';
 import '../widgets/command_palette_dialog.dart';
 import '../widgets/workflow_guide_bar.dart';
 import '../widgets/capabilities_overview_dialog.dart';
+import '../widgets/welcome_quickstart_overlay.dart';
+import '../widgets/keyboard_shortcuts_dialog.dart';
 import '../widgets/next_step_prompt_banner.dart';
 import '../widgets/info_tooltip.dart';
 import '../widgets/voice_copilot_pill.dart';
@@ -91,9 +93,23 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   bool _autoPropagateLoads = true;
   int _modelRevision = 0;
   int _activeWorkflowStep = 1;
+  bool _isEssentialMode = true;
+  bool _showWelcomeOverlay = true;
   NextStepPromptData? _activeNextStepPrompt;
   Timer? _nextStepPromptTimer;
   StreamSubscription<dynamic>? _authSubscription;
+
+  void _toggleWorkspaceMode() {
+    setState(() {
+      _isEssentialMode = !_isEssentialMode;
+      WorkspacePreferences.setBool('is_essential_mode', _isEssentialMode);
+      _showToolSnackBar(
+        _isEssentialMode
+            ? 'Switched to Essential Workspace (Streamlined for civil/structural daily workflow)'
+            : 'Switched to Pro Suite Workspace (Frontier Research Modules & Dynamic Solvers Unlocked)',
+      );
+    });
+  }
 
   void _saveUndoState() {
     _undoStack.add(_model.copyWith());
@@ -153,6 +169,13 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     // Cmd/Ctrl + K: Open Universal Command Palette & Encyclopedia
     if (isModifier && event.logicalKey == LogicalKeyboardKey.keyK) {
       _openCommandPalette();
+      return KeyEventResult.handled;
+    }
+
+    // ? or Shift + /: Open Keyboard Shortcuts Cheat-Sheet
+    if ((isShift && event.logicalKey == LogicalKeyboardKey.slash) ||
+        event.logicalKey == LogicalKeyboardKey.question) {
+      showKeyboardShortcutsDialog(context);
       return KeyEventResult.handled;
     }
 
@@ -434,6 +457,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
   @override
   void initState() {
     super.initState();
+    _isEssentialMode = WorkspacePreferences.getBool('is_essential_mode', true);
+    _showWelcomeOverlay = !WorkspacePreferences.getBool('hide_welcome_quickstart', false);
     _isInspectorOpen = WorkspacePreferences.getOptionalBool('inspector_is_open');
     _inspectorTopOffset = WorkspacePreferences.getDouble('inspector_top_offset', 70.0);
     _model = BenchmarkPresets.multiStorySwayFrame();
@@ -1939,6 +1964,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
               model: _model,
               isBackendConnected: _apiService.isConnected,
               useThreeJs: _viewportKey.currentState?.useThreeJs ?? true,
+              isEssentialMode: _isEssentialMode,
+              onToggleWorkspaceMode: _toggleWorkspaceMode,
+              onOpenShortcuts: () => showKeyboardShortcutsDialog(context),
               onToggleRenderer: () {
                 _viewportKey.currentState?.toggleRenderer();
                 setState(() {});
@@ -2090,6 +2118,7 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             left: 0,
             right: 0,
             child: FloatingTelemetryDock(
+              isEssentialMode: _isEssentialMode,
               maxDcr: maxDcr,
               isPass: isOverallPass,
               passCount: passCount,
@@ -2145,6 +2174,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
             badgeText: 'DRAWING',
             initialTop: isTabletBand ? 148.0 : 76.0,
             initialExpanded: !isCompact,
+            isEssentialMode: _isEssentialMode,
+            onToggleWorkspaceMode: _toggleWorkspaceMode,
             onAutoPropagateLoads: () {
               setState(() {
                 _autoPropagateLoads = !_autoPropagateLoads;
@@ -2547,6 +2578,39 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
+
+          // 4.9 Welcome Quick-Start Overlay (First visit or on-demand)
+          if (_showWelcomeOverlay)
+            Positioned(
+              top: isCompact ? 72.0 : 80.0,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: WelcomeQuickstartOverlay(
+                  onExploreSamples: () {
+                    setState(() => _showWelcomeOverlay = false);
+                    onOpenBuildingTemplates();
+                  },
+                  onVisionToBim: () {
+                    setState(() => _showWelcomeOverlay = false);
+                    onOpenVisionToBim();
+                  },
+                  onStartGuidedBuild: () {
+                    setState(() {
+                      _showWelcomeOverlay = false;
+                      _activeWorkflowStep = 1;
+                    });
+                    _showToolSnackBar('Step 1: Place 3D Joints & Foundation Restraints');
+                  },
+                  onAutoOptimizeAndReport: () {
+                    setState(() => _showWelcomeOverlay = false);
+                    onOptimize();
+                  },
+                  onDismiss: () => setState(() => _showWelcomeOverlay = false),
+                  onOpenShortcuts: () => showKeyboardShortcutsDialog(context),
                 ),
               ),
             ),

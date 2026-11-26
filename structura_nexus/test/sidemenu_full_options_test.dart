@@ -8,12 +8,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:structura_nexus/screens/workstation_screen.dart';
 import 'package:structura_nexus/screens/auth_screen.dart';
+import 'package:structura_nexus/services/workspace_storage.dart';
 
 void main() {
   group('Full Side Menu Options In-Depth Verification', () {
     testWidgets('Every side menu option executes cleanly without crashing', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1600, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      WorkspacePreferences.setBool('is_essential_mode', false);
+      WorkspacePreferences.setBool('hide_welcome_quickstart', true);
 
       await tester.pumpWidget(
         const MaterialApp(

@@ -89,7 +89,12 @@ class SlideableWorkspaceMenu extends StatefulWidget {
     this.onOpenProgressiveCollapse,
     this.onPresetSelected,
     this.onSolveTriggered,
+    this.isEssentialMode = false,
+    this.onToggleWorkspaceMode,
   });
+
+  final bool isEssentialMode;
+  final VoidCallback? onToggleWorkspaceMode;
 
   @override
   State<SlideableWorkspaceMenu> createState() => SlideableWorkspaceMenuState();
@@ -257,10 +262,9 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
   }
 
   List<WorkspaceToolItem> get _allTools {
-    if (widget.customTools != null && widget.customTools!.isNotEmpty) {
-      return widget.customTools!;
-    }
-    return [
+    final baseTools = (widget.customTools != null && widget.customTools!.isNotEmpty)
+        ? List<WorkspaceToolItem>.from(widget.customTools!)
+        : <_ToolDef>[
       // 1. AI & GENERATIVE
     _ToolDef(
       label: 'Mac-Trained AI Suite',
@@ -480,6 +484,51 @@ class SlideableWorkspaceMenuState extends State<SlideableWorkspaceMenu> {
           'Detects floor diaphragms by Y-elevation, calculates orthogonal tributary areas A_trib, and assigns factored gravity (1.2D+1.6L) and directional wind/seismic shears.',
     ),
   ];
+
+    if (widget.isEssentialMode) {
+      const proToolLabels = {
+        'Mac-Trained AI Suite',
+        'Generative Bracing',
+        'Dynamic NLTHA Player',
+        'Pushover Capacity Spectrum',
+        'Wind Tunnel CFD Studio',
+        'Dynamic Multi-Hazard Stimulator',
+        'Progressive Collapse (ALP)',
+        '4-Agent Autonomous Swarm',
+      };
+      final essentialList = baseTools.where((t) => !proToolLabels.contains(t.label)).toList();
+      if (widget.onToggleWorkspaceMode != null) {
+        essentialList.add(
+          _ToolDef(
+            label: '+ Show Pro Frontier Tools',
+            subtitle: 'Unlock NLTHA, CFD, Swarm, Pareto & Collapse',
+            icon: Icons.rocket_launch_rounded,
+            color: const Color(0xFFA855F7),
+            category: 'ALL',
+            onTap: widget.onToggleWorkspaceMode,
+            badge: 'PRO',
+            infoText: 'Switch to Pro Suite mode to access all advanced frontier research modules.',
+          ),
+        );
+      }
+      return essentialList;
+    } else {
+      if (widget.onToggleWorkspaceMode != null) {
+        baseTools.add(
+          _ToolDef(
+            label: '← Switch to Essential Mode',
+            subtitle: 'Streamline interface to daily engineering tools',
+            icon: Icons.bolt_rounded,
+            color: const Color(0xFF10B981),
+            category: 'ALL',
+            onTap: widget.onToggleWorkspaceMode,
+            badge: 'ESSENTIAL',
+            infoText: 'Switch to Essential Mode for a clutter-free view of everyday structural engineering workflows.',
+          ),
+        );
+      }
+      return baseTools;
+    }
   }
 
   static String _resolveToolCodeRef(_ToolDef tool) {

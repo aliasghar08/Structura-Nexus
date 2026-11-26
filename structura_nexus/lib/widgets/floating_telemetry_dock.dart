@@ -24,6 +24,7 @@ class FloatingTelemetryDock extends StatefulWidget {
   final VoidCallback onAutoSizerPressed;
   final VoidCallback onStabilityPressed;
   final VoidCallback? onParetoPressed;
+  final bool isEssentialMode;
 
   const FloatingTelemetryDock({
     super.key,
@@ -41,6 +42,7 @@ class FloatingTelemetryDock extends StatefulWidget {
     required this.onAutoSizerPressed,
     required this.onStabilityPressed,
     this.onParetoPressed,
+    this.isEssentialMode = false,
   });
 
   @override
@@ -139,11 +141,11 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Flexible(
+                              Flexible(
                                 child: Text(
-                                  "AISC 360-16",
+                                  widget.isEssentialMode ? "MAX STRESS (DCR)" : "AISC 360-16",
                                   overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: Colors.white70,
                                     fontSize: 10.5,
                                     fontWeight: FontWeight.w600,
@@ -172,7 +174,9 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                             border: Border.all(color: statusColor.withValues(alpha: 0.6), width: 0.8),
                           ),
                           child: Text(
-                            widget.isPass ? "PASSED" : "OVERSTRESSED",
+                            widget.isEssentialMode
+                                ? (widget.failCount > 0 ? "FAIL" : (widget.warnCount > 0 ? "WARNING" : "SAFE"))
+                                : (widget.isPass ? "PASSED" : "OVERSTRESSED"),
                             style: TextStyle(color: statusColor, fontSize: 9.5, fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -382,7 +386,42 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                               "Iteratively evaluates standard AISC hot-rolled profiles using neural cross-section surrogate networks to minimize structural steel mass and carbon.",
                           size: 13,
                         ),
-                        if (widget.onParetoPressed != null) ...[
+                        if (widget.isEssentialMode) ...[
+                          const SizedBox(width: 6),
+                          InkWell(
+                            onTap: widget.onStabilityPressed,
+                            mouseCursor: SystemMouseCursors.click,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              height: 36,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1F6FEB).withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.45)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.shield_outlined, size: 13, color: Color(0xFF00F0FF)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "α_cr: ${widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(1) : '—'}",
+                                    style: const TextStyle(color: Color(0xFF00F0FF), fontSize: 9.5, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const InfoTooltip(
+                            title: 'Stability & Buckling Safety (α_cr / B_2)',
+                            codeRef: 'AISC 360-16 App. 8',
+                            message:
+                                'Click to open Lateral Stability studio for 12×12 [Kg] eigenvalue buckling and second-order sway amplification.',
+                            size: 13,
+                          ),
+                        ] else if (widget.onParetoPressed != null) ...[
                           const SizedBox(width: 6),
                           InkWell(
                             onTap: widget.onParetoPressed,
@@ -426,67 +465,69 @@ class _FloatingTelemetryDockState extends State<FloatingTelemetryDock>
                 ),
               ),
             ),
-            const SizedBox(width: 14),
 
-            // 4. Lateral & Stability Glass Pod
-            _buildStaggeredPod(
-              index: 3,
-              width: 275,
-              child: GlassPod(
-                padding: podPadding,
-                borderRadius: 22,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: _metricSnippet(
-                            "α_cr BUCKLING",
-                            widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—",
-                            title: "Elastic Critical Buckling Factor (α_cr)",
-                            codeRef: "AISC 360-16 App. 8",
-                            formula: "det([K_e] + α_cr · [K_g]) = 0",
-                            standardOrRange: "α_cr ≥ 10.0: First-Order Valid | α_cr < 10.0: Second-Order P-Δ Mandatory",
-                            tooltip:
-                                "Elastic critical buckling load multiplier det([Ke] + α_cr[Kg]) = 0. Values < 10.0 indicate second-order P-Delta sway sensitivity.",
+            // 4. Lateral & Stability Glass Pod (Shown in Pro Suite Mode)
+            if (!widget.isEssentialMode) ...[
+              const SizedBox(width: 14),
+              _buildStaggeredPod(
+                index: 3,
+                width: 275,
+                child: GlassPod(
+                  padding: podPadding,
+                  borderRadius: 22,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: _metricSnippet(
+                              "α_cr BUCKLING",
+                              widget.alphaCr > 0 ? widget.alphaCr.toStringAsFixed(2) : "—",
+                              title: "Elastic Critical Buckling Factor (α_cr)",
+                              codeRef: "AISC 360-16 App. 8",
+                              formula: "det([K_e] + α_cr · [K_g]) = 0",
+                              standardOrRange: "α_cr ≥ 10.0: First-Order Valid | α_cr < 10.0: Second-Order P-Δ Mandatory",
+                              tooltip:
+                                  "Elastic critical buckling load multiplier det([Ke] + α_cr[Kg]) = 0. Values < 10.0 indicate second-order P-Delta sway sensitivity.",
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _metricSnippet(
-                            "B2 SWAY AMP",
-                            widget.b2Amp.toStringAsFixed(2),
-                            title: "Second-Order Sway Amplification (B_2)",
-                            codeRef: "AISC 360-16 Eq. A-8-4",
-                            formula: "B_2 = 1 / (1 - 1 / α_cr)  |  B_2 ≤ 1.50 Limit",
-                            standardOrRange: "AISC Limit: B_2 ≤ 1.50 | Optimal: B_2 ≤ 1.20",
-                            tooltip:
-                                "Second-order P-Δ sway moment amplification factor B2 = 1 / (1 - 1/α_cr) per AISC 360-16 Appendix 8.",
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _metricSnippet(
+                              "B2 SWAY AMP",
+                              widget.b2Amp.toStringAsFixed(2),
+                              title: "Second-Order Sway Amplification (B_2)",
+                              codeRef: "AISC 360-16 Eq. A-8-4",
+                              formula: "B_2 = 1 / (1 - 1 / α_cr)  |  B_2 ≤ 1.50 Limit",
+                              standardOrRange: "AISC Limit: B_2 ≤ 1.50 | Optimal: B_2 ≤ 1.20",
+                              tooltip:
+                                  "Second-order P-Δ sway moment amplification factor B2 = 1 / (1 - 1/α_cr) per AISC 360-16 Appendix 8.",
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: widget.onStabilityPressed,
+                        icon: const Icon(Icons.grain, size: 14, color: Color(0xFF00F0FF)),
+                        label: const Text(
+                          "ASCE 7 & P-Δ ENGINE",
+                          style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.w700),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: widget.onStabilityPressed,
-                      icon: const Icon(Icons.grain, size: 14, color: Color(0xFF00F0FF)),
-                      label: const Text(
-                        "ASCE 7 & P-Δ ENGINE",
-                        style: TextStyle(color: Color(0xFF00F0FF), fontSize: 11, fontWeight: FontWeight.w700),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5), width: 1.0),
+                          minimumSize: const Size(double.infinity, 38),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5), width: 1.0),
-                        minimumSize: const Size(double.infinity, 38),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

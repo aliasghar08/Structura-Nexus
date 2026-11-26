@@ -6,6 +6,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/workspace_storage.dart';
+import 'keyboard_shortcuts_dialog.dart';
 
 class WorkstationDrawer extends StatefulWidget {
   final VoidCallback? onOpenCopilot;
@@ -330,94 +331,7 @@ class _WorkstationDrawerState extends State<WorkstationDrawer> {
   ];
 
   void _showShortcutsDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0D1117),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
-        ),
-        title: Row(
-          children: const [
-            Icon(Icons.keyboard_outlined, color: Color(0xFF00F0FF), size: 22),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Workstation Navigation & Shortcuts',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        content: SizedBox(
-          width: 440,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildShortcutRow('Orbit 3D Viewport', 'Click & Drag anywhere on canvas'),
-              _buildShortcutRow('Pan Viewport', 'Two-finger Drag or Right Click'),
-              _buildShortcutRow('Zoom In / Out', 'Mouse Scroll Wheel or Pinch gesture'),
-              _buildShortcutRow('Morph Realtime Geometry', 'Click & Drag any 3D node ball'),
-              _buildShortcutRow('Inspect Member / Node', 'Single click on any element'),
-              _buildShortcutRow('Re-run Finite Element Solve', 'Click Live Engine in header'),
-              const Divider(color: Colors.white12, height: 24),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF10B981),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Real-time GNN Surrogate operates at < 0.4ms latency',
-                      style: TextStyle(color: Colors.white70, fontSize: 11, fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Got It', style: TextStyle(color: Color(0xFF00F0FF))),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShortcutRow(String title, String desc) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 170,
-            child: Text(
-              title,
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              desc,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11.5),
-            ),
-          ),
-        ],
-      ),
-    );
+    showKeyboardShortcutsDialog(context);
   }
 
   void _handleToolSelected(VoidCallback? toolAction) {

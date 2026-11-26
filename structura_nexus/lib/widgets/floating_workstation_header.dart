@@ -12,6 +12,7 @@ import '../services/workspace_storage.dart';
 import '../services/building_generator_service.dart';
 import 'glass_pod.dart';
 import 'info_tooltip.dart';
+import 'keyboard_shortcuts_dialog.dart';
 
 class FloatingWorkstationHeader extends StatefulWidget {
   final StructuralModel model;
@@ -66,6 +67,9 @@ class FloatingWorkstationHeader extends StatefulWidget {
   final VoidCallback? onRedo;
   final bool canUndo;
   final bool canRedo;
+  final bool isEssentialMode;
+  final VoidCallback? onToggleWorkspaceMode;
+  final VoidCallback? onOpenShortcuts;
 
   const FloatingWorkstationHeader({
     super.key,
@@ -119,6 +123,9 @@ class FloatingWorkstationHeader extends StatefulWidget {
     this.onRedo,
     this.canUndo = false,
     this.canRedo = false,
+    this.isEssentialMode = true,
+    this.onToggleWorkspaceMode,
+    this.onOpenShortcuts,
   });
 
   @override
@@ -293,6 +300,10 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                       ),
                       const SizedBox(width: 8),
 
+                      // 2.2 ESSENTIAL / PRO SUITE Mode Switcher Pill
+                      _buildModeSwitcherPill(),
+                      const SizedBox(width: 8),
+
                       // 2.5 Universal Command Palette & Encyclopedia Pill (⌘K)
                       if (widget.onOpenCommandPalette != null) ...[
                         _HoverableSpecularPill(
@@ -358,6 +369,39 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                         ),
                         const SizedBox(width: 8),
                       ],
+
+                      // 2.7 KEYBOARD SHORTCUTS (?)
+                      _HoverableSpecularPill(
+                        label: "SHORTCUTS (?)",
+                        icon: Icons.keyboard_rounded,
+                        onTap: widget.onOpenShortcuts != null
+                            ? widget.onOpenShortcuts!
+                            : () => showKeyboardShortcutsDialog(context),
+                        infoTitle: 'Keyboard Shortcuts Reference',
+                        infoCode: 'Press ? anytime',
+                        infoMessage:
+                            'Fast viewport navigation (1-4 Camera views), multi-selection (Shift+Click), and modeling commands.',
+                        trailingBadge: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00F0FF).withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFF00F0FF).withValues(alpha: 0.55),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: const Text(
+                            "?",
+                            style: TextStyle(
+                              color: Color(0xFF00F0FF),
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
 
                       // 3. Sequential 5-Stage Civil/Structural Engineering Pipeline
                       // Stage 1: GEOMETRY
@@ -447,22 +491,24 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                   'Steps the AASHTO HL-93 Design Truck (35 + 145 + 145 kN, IM=1.33) + 9.3 kN/m lane load across the bridge deck in 40 DSM steps with influence lines η(x).',
                               onTap: () => widget.onOpenBridgeMovingLoad?.call(),
                             ),
-                          _MenuAction(
-                            label: "AeroNet Atmospheric Wind Boundary-Layer CFD",
-                            subtitle: "Simulate wind velocity profiles, Cp pressure contours, and vortex shedding",
-                            icon: Icons.air_rounded,
-                            infoText:
-                                'Atmospheric boundary layer velocity profile, Cp pressure contours, and vortex shedding lock-in frequency analysis.',
-                            onTap: () => widget.onOpenWindCfd?.call(),
-                          ),
-                          _MenuAction(
-                            label: "Multi-Hazard Dynamic Environmental Stimulator",
-                            subtitle: "Apply live coupled seismic ground motion, wind gusts, and blast waves",
-                            icon: Icons.cyclone_rounded,
-                            infoText:
-                                'Live 60 FPS 3D simulation of coupled seismic ground motion, vortex-induced wind resonance, and blast wave overpressure.',
-                            onTap: () => widget.onOpenEnvironmentalStimulator?.call(),
-                          ),
+                          if (!widget.isEssentialMode) ...[
+                            _MenuAction(
+                              label: "AeroNet Atmospheric Wind Boundary-Layer CFD",
+                              subtitle: "Simulate wind velocity profiles, Cp pressure contours, and vortex shedding",
+                              icon: Icons.air_rounded,
+                              infoText:
+                                  'Atmospheric boundary layer velocity profile, Cp pressure contours, and vortex shedding lock-in frequency analysis.',
+                              onTap: () => widget.onOpenWindCfd?.call(),
+                            ),
+                            _MenuAction(
+                              label: "Multi-Hazard Dynamic Environmental Stimulator",
+                              subtitle: "Apply live coupled seismic ground motion, wind gusts, and blast waves",
+                              icon: Icons.cyclone_rounded,
+                              infoText:
+                                  'Live 60 FPS 3D simulation of coupled seismic ground motion, vortex-induced wind resonance, and blast wave overpressure.',
+                              onTap: () => widget.onOpenEnvironmentalStimulator?.call(),
+                            ),
+                          ],
                           _MenuAction(
                             label: "Geotechnical Foundation Supports & Winkler Springs",
                             subtitle: "Model elastic soil springs (ks), footing dimensions, and base restraints",
@@ -471,6 +517,13 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 'Soil-Structure Interaction with Winkler subgrade springs (k_s), Terzaghi bearing capacity, and ACI 318-19 §22.6 two-way punching shear.',
                             onTap: () => widget.onOpenGeotechnicalFoundation?.call(),
                           ),
+                          if (widget.isEssentialMode && widget.onToggleWorkspaceMode != null)
+                            _MenuAction(
+                              label: "+ Show Pro Frontier Tools (AeroNet CFD & Multi-Hazard)",
+                              subtitle: "Switch to Pro Suite mode to unlock atmospheric CFD wind tunnels and dynamic stimulators",
+                              icon: Icons.rocket_launch_rounded,
+                              onTap: widget.onToggleWorkspaceMode!,
+                            ),
                         ]),
                       ),
                       const SizedBox(width: 8),
@@ -501,23 +554,6 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 'Assembles 12×12 geometric stiffness matrix [Kg] to compute elastic critical buckling load factor α_cr and AISC 360-16 Appendix 8 B2 sway amplification.',
                             onTap: () => widget.onOpenLateralStability?.call(),
                           ),
-                          if (widget.onOpenProgressiveCollapse != null)
-                            _MenuAction(
-                              label: "Progressive Collapse & Alternate Path (UFC 4-023-03)",
-                              subtitle: "Simulate sudden column loss (Ω_LD = 2.0) and double-span catenary bridging",
-                              icon: Icons.warning_amber_rounded,
-                              infoText:
-                                  'Simulates sudden notional column loss under Ω_LD = 2.0 dynamic amplification, evaluating double-span catenary bridging and vulnerability rankings.',
-                              onTap: () => widget.onOpenProgressiveCollapse?.call(),
-                            ),
-                          _MenuAction(
-                            label: "Dynamic Time-History (NLTHA) Earthquake Player",
-                            subtitle: "Run Newmark-β step-by-step response under El Centro, Northridge & Kobe records",
-                            icon: Icons.movie_filter_rounded,
-                            infoText:
-                                'Newmark-Beta (γ=0.5, β=0.25) step-by-step non-linear seismic time history integration under El Centro, Northridge, and Kobe ground motions.',
-                            onTap: () => widget.onOpenNltha?.call(),
-                          ),
                           _MenuAction(
                             label: "Dynamic Modal Vibration & Eigenmodes (ASCE 7-16)",
                             subtitle: "Extract natural frequencies ω_n, periods T_n, and 3D mode shape animations",
@@ -526,14 +562,40 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 'Solves generalized eigenvalue problem det([K] - ω²[M]) = 0 for natural frequencies, periods, and 3D mode shape animations.',
                             onTap: () => widget.onOpenSeismicModal?.call(),
                           ),
-                          _MenuAction(
-                            label: "Non-Linear Static Pushover Curve (ATC-40 / FEMA 356)",
-                            subtitle: "Trace Base Shear V vs. Roof Drift Δ with IO / LS / CP plastic hinge limits",
-                            icon: Icons.trending_up_rounded,
-                            infoText:
-                                'Non-linear static pushover curve (Base Shear V vs. Roof Drift Δ) with FEMA 356 IO / LS / CP plastic hinge performance levels.',
-                            onTap: () => widget.onOpenPushoverAnalysis?.call(),
-                          ),
+                          if (!widget.isEssentialMode) ...[
+                            if (widget.onOpenProgressiveCollapse != null)
+                              _MenuAction(
+                                label: "Progressive Collapse & Alternate Path (UFC 4-023-03)",
+                                subtitle: "Simulate sudden column loss (Ω_LD = 2.0) and double-span catenary bridging",
+                                icon: Icons.warning_amber_rounded,
+                                infoText:
+                                    'Simulates sudden notional column loss under Ω_LD = 2.0 dynamic amplification, evaluating double-span catenary bridging and vulnerability rankings.',
+                                onTap: () => widget.onOpenProgressiveCollapse?.call(),
+                              ),
+                            _MenuAction(
+                              label: "Dynamic Time-History (NLTHA) Earthquake Player",
+                              subtitle: "Run Newmark-β step-by-step response under El Centro, Northridge & Kobe records",
+                              icon: Icons.movie_filter_rounded,
+                              infoText:
+                                  'Newmark-Beta (γ=0.5, β=0.25) step-by-step non-linear seismic time history integration under El Centro, Northridge, and Kobe ground motions.',
+                              onTap: () => widget.onOpenNltha?.call(),
+                            ),
+                            _MenuAction(
+                              label: "Non-Linear Static Pushover Curve (ATC-40 / FEMA 356)",
+                              subtitle: "Trace Base Shear V vs. Roof Drift Δ with IO / LS / CP plastic hinge limits",
+                              icon: Icons.trending_up_rounded,
+                              infoText:
+                                  'Non-linear static pushover curve (Base Shear V vs. Roof Drift Δ) with FEMA 356 IO / LS / CP plastic hinge performance levels.',
+                              onTap: () => widget.onOpenPushoverAnalysis?.call(),
+                            ),
+                          ],
+                          if (widget.isEssentialMode && widget.onToggleWorkspaceMode != null)
+                            _MenuAction(
+                              label: "+ Show Pro Frontier Tools (NLTHA, Pushover & Progressive Collapse)",
+                              subtitle: "Switch to Pro Suite mode to unlock non-linear time history and column removal simulations",
+                              icon: Icons.rocket_launch_rounded,
+                              onTap: widget.onToggleWorkspaceMode!,
+                            ),
                         ]),
                       ),
                       const SizedBox(width: 8),
@@ -573,41 +635,43 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 'Biaxial reinforced concrete column P-M interaction diagram (Whitney stress block) and ACI 224R-01 Gergely-Lutz surface crack width serviceability.',
                             onTap: () => widget.onOpenConcreteStudio?.call(),
                           ),
-                          if (widget.onOpenAutonomousSwarm != null)
+                          if (!widget.isEssentialMode) ...[
+                            if (widget.onOpenAutonomousSwarm != null)
+                              _MenuAction(
+                                label: "Autonomous 4-Agent Engineering Swarm (Self-Healer)",
+                                subtitle: "Architect ↔ FEA Analyst ↔ Code Auditor ↔ Self-Healer iterative loop",
+                                icon: Icons.hub_rounded,
+                                infoText:
+                                    'Multi-agent collaboration (Architect, FEA Analyst, Code Auditor, Self-Healer) that iteratively resolves overstressed members and drift violations.',
+                                onTap: () => widget.onOpenAutonomousSwarm?.call(),
+                              ),
+                            if (widget.onOpenGenerativeTopology != null)
+                              _MenuAction(
+                                label: "3D Diagrid Topology Synthesizer (Neural SIMP)",
+                                subtitle: "Optimize continuous density field ρ(x,y,z) for 18–30% steel mass reduction",
+                                icon: Icons.architecture_rounded,
+                                infoText:
+                                    'Continuous neural density field ρ(x,y,z) optimization and Marching Struts discretizer generating 3D diagrid exoskeletons with 18–30% steel mass reduction.',
+                                onTap: () => widget.onOpenGenerativeTopology?.call(),
+                              ),
+                            if (widget.onOpenParetoExplorer != null)
+                              _MenuAction(
+                                label: "WebGPU 60 FPS Pareto Frontier Explorer (B=256)",
+                                subtitle: "Trade off Steel Mass (kg), Peak Drift (mm), and Carbon (kg CO2e) in real time",
+                                icon: Icons.scatter_plot_rounded,
+                                infoText:
+                                    'Evaluates 256 structural variations in parallel via WebGPU WGSL shaders, trading off steel mass, roof drift, and embodied carbon in real time.',
+                                onTap: () => widget.onOpenParetoExplorer?.call(),
+                              ),
                             _MenuAction(
-                              label: "Autonomous 4-Agent Engineering Swarm (Self-Healer)",
-                              subtitle: "Architect ↔ FEA Analyst ↔ Code Auditor ↔ Self-Healer iterative loop",
-                              icon: Icons.hub_rounded,
+                              label: "Generative Lateral Bracing Optimizer",
+                              subtitle: "Synthesize X-brace, Chevron, or Diagrid bracing to maximize buckling α_cr",
+                              icon: Icons.grid_4x4_rounded,
                               infoText:
-                                  'Multi-agent collaboration (Architect, FEA Analyst, Code Auditor, Self-Healer) that iteratively resolves overstressed members and drift violations.',
-                              onTap: () => widget.onOpenAutonomousSwarm?.call(),
+                                  'Synthesizes optimal lateral bracing topologies (X-brace, Chevron, Diagrid) to maximize elastic critical buckling factor α_cr.',
+                              onTap: () => widget.onOpenGenerativeBracing?.call(),
                             ),
-                          if (widget.onOpenGenerativeTopology != null)
-                            _MenuAction(
-                              label: "3D Diagrid Topology Synthesizer (Neural SIMP)",
-                              subtitle: "Optimize continuous density field ρ(x,y,z) for 18–30% steel mass reduction",
-                              icon: Icons.architecture_rounded,
-                              infoText:
-                                  'Continuous neural density field ρ(x,y,z) optimization and Marching Struts discretizer generating 3D diagrid exoskeletons with 18–30% steel mass reduction.',
-                              onTap: () => widget.onOpenGenerativeTopology?.call(),
-                            ),
-                          if (widget.onOpenParetoExplorer != null)
-                            _MenuAction(
-                              label: "WebGPU 60 FPS Pareto Frontier Explorer (B=256)",
-                              subtitle: "Trade off Steel Mass (kg), Peak Drift (mm), and Carbon (kg CO2e) in real time",
-                              icon: Icons.scatter_plot_rounded,
-                              infoText:
-                                  'Evaluates 256 structural variations in parallel via WebGPU WGSL shaders, trading off steel mass, roof drift, and embodied carbon in real time.',
-                              onTap: () => widget.onOpenParetoExplorer?.call(),
-                            ),
-                          _MenuAction(
-                            label: "Generative Lateral Bracing Optimizer",
-                            subtitle: "Synthesize X-brace, Chevron, or Diagrid bracing to maximize buckling α_cr",
-                            icon: Icons.grid_4x4_rounded,
-                            infoText:
-                                'Synthesizes optimal lateral bracing topologies (X-brace, Chevron, Diagrid) to maximize elastic critical buckling factor α_cr.',
-                            onTap: () => widget.onOpenGenerativeBracing?.call(),
-                          ),
+                          ],
                           _MenuAction(
                             label: "Composite Floor Walking Vibration Check (AISC DG 11)",
                             subtitle: "Verify human comfort peak acceleration a_p/g and composite shear studs",
@@ -624,6 +688,13 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                                 'Designs bolted end-plate moment connections, shear tabs, and column baseplates for bolt shear, prying, and weld capacity.',
                             onTap: () => widget.onOpenSteelConnections?.call(),
                           ),
+                          if (widget.isEssentialMode && widget.onToggleWorkspaceMode != null)
+                            _MenuAction(
+                              label: "+ Show Pro Frontier Tools (Swarm, Diagrid SIMP, WebGPU Pareto)",
+                              subtitle: "Switch to Pro Suite mode to unlock autonomous 4-agent swarms and WebGPU Pareto explorers",
+                              icon: Icons.rocket_launch_rounded,
+                              onTap: widget.onToggleWorkspaceMode!,
+                            ),
                         ]),
                       ),
                       const SizedBox(width: 8),
@@ -1192,6 +1263,93 @@ class _FloatingWorkstationHeaderState extends State<FloatingWorkstationHeader> {
                 '• Framing: ${currentSample.structuralSystem}\n'
                 '• Mesh: ${currentSample.nodeCount} Joints, ${currentSample.memberCount} Members\n\n'
                 'Click ◀ or ▶ to quick-cycle between all 24 certified building, bridge, long-span & seismic archetypes.',
+            size: 13,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSwitcherPill() {
+    return GlassPod(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      borderRadius: 16,
+      glowColor: widget.isEssentialMode
+          ? const Color(0xFF10B981).withValues(alpha: 0.2)
+          : const Color(0xFFA855F7).withValues(alpha: 0.2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: widget.isEssentialMode ? null : widget.onToggleWorkspaceMode,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: widget.isEssentialMode ? const Color(0xFF10B981) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.bolt_rounded,
+                    size: 13,
+                    color: widget.isEssentialMode ? Colors.black : Colors.white60,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "ESSENTIAL",
+                    style: TextStyle(
+                      color: widget.isEssentialMode ? Colors.black : Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 3),
+          InkWell(
+            onTap: !widget.isEssentialMode ? null : widget.onToggleWorkspaceMode,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(
+                color: !widget.isEssentialMode ? const Color(0xFFA855F7) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.rocket_launch_rounded,
+                    size: 13,
+                    color: !widget.isEssentialMode ? Colors.white : Colors.white60,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "PRO SUITE",
+                    style: TextStyle(
+                      color: !widget.isEssentialMode ? Colors.white : Colors.white70,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 2),
+          InfoTooltip(
+            title: widget.isEssentialMode ? 'Essential Mode (Daily Engineering)' : 'Pro Suite Mode (Frontier Research)',
+            codeRef: widget.isEssentialMode ? 'AISC 360 • ACI 318 • ASCE 7' : 'WebGPU • NLTHA • CFD • GNN',
+            message: widget.isEssentialMode
+                ? 'Essential Mode streamlines the interface to core daily engineering workflows: 3D Framing, 6-DOF Supports, ASCE 7 Loads, 12-DOF FEA Solve, AISC/ACI Checks, and PE Packet / BIM export.\n\nClick "PRO SUITE" to unlock advanced frontier modules.'
+                : 'Pro Suite Mode unlocks all advanced research capsules: 4-Agent Autonomous Swarm, WebGPU Pareto Explorer, AeroNet Wind Tunnel CFD, Non-Linear Time History (NLTHA), and Progressive Collapse.',
             size: 13,
           ),
         ],

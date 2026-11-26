@@ -9,8 +9,12 @@ import 'package:structura_nexus/services/structural_api_service.dart';
 import 'package:structura_nexus/widgets/vision_ingestion_dialog.dart';
 import 'package:structura_nexus/widgets/foundation_studio_dialog.dart';
 import 'package:structura_nexus/widgets/time_history_player.dart';
+import 'package:structura_nexus/services/workspace_storage.dart';
 
 void main() {
+  setUp(() {
+    WorkspacePreferences.setBool('hide_welcome_quickstart', true);
+  });
   test('Embedded FEA Solver solves multi-story sway frame', () {
     final model = BenchmarkPresets.multiStorySwayFrame();
     EmbeddedFeaSolver.solve(model);

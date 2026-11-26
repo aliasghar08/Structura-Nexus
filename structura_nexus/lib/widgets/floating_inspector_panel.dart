@@ -471,10 +471,10 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Container(
-          width: 52,
-          height: 52,
+          width: 48,
+          height: 48,
           decoration: BoxDecoration(
             color: const Color(0xFF00F0FF).withValues(alpha: 0.1),
             shape: BoxShape.circle,
@@ -482,22 +482,65 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
           ),
           child: const Icon(
             Icons.hub_rounded,
-            size: 26,
+            size: 24,
             color: Color(0xFF00F0FF),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         const Text(
           "PROPRIETARY NEURAL CORE",
           style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.8),
         ),
         const SizedBox(height: 6),
         Text(
-          "Click any joint node or frame member to inspect 6-DOF internal tensors.",
+          "Click any joint node or frame member in 3D to inspect and edit.",
           textAlign: TextAlign.center,
           style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 10.5, height: 1.3),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 14),
+
+        // Friendly 3-Bullet Interaction Guide
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF00F0FF).withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF00F0FF).withValues(alpha: 0.22)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.touch_app_rounded, color: Color(0xFF00F0FF), size: 14),
+                  SizedBox(width: 6),
+                  Text(
+                    'QUICK INTERACTION GUIDE',
+                    style: TextStyle(
+                      color: Color(0xFF00F0FF),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
+              _guideBullet(Icons.adjust_rounded, 'Click a joint', 'to set 6-DOF supports, coordinates, or point loads'),
+              const SizedBox(height: 6),
+              _guideBullet(Icons.horizontal_rule_rounded, 'Click a beam/column', 'to swap W-shapes, releases, or cracked factors'),
+              const SizedBox(height: 6),
+              _guideBullet(Icons.open_with_rounded, 'Drag any joint', 'in 3D for live physics & instant recalculation'),
+              const SizedBox(height: 8),
+              const Text(
+                'Tip: Shift+Click or drag-marquee to batch edit multiple entities.',
+                style: TextStyle(color: Colors.white54, fontSize: 9.5, fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -589,6 +632,30 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
             ],
           ),
         ],
+      ],
+    );
+  }
+
+  Widget _guideBullet(IconData icon, String boldAction, String desc) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 12, color: const Color(0xFF00F0FF)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 10, color: Colors.white70, height: 1.25),
+              children: [
+                TextSpan(
+                  text: '$boldAction ',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: desc),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }

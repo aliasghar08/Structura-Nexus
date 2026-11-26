@@ -198,13 +198,11 @@ void main() {
       expect(find.byIcon(Icons.arrow_back_ios_rounded), findsWidgets);
       expect(find.byIcon(Icons.arrow_forward_ios_rounded), findsWidgets);
 
-      // Drag the horizontal scrollview so the stepper buttons are comfortably centered in viewport hit-test bounds
-      await tester.drag(find.byType(SingleChildScrollView).first, const Offset(-2000, 0));
-      await tester.pumpAndSettle();
-
       // Find the next step button inside the sample switcher
       final nextBtn = find.byTooltip('Next Sample: 4-Story Educational Campus Frame');
       expect(nextBtn, findsOneWidget);
+      await tester.ensureVisible(nextBtn);
+      await tester.pumpAndSettle();
 
       // Tap next sample button
       await tester.tap(nextBtn);
@@ -215,6 +213,8 @@ void main() {
       // Find the previous step button
       final prevBtn = find.byTooltip('Previous Sample: Hibbeler & Leet Continuous Beam');
       expect(prevBtn, findsOneWidget);
+      await tester.ensureVisible(prevBtn);
+      await tester.pumpAndSettle();
 
       // Tap previous sample button
       await tester.tap(prevBtn);

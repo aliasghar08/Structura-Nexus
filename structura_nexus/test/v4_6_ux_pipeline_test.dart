@@ -21,8 +21,13 @@ import 'package:structura_nexus/widgets/time_history_player.dart';
 import 'package:structura_nexus/widgets/bridge_moving_load_dock.dart';
 import 'package:structura_nexus/widgets/pareto_frontier_dock.dart';
 import 'package:structura_nexus/widgets/pe_packet_dialog.dart';
+import 'package:structura_nexus/services/workspace_storage.dart';
 
 void main() {
+  setUp(() {
+    WorkspacePreferences.setBool('hide_welcome_quickstart', true);
+  });
+
   group('Structura Nexus v4.6 Engineering-First UX Pipeline & Polish Tests', () {
     testWidgets(
       '1. Top Header displays 5-Stage Engineering Pipeline & opens stage modal with 1-line subtitles',
@@ -42,6 +47,8 @@ void main() {
         expect(find.text('5. REPORTS & BIM'), findsOneWidget);
         expect(find.text('WHAT CAN I BUILD?'), findsWidgets);
 
+        await tester.ensureVisible(find.text('1. GEOMETRY'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('1. GEOMETRY'));
         await tester.pumpAndSettle();
 
