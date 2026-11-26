@@ -35,6 +35,7 @@
       this.sfdGroup = new THREE.Group();     // SFD ribbons
       this.loadsGroup = new THREE.Group();   // 3D Force vector arrows
       this.releasesGroup = new THREE.Group(); // Release hinges & cracked glyphs
+      this.elevationGroup = new THREE.Group(); // Procedural elevation datum rings
       this.reviewPinsGroup = new THREE.Group(); // 3D Pinned Engineering Review Comments
       this.connectionsGroup = new THREE.Group(); // v4.5 3D AISC Chapter J Steel Connections & Baseplates
       this.movingTruckGroup = new THREE.Group(); // v4.5 AASHTO HL-93 3D Moving Truck & Axle Vectors
@@ -245,6 +246,7 @@
       this.scene.add(this.sfdGroup);
       this.scene.add(this.loadsGroup);
       this.scene.add(this.releasesGroup);
+      this.scene.add(this.elevationGroup);
       this.scene.add(this.reviewPinsGroup);
       this.scene.add(this.connectionsGroup);
       this.scene.add(this.movingTruckGroup);
@@ -735,6 +737,22 @@
         this.onResize();
       }
 
+      // Smooth damped camera position & target interpolation (safe no-op in headless test)
+      if (this._targetCameraPos && this.camera && this.camera.position && typeof this.camera.position.lerp === "function") {
+        this.camera.position.lerp(this._targetCameraPos, 0.09);
+        if (this.camera.position.distanceTo(this._targetCameraPos) < 0.02) {
+          this.camera.position.copy(this._targetCameraPos);
+          this._targetCameraPos = null;
+        }
+      }
+      if (this._targetControlsTarget && this.controls && this.controls.target && typeof this.controls.target.lerp === "function") {
+        this.controls.target.lerp(this._targetControlsTarget, 0.09);
+        if (this.controls.target.distanceTo(this._targetControlsTarget) < 0.02) {
+          this.controls.target.copy(this._targetControlsTarget);
+          this._targetControlsTarget = null;
+        }
+      }
+
       if (this.controls) {
         this.controls.update();
       }
@@ -892,6 +910,7 @@
       this._disposeGroup(this.sfdGroup);
       this._disposeGroup(this.loadsGroup);
       this._disposeGroup(this.releasesGroup);
+      this._disposeGroup(this.elevationGroup);
       this._disposeGroup(this.reviewPinsGroup);
 
       this.nodeMeshes = [];
@@ -1174,6 +1193,31 @@
         }
       });
 
+      // 6. Procedural Elevation Datum Markers (for multi-story towers)
+      if (typeof THREE !== "undefined" && THREE.RingGeometry && nodes.length > 0) {
+        const elevations = new Set();
+        nodes.forEach((n) => {
+          const y = Array.isArray(n.coords) ? n.coords[1] : (n.coords ? n.coords.y : 0);
+          if (y > 0.5) elevations.add(Math.round(y * 10) / 10);
+        });
+
+        elevations.forEach((elevY) => {
+          const ringRadius = Math.max(maxDim * 0.65, 8.0);
+          const ringGeo = new THREE.RingGeometry(ringRadius - 0.04, ringRadius, 48);
+          const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x00F0FF,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.16,
+            depthWrite: false,
+          });
+          const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+          ringMesh.rotation.x = Math.PI / 2;
+          ringMesh.position.set(cx, elevY, cz);
+          this.elevationGroup.add(ringMesh);
+        });
+      }
+
       // Center camera focus on bounding center & auto-frame only when topology bounds change or forced
       if (nodes.length > 0) {
         this.currentCenter = new THREE.Vector3(cx, cy, cz);
@@ -1399,32 +1443,41 @@
     }
 
     setCameraPreset(preset) {
-      if (!this.camera) return;
+      if (!this.camera || typeof THREE === "undefined") return;
       const target =
         this.currentCenter ||
         (this.controls ? this.controls.target : new THREE.Vector3(3, 4, 0));
       const dist = this.fitDistance || 18.0;
+      const targetPos = new THREE.Vector3();
       switch (preset) {
         case "TOP":
-          this.camera.position.set(target.x, target.y + dist * 1.4, target.z + 0.001);
+          targetPos.set(target.x, target.y + dist * 1.4, target.z + 0.001);
           break;
         case "FRONT":
-          this.camera.position.set(target.x, target.y, target.z + dist * 1.4);
+          targetPos.set(target.x, target.y, target.z + dist * 1.4);
           break;
         case "ISO":
         case "RECENTER":
         default:
-          this.camera.position.set(
+          targetPos.set(
             target.x + dist * 0.72,
             target.y + dist * 0.52,
             target.z + dist * 0.82
           );
           break;
       }
-      this.camera.lookAt(target);
-      if (this.controls) {
-        this.controls.target.copy(target);
-        this.controls.update();
+
+      // Smooth camera interpolation (lerp) with headless test fallback
+      if (this.camera && this.camera.position && typeof this.camera.position.lerp === "function") {
+        this._targetCameraPos = targetPos;
+        this._targetControlsTarget = target.clone ? target.clone() : new THREE.Vector3().copy(target);
+      } else {
+        this.camera.position.copy(targetPos);
+        this.camera.lookAt(target);
+        if (this.controls) {
+          this.controls.target.copy(target);
+          this.controls.update();
+        }
       }
     }
 
@@ -1644,6 +1697,7 @@
       this._disposeGroup(this.sfdGroup);
       this._disposeGroup(this.loadsGroup);
       this._disposeGroup(this.releasesGroup);
+      this._disposeGroup(this.elevationGroup);
       this._disposeGroup(this.reviewPinsGroup);
       this._disposeGroup(this.connectionsGroup);
       this._disposeGroup(this.movingTruckGroup);

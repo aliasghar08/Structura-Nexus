@@ -24,6 +24,8 @@ class FloatingInspectorPanel extends StatefulWidget {
   final void Function(String section)? onBatchAssignSection;
   final void Function(String support)? onBatchAssignSupport;
   final void Function(double fx, double fy, double fz)? onBatchApplyLoads;
+  final void Function(bool releaseI, bool releaseJ)? onBatchAssignReleases;
+  final void Function(double factor)? onBatchAssignCrackedFactor;
   final VoidCallback? onBatchDelete;
   final VoidCallback? onDeselectAll;
   final VoidCallback? onDetailJointConnection;
@@ -47,6 +49,8 @@ class FloatingInspectorPanel extends StatefulWidget {
     this.onBatchAssignSection,
     this.onBatchAssignSupport,
     this.onBatchApplyLoads,
+    this.onBatchAssignReleases,
+    this.onBatchAssignCrackedFactor,
     this.onBatchDelete,
     this.onDeselectAll,
     this.onDetailJointConnection,
@@ -297,6 +301,68 @@ class _FloatingInspectorPanelState extends State<FloatingInspectorPanel>
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
               onPressed: () => widget.onBatchAssignSection?.call(sec),
             )).toList(),
+          ),
+          const SizedBox(height: 14),
+
+          _headerText('BATCH MEMBER END RELEASES'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ActionChip(
+                label: const Text('Pin-Pin (Secondary/Truss)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: BorderSide(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignReleases?.call(true, true),
+              ),
+              ActionChip(
+                label: const Text('Fixed-Fixed (Moment Frame)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: BorderSide(color: const Color(0xFF00F0FF).withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignReleases?.call(false, false),
+              ),
+              ActionChip(
+                label: const Text('Pin-Fixed (Propped Beam)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: BorderSide(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignReleases?.call(true, false),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          _headerText('BATCH ACI 318-19 CRACKED MODIFIERS'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              ActionChip(
+                label: const Text('0.35 Ig (Beams / Flexure)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: BorderSide(color: const Color(0xFF3B82F6).withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignCrackedFactor?.call(0.35),
+              ),
+              ActionChip(
+                label: const Text('0.70 Ig (Columns / Axial)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: BorderSide(color: const Color(0xFF8B5CF6).withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignCrackedFactor?.call(0.70),
+              ),
+              ActionChip(
+                label: const Text('1.00 Ig (Gross / Uncracked)', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFF1B2433),
+                side: const BorderSide(color: Colors.white30),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                onPressed: () => widget.onBatchAssignCrackedFactor?.call(1.0),
+              ),
+            ],
           ),
           const SizedBox(height: 14),
         ],

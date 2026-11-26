@@ -135,7 +135,9 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     final primaryFocus = FocusManager.instance.primaryFocus;
     if (primaryFocus == null) return false;
     final widget = primaryFocus.context?.widget;
-    return widget is EditableText;
+    if (widget is EditableText) return true;
+    final hasTextInput = primaryFocus.context?.findAncestorWidgetOfExactType<EditableText>() != null;
+    return hasTextInput;
   }
 
   KeyEventResult _handleGlobalKeyEvent(FocusNode node, KeyEvent event) {
@@ -183,6 +185,30 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
     if (event.logicalKey == LogicalKeyboardKey.escape) {
       _deselectAll();
       return KeyEventResult.handled;
+    }
+
+    // Camera Viewport Presets (1 = ISO, 2 = TOP, 3 = FRONT, 4 = RECENTER)
+    if (!isModifier && !isShift) {
+      if (event.logicalKey == LogicalKeyboardKey.digit1 || event.logicalKey == LogicalKeyboardKey.numpad1) {
+        _viewportKey.currentState?.setCameraPreset('ISO');
+        _showToolSnackBar('Camera Viewport: 3D Isometric View');
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.digit2 || event.logicalKey == LogicalKeyboardKey.numpad2) {
+        _viewportKey.currentState?.setCameraPreset('TOP');
+        _showToolSnackBar('Camera Viewport: Top Plan View (X-Z)');
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.digit3 || event.logicalKey == LogicalKeyboardKey.numpad3) {
+        _viewportKey.currentState?.setCameraPreset('FRONT');
+        _showToolSnackBar('Camera Viewport: Front Elevation View (X-Y)');
+        return KeyEventResult.handled;
+      }
+      if (event.logicalKey == LogicalKeyboardKey.digit4 || event.logicalKey == LogicalKeyboardKey.numpad4) {
+        _viewportKey.currentState?.setCameraPreset('RECENTER');
+        _showToolSnackBar('Camera Viewport: Recenter & Auto-Fit Structure');
+        return KeyEventResult.handled;
+      }
     }
 
     return KeyEventResult.ignored;
@@ -296,6 +322,46 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
 
     _model = _model.copyWith(nodes: updated);
     _commitModelMutation('Applied loads across ${targetIds.length} joints');
+  }
+
+  void _batchAssignReleases(bool releaseI, bool releaseJ) {
+    if (_selectedMemberIds.isEmpty && _selectedMemberId == null) return;
+    final targetIds = Set<String>.from(_selectedMemberIds);
+    if (_selectedMemberId != null) targetIds.add(_selectedMemberId!);
+
+    _saveUndoState();
+    final updated = _model.members.map((m) {
+      if (targetIds.contains(m.id)) {
+        return m.copyWith(
+          releaseIMoment: releaseI,
+          releaseJMoment: releaseJ,
+          releaseStartMz: releaseI,
+          releaseEndMz: releaseJ,
+        );
+      }
+      return m;
+    }).toList();
+
+    _model = _model.copyWith(members: updated);
+    final label = (releaseI && releaseJ) ? 'Pin-Pin' : (releaseI ? 'Pin-Fixed' : 'Fixed-Fixed');
+    _commitModelMutation('Assigned $label moment releases across ${targetIds.length} members');
+  }
+
+  void _batchAssignCrackedFactor(double factor) {
+    if (_selectedMemberIds.isEmpty && _selectedMemberId == null) return;
+    final targetIds = Set<String>.from(_selectedMemberIds);
+    if (_selectedMemberId != null) targetIds.add(_selectedMemberId!);
+
+    _saveUndoState();
+    final updated = _model.members.map((m) {
+      if (targetIds.contains(m.id)) {
+        return m.copyWith(crackedSectionFactor: factor);
+      }
+      return m;
+    }).toList();
+
+    _model = _model.copyWith(members: updated);
+    _commitModelMutation('Assigned ACI cracked modifier ${factor}x Ig across ${targetIds.length} members');
   }
 
   void _commitModelMutation(String snackbarMessage, {bool refitCamera = false}) {
@@ -2434,6 +2500,8 @@ class _WorkstationScreenState extends State<WorkstationScreen> {
                   onBatchAssignSection: _batchAssignSection,
                   onBatchAssignSupport: _batchAssignSupport,
                   onBatchApplyLoads: _batchApplyLoads,
+                  onBatchAssignReleases: _batchAssignReleases,
+                  onBatchAssignCrackedFactor: _batchAssignCrackedFactor,
                   onBatchDelete: _deleteSelectedElements,
                   onDeselectAll: _deselectAll,
                   onDetailJointConnection: _openConnectionDetailer,
